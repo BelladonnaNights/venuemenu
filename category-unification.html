@@ -109,7 +109,7 @@
 <div id="main-content" style="display:none;">
 
 <h1>Category Unification</h1>
-<div class="sub">One-time reconciliation: matches Planner's Trivia themes and Venue Menu's browsing categories back to the real game-content libraries (<code>trivia/categories</code> and <code>bingo/landing/categories</code>), so there's one record per category instead of three. Nothing is deleted here — this only copies fields forward and re-points references. Run this before any app code is updated to read the new fields.</div>
+<div class="sub">One-time reconciliation: matches Planner's Trivia themes and Venue Menu's browsing categories back to the real game-content libraries (<code>trivia/categories</code> and <code>bingo/landing/categories</code>), so there's one record per category instead of three. Nothing is deleted here — this only copies fields forward and re-points references. All five apps (Planner, Trivia Admin, Bingo Admin, Venue Menu admin, and the public Venue Menu) already read/write these unified docs directly — this page is the step that actually merges everything that's still scattered into them. Run Step 1, then Step 2, then Step 3, in order, all the way through (including the "Create All Unmatched" buttons for anything with no automatic match) — that's what makes a theme or category that only ever lived in one app start showing up everywhere it should.</div>
 
 <div class="warn">⚠ Some Planner "themes" tagged for a round-3 / coordinating slot are actually Bingo categories referenced by name, not Trivia categories. Anything that looks like this is flagged "Ambiguous" below — pick the real target manually rather than trusting an auto-match.</div>
 
@@ -119,7 +119,10 @@
   <div class="step-desc">Every entry in <code>trivia/planner/themes</code>, matched by name to <code>trivia/categories</code> (or <code>bingo/landing/categories</code> for coordinating-music themes). Confirm or override each one, then apply.</div>
   <div class="counts" id="theme-counts"></div>
   <div id="theme-rows"></div>
-  <button class="btn btn-lg" onclick="applyThemeMatches()">Apply Confirmed Matches</button>
+  <div style="display:flex;gap:0.6rem;flex-wrap:wrap;">
+    <button class="btn btn-lg" onclick="applyThemeMatches()">Apply Confirmed Matches</button>
+    <button class="btn btn-lg" onclick="createAllUnmatchedThemes()">Create All Unmatched (one click)</button>
+  </div>
 </div>
 
 <div class="divider"></div>
@@ -130,7 +133,10 @@
   <div class="step-desc"><code>venueMenuCategories</code> docs tagged Trivia or Bingo, matched to the same real category libraries. Their venue-facing fields (description, banner, published tabs) get copied onto the matched record under a <code>venueMenu</code> field — nothing else on that record is touched.</div>
   <div class="counts" id="vm-counts"></div>
   <div id="vm-rows"></div>
-  <button class="btn btn-lg" onclick="applyVmMatches()">Apply Confirmed Matches</button>
+  <div style="display:flex;gap:0.6rem;flex-wrap:wrap;">
+    <button class="btn btn-lg" onclick="applyVmMatches()">Apply Confirmed Matches</button>
+    <button class="btn btn-lg" onclick="createAllUnmatchedVm()">Create All Unmatched (one click)</button>
+  </div>
 </div>
 
 <div class="divider"></div>
@@ -347,25 +353,61 @@ function renderThemeRows() {
 // row at it. The record's content (question sheet, banner images, song
 // list, etc.) still needs filling in afterward in Trivia Admin or Bingo
 // Admin; this only gives it a real, permanent, shared ID to build on.
+// Shared by the per-row "+ New Trivia/Bingo" buttons and the bulk
+// "Create All Unmatched" action. Carries the theme's own Planner data
+// (tier/tags/pairsWith) onto the brand-new category doc immediately —
+// previously this created a bare {name, type, notes} doc and silently
+// dropped every tag, pair, and tier the theme had, which is why themes
+// like "Comedians" lost their tags the moment they got a real category id.
+async function doCreateCategoryFromTheme(themeId, collection) {
+  const m = themeMatches[themeId];
+  const theme = themes[themeId] || {};
+  if (!m) return null;
+  const path = collection === 'trivia' ? 'trivia/categories' : 'bingo/landing/categories';
+  const newRef = push(ref(rtdb, path));
+  const plannerFields = {};
+  if (theme.tier) plannerFields.plannerTier = theme.tier;
+  if (Array.isArray(theme.tags) && theme.tags.length) plannerFields.tags = theme.tags;
+  if (Array.isArray(theme.pairsWith) && theme.pairsWith.length) plannerFields.pairsWith = theme.pairsWith;
+  const data = collection === 'trivia'
+    ? { name: m.name, type: 'trivia', notes: 'Created from an unmatched Planner theme — needs real content added in Trivia Admin.', createdAt: Date.now(), ...plannerFields }
+    : { title: m.name, genre: '', status: 'coming', createdAt: Date.now(), ...plannerFields };
+  await rtdbSet(newRef, data);
+  // Reflect it locally immediately so the dropdown/list update without a full reload
+  if (collection === 'trivia') triviaCats[newRef.key] = data; else bingoCats[newRef.key] = data;
+  themeMatches[themeId] = { ...m, collection, targetId: newRef.key, status: 'matched' };
+  return newRef.key;
+}
 window.createCategoryFromTheme = async function(themeId, collection) {
   const m = themeMatches[themeId];
   if (!m) return;
   if (!confirm(`Create a new ${collection === 'trivia' ? 'Trivia' : 'Bingo'} category called "${m.name}"? You'll still need to add its real content (sheet/songs/images) afterward.`)) return;
   try {
-    const path = collection === 'trivia' ? 'trivia/categories' : 'bingo/landing/categories';
-    const newRef = push(ref(rtdb, path));
-    const data = collection === 'trivia'
-      ? { name: m.name, type: 'trivia', notes: 'Created from an unmatched Planner theme — needs real content added in Trivia Admin.', createdAt: Date.now() }
-      : { title: m.name, genre: '', status: 'coming', createdAt: Date.now() };
-    await rtdbSet(newRef, data);
-    // Reflect it locally immediately so the dropdown/list update without a full reload
-    if (collection === 'trivia') triviaCats[newRef.key] = data; else bingoCats[newRef.key] = data;
-    themeMatches[themeId] = { ...m, collection, targetId: newRef.key, status: 'matched' };
+    await doCreateCategoryFromTheme(themeId, collection);
     toast(`Created "${m.name}" — remember to fill in its real content.`, 'success');
     renderThemeRows();
   } catch (e) {
     toast('Could not create category: ' + e.message, 'error');
   }
+};
+// Bulk action: creates a real category for every theme with no match at
+// all (status "nomatch"), using the same default collection guess the row
+// already shows, then immediately applies all newly-created matches. This
+// is the one-click path for "every theme that only ever lived in the
+// Planner should get its own firebase place" — no clicking through rows
+// one at a time.
+window.createAllUnmatchedThemes = async function() {
+  const nomatch = Object.entries(themeMatches).filter(([,m]) => m.status === 'nomatch');
+  if (!nomatch.length) { toast('No unmatched themes left — nothing to create.', 'error'); return; }
+  if (!confirm(`Create ${nomatch.length} new categories, one per unmatched Planner theme (defaulting to Trivia unless it looks like Bingo)? You can fix any wrong guesses afterward in Trivia/Bingo Admin. You'll still need to add real content (sheet/songs/images) for each.`)) return;
+  let created = 0, failed = 0;
+  for (const [themeId, m] of nomatch) {
+    try { await doCreateCategoryFromTheme(themeId, m.collection || 'trivia'); created++; }
+    catch (e) { failed++; console.error(e); }
+  }
+  renderThemeRows();
+  toast(`Created ${created} new categories${failed ? ` (${failed} failed)` : ''} — applying now…`, 'success');
+  await applyThemeMatches();
 };
 window.setThemeTarget = function(themeId, value) {
   if (!value) { themeMatches[themeId] = { ...themeMatches[themeId], collection:'trivia', targetId:'', status:'nomatch' }; return; }
@@ -374,6 +416,11 @@ window.setThemeTarget = function(themeId, value) {
   renderThemeRows();
 };
 
+function mergeUnique(a, b) {
+  const out = Array.isArray(a) ? a.slice() : [];
+  (Array.isArray(b) ? b : []).forEach(v => { if (!out.includes(v)) out.push(v); });
+  return out;
+}
 window.applyThemeMatches = async function() {
   const confirmed = Object.entries(themeMatches).filter(([,m]) => m.status === 'matched' && m.targetId);
   if (!confirmed.length) { toast('Nothing confirmed to apply yet.', 'error'); return; }
@@ -382,12 +429,22 @@ window.applyThemeMatches = async function() {
     confirmed.forEach(([themeId, m]) => {
       const theme = themes[themeId];
       const path = m.collection === 'trivia' ? `trivia/categories/${m.targetId}` : `bingo/landing/categories/${m.targetId}`;
+      const target = (m.collection === 'trivia' ? triviaCats[m.targetId] : bingoCats[m.targetId]) || {};
       updates[`${path}/plannerUsage`] = {
         timesUsed: theme.timesUsed || 0,
         lastUsedDate: theme.lastUsedDate || null,
         lastUsedVenueId: theme.lastUsedVenueId || null,
         migratedFromThemeId: themeId
       };
+      // Carry the Planner-owned fields the old theme doc actually held —
+      // this was the missing piece: this function used to write ONLY
+      // plannerUsage, so a theme's tags/tier/pairs (e.g. "Comedians") were
+      // silently left behind on the old theme doc every time this ran.
+      // Merge rather than overwrite, in case the target category already
+      // picked up its own tags/tier since the rewrite.
+      if (theme.tier && !target.plannerTier) updates[`${path}/plannerTier`] = theme.tier;
+      if (Array.isArray(theme.tags) && theme.tags.length) updates[`${path}/tags`] = mergeUnique(target.tags, theme.tags);
+      if (Array.isArray(theme.pairsWith) && theme.pairsWith.length) updates[`${path}/pairsWith`] = mergeUnique(target.pairsWith, theme.pairsWith);
     });
     await update(ref(rtdb), updates);
     // Mark themes as migrated (not deleted) so gig migration knows where they point
@@ -413,6 +470,7 @@ function getVmTypes(c) {
 function buildVmMatches() {
   vmMatches = {};
   vmCats.forEach(c => {
+    if (c._migratedTo) return; // already handled in a previous run — hide only, nothing deleted
     const types = getVmTypes(c);
     const isTrivia = types.some(t => t.includes('trivia'));
     const isBingo = types.some(t => t.includes('bingo'));
@@ -447,16 +505,79 @@ function renderVmRows() {
   container.innerHTML = ids.map(id => {
     const m = vmMatches[id];
     const selectedValue = m.targetId ? `${m.collection}:${m.targetId}` : '';
+    const createBtns = m.status === 'nomatch' ? `
+      <button class="btn btn-sm" onclick="createCategoryFromVm('${esc(id)}','trivia')">+ New Trivia</button>
+      <button class="btn btn-sm" onclick="createCategoryFromVm('${esc(id)}','bingo')">+ New Bingo</button>` : '';
     return `<div class="row status-${m.status}" data-vm-id="${esc(id)}">
       <div class="row-name">${esc(m.name)}<div class="row-source">Venue Menu listing</div></div>
       <select class="row-target-select" onchange="setVmTarget('${esc(id)}', this.value)">
         <option value="">— no match, skip —</option>
         ${buildGroupedCategoryOptions(selectedValue)}
       </select>
+      ${createBtns}
       <span class="status-tag ${m.status}">${m.status}</span>
     </div>`;
   }).join('');
 }
+// venueMenu sub-object field names here MUST match what admin.html and
+// bingo-index.html write from their own "Show in Venue Menu" section, and
+// what venue-menu-index.html / venue.html read back out: show, description,
+// shows, bannerUrl. This function used to write a completely different
+// shape (description/publishedTabs/shows/position, no "show" flag at all),
+// so even a fully-migrated category could never appear as a live Venue
+// Menu listing — nothing was ever setting venueMenu.show to true.
+function vmFieldsFromDoc(vm) {
+  return {
+    show: true,
+    description: vm.theme || vm.desc || '',
+    shows: vm.shows || [],
+    bannerUrl: vm.bannerData || vm.bannerUrl || '',
+    notes: vm.notes || '',
+    migratedFromVmId: vm.id
+  };
+}
+async function doCreateCategoryFromVm(vmId, collection) {
+  const m = vmMatches[vmId];
+  const vm = vmCats.find(c => c.id === vmId) || {};
+  if (!m) return null;
+  const path = collection === 'trivia' ? 'trivia/categories' : 'bingo/landing/categories';
+  const newRef = push(ref(rtdb, path));
+  const venueMenu = vmFieldsFromDoc(vm);
+  const data = collection === 'trivia'
+    ? { name: m.name, type: 'trivia', notes: 'Created from an unmatched Venue Menu listing — needs real content added in Trivia Admin.', createdAt: Date.now(), venueMenu }
+    : { title: m.name, genre: '', status: 'coming', createdAt: Date.now(), venueMenu };
+  await rtdbSet(newRef, data);
+  if (collection === 'trivia') triviaCats[newRef.key] = data; else bingoCats[newRef.key] = data;
+  vmMatches[vmId] = { ...m, collection, targetId: newRef.key, status: 'matched' };
+  return newRef.key;
+}
+window.createCategoryFromVm = async function(vmId, collection) {
+  const m = vmMatches[vmId];
+  if (!m) return;
+  if (!confirm(`Create a new ${collection === 'trivia' ? 'Trivia' : 'Bingo'} category called "${m.name}"? You'll still need to add its real content afterward.`)) return;
+  try {
+    await doCreateCategoryFromVm(vmId, collection);
+    toast(`Created "${m.name}" — remember to fill in its real content.`, 'success');
+    renderVmRows();
+  } catch (e) {
+    toast('Could not create category: ' + e.message, 'error');
+  }
+};
+// Bulk action, same idea as createAllUnmatchedThemes but for Venue Menu
+// listings that never matched an existing Trivia/Bingo category.
+window.createAllUnmatchedVm = async function() {
+  const nomatch = Object.entries(vmMatches).filter(([,m]) => m.status === 'nomatch');
+  if (!nomatch.length) { toast('No unmatched Venue Menu listings left — nothing to create.', 'error'); return; }
+  if (!confirm(`Create ${nomatch.length} new categories, one per unmatched Venue Menu listing? You can fix any wrong guesses afterward. You'll still need to add real content for each.`)) return;
+  let created = 0, failed = 0;
+  for (const [vmId, m] of nomatch) {
+    try { await doCreateCategoryFromVm(vmId, m.collection || 'trivia'); created++; }
+    catch (e) { failed++; console.error(e); }
+  }
+  renderVmRows();
+  toast(`Created ${created} new categories${failed ? ` (${failed} failed)` : ''} — applying now…`, 'success');
+  await applyVmMatches();
+};
 window.setVmTarget = function(vmId, value) {
   if (!value) { vmMatches[vmId] = { ...vmMatches[vmId], collection:'trivia', targetId:'', status:'nomatch' }; return; }
   const [collection, targetId] = value.split(':');
@@ -470,17 +591,19 @@ window.applyVmMatches = async function() {
   try {
     const updates = {};
     confirmed.forEach(([vmId, m]) => {
-      const vm = vmCats.find(c => c.id === vmId);
+      const vm = vmCats.find(c => c.id === vmId) || {};
       const path = m.collection === 'trivia' ? `trivia/categories/${m.targetId}` : `bingo/landing/categories/${m.targetId}`;
-      updates[`${path}/venueMenu`] = {
-        description: vm.theme || vm.desc || '',
-        publishedTabs: vm.publishedTabs || [],
-        shows: vm.shows || [],
-        position: vm.position ?? null,
-        migratedFromVmId: vmId
-      };
+      const target = (m.collection === 'trivia' ? triviaCats[m.targetId] : bingoCats[m.targetId]) || {};
+      const existingVm = target.venueMenu || {};
+      updates[`${path}/venueMenu`] = { ...existingVm, ...vmFieldsFromDoc(vm) };
     });
     await update(ref(rtdb), updates);
+    // Mark each source venueMenuCategories doc as handled — additive only,
+    // same as theme migration. Nothing is deleted; this just keeps it out
+    // of this list on future runs.
+    await Promise.all(confirmed.map(([vmId, m]) =>
+      updateDoc(doc(db, 'venueMenuCategories', vmId), { _migratedTo: `${m.collection}:${m.targetId}` })
+    ));
     toast(`Applied ${confirmed.length} Venue Menu matches.`, 'success');
     await loadAll();
   } catch (e) {
