@@ -974,6 +974,10 @@
       <div class="browse-main">
         <button class="back-btn" onclick="navigateTo('menu')">← Back to Menu</button>
         <div id="trivia-view-title" style="font-family:'Cinzel',serif;font-size:0.75rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--text-dim);margin-bottom:0.75rem;"></div>
+        <div class="search-wrap" style="margin-bottom:0.75rem;">
+          <span>🔍</span>
+          <input type="search" class="search-input" id="trivia-search" placeholder="Search trivia…" oninput="renderTrivia()">
+        </div>
         <!-- Also See strip for trivia -->
         <div id="also-see-trivia-wrap" style="display:none;margin-bottom:1.25rem;">
           <div style="font-family:'Cinzel',serif;font-size:0.58rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--gold-dim);margin-bottom:0.5rem;">Also See</div>
@@ -1995,6 +1999,14 @@ function renderTrivia() {
   let filtered = publishedCategories.filter(c =>
     isTrivia(c) && (c.published || (c.publishedTabs||[]).length > 0)
   );
+  const triviaSearchQ = (document.getElementById('trivia-search')?.value || '').toLowerCase().trim();
+  if (triviaSearchQ) {
+    filtered = filtered.filter(c =>
+      c.name.toLowerCase().includes(triviaSearchQ) ||
+      (c.theme||'').toLowerCase().includes(triviaSearchQ) ||
+      (c.shows||[]).some(s => s.toLowerCase().includes(triviaSearchQ))
+    );
+  }
   if (typeFilter) {
     // Specific sub-type requested (e.g. "book trivia") — show only that type
     filtered = filtered.filter(c =>
