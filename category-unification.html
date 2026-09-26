@@ -254,7 +254,23 @@ let vmCats = [];        // [{id, ...}] from venueMenuCategories
 let themeMatches = {};  // themeId -> {collection:'trivia'|'bingo', targetId, status}
 let vmMatches = {};     // vmId -> {collection:'trivia'|'bingo', targetId, status}
 
-const COORD_KEYWORDS = ['coordinating', 'round3', 'round 3', 'music'];
+// NOTE: 'music' used to be in this list, which was a real bug — it made
+// EVERY theme with "music" in its name (e.g. "80s Music Trivia") get
+// treated as a round-3-coordinating slot and routed toward matching a
+// Bingo category by title. Since a music-trivia theme usually has no
+// same-named Bingo category, that left it stuck as "ambiguous" with an
+// empty target and no create button — the exact "not giving me an option
+// to create those" symptom. Only a genuine coordinating/round-3 reference
+// should route toward Bingo; a plain music-trivia theme belongs in Trivia
+// (see isMusicThemed below for how it still gets tagged as music content).
+const COORD_KEYWORDS = ['coordinating', 'round3', 'round 3'];
+// A theme is "music trivia" content (belongs in trivia/categories with
+// type 'music' and a "Music Bingo" tag) if its Planner tier says so, or
+// its name plainly says so — independent of the coordinating/round-3 check
+// above, which is about which COLLECTION it targets, not what it is.
+function isMusicThemed(theme, name) {
+  return (theme && theme.tier === 'music-bingo') || /music/i.test(name || '');
+}
 
 async function loadAll() {
   const [themeSnap, catSnap, bingoSnap, vmSnap] = await Promise.all([
@@ -365,12 +381,15 @@ async function doCreateCategoryFromTheme(themeId, collection) {
   if (!m) return null;
   const path = collection === 'trivia' ? 'trivia/categories' : 'bingo/landing/categories';
   const newRef = push(ref(rtdb, path));
+  const musicThemed = collection === 'trivia' && isMusicThemed(theme, theme.name || m.name);
+  let tags = (Array.isArray(theme.tags) && theme.tags.length) ? theme.tags.slice() : [];
+  if (musicThemed && !tags.some(t => /music bingo/i.test(t))) tags.push('Music Bingo');
   const plannerFields = {};
   if (theme.tier) plannerFields.plannerTier = theme.tier;
-  if (Array.isArray(theme.tags) && theme.tags.length) plannerFields.tags = theme.tags;
+  if (tags.length) plannerFields.tags = tags;
   if (Array.isArray(theme.pairsWith) && theme.pairsWith.length) plannerFields.pairsWith = theme.pairsWith;
   const data = collection === 'trivia'
-    ? { name: m.name, type: 'trivia', notes: 'Created from an unmatched Planner theme — needs real content added in Trivia Admin.', createdAt: Date.now(), ...plannerFields }
+    ? { name: m.name, type: musicThemed ? 'music' : 'trivia', notes: 'Created from an unmatched Planner theme — needs real content added in Trivia Admin.', createdAt: Date.now(), ...plannerFields }
     : { title: m.name, genre: '', status: 'coming', createdAt: Date.now(), ...plannerFields };
   await rtdbSet(newRef, data);
   // Reflect it locally immediately so the dropdown/list update without a full reload
