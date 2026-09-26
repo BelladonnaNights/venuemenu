@@ -1829,6 +1829,7 @@ import {
   query, orderBy, onSnapshot
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
 // ═══════════════════════════════════════════════
 // FIREBASE INIT
@@ -1836,6 +1837,7 @@ import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/fi
 const firebaseConfig = {
   apiKey: "AIzaSyCIfAE1JGHsUGzzVH2pz1Vyj5b5OhA0tDQ",
   authDomain: "belladonna-hq.firebaseapp.com",
+  databaseURL: "https://belladonna-hq-default-rtdb.firebaseio.com",
   projectId: "belladonna-hq",
   storageBucket: "belladonna-hq.firebasestorage.app",
   messagingSenderId: "1021873183587",
@@ -1844,6 +1846,7 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const rtdb = getDatabase(app);
 const auth = getAuth(app);
 const catsCol = collection(db, 'venueMenuCategories');
 const nightsCol = collection(db, 'venueMenuNights');
@@ -1885,6 +1888,29 @@ onAuthStateChanged(auth, user=>{
 // DATA STORE
 // ═══════════════════════════════════════════════
 let categories = [];
+// Trivia/Bingo categories are no longer copied into venueMenuCategories —
+// they're read live, straight from the same record Trivia Admin / Bingo
+// Admin edit (trivia/categories, bingo/landing/categories in the Realtime
+// Database), filtered to venueMenu.show === true. They're shown here for
+// review only — editing one redirects to the app that owns it, since
+// writing a full Firestore-shaped edit back onto that record is its own
+// separate piece of work (see editLiveCategory).
+let liveTriviaCats = [];
+let liveBingoCats = [];
+function mapLiveCategory(id, c, kind){
+  const vm = c.venueMenu || {};
+  return {
+    _liveId: id,
+    _liveKind: kind, // 'trivia' | 'bingo'
+    name: c.name || c.title || '(untitled)',
+    type: kind === 'bingo' ? 'Bingo' : 'Trivia',
+    theme: '',
+    tags: '',
+    shows: Array.isArray(vm.shows) ? vm.shows : [],
+    plannerTier: c.plannerTier || null,
+    bannerData: vm.bannerUrl || c.bgImage || c.squareImage || c.image || null
+  };
+}
 let nights = [];
 let nightTags = []; // filter tags for the themed nights tab
 let miniTags = []; // filter tags for mini games tab
@@ -1910,6 +1936,32 @@ function toId(name) {
     + '-' + Math.abs(name.split('').reduce((a,c) => (a<<5)-a+c.charCodeAt(0)|0, 0)).toString(36);
 }
 
+// Read Trivia's and Bingo's real category records directly from the
+// Realtime Database and keep only the ones tagged to show on the Venue
+// Menu (venueMenu.show). Failure here never blocks the rest of the page —
+// worst case, the Trivia/Bingo tabs just show the Firestore-native items.
+async function loadLiveCategories() {
+  try {
+    const [tSnap, bSnap] = await Promise.all([
+      get(ref(rtdb, 'trivia/categories')),
+      get(ref(rtdb, 'bingo/landing/categories'))
+    ]);
+    const tRaw = tSnap.exists() ? tSnap.val() : {};
+    const bRaw = bSnap.exists() ? bSnap.val() : {};
+    liveTriviaCats = Object.entries(tRaw)
+      .filter(([id,c]) => c && c.venueMenu && c.venueMenu.show)
+      .map(([id,c]) => mapLiveCategory(id, c, 'trivia'))
+      .sort((a,b) => a.name.localeCompare(b.name));
+    liveBingoCats = Object.entries(bRaw)
+      .filter(([id,c]) => c && c.venueMenu && c.venueMenu.show)
+      .map(([id,c]) => mapLiveCategory(id, c, 'bingo'))
+      .sort((a,b) => a.name.localeCompare(b.name));
+  } catch(e) {
+    console.error('Live category load failed (Trivia/Bingo tabs will show Firestore-native items only):', e);
+    liveTriviaCats = []; liveBingoCats = [];
+  }
+}
+
 async function loadData() {
   const loadingEl = document.getElementById('loading-overlay');
   const loadingMsg = loadingEl.querySelector('p');
@@ -1931,6 +1983,7 @@ async function loadData() {
     await loadFilterDims();
     singaTags = sSnap.exists() ? (sSnap.data().tags || []) : ['Pop','Rock/Emo','Holiday','Artist-Specific','Oldies','Latin'];
     triviaTags = rvSnap.exists() ? (rvSnap.data().tags || []) : ['Pop Culture','TV Shows','Movies','Music','Spooky','Books','Sports'];
+    await loadLiveCategories();
   } catch(e) {
     console.error('Firebase load error:', e);
     const msg = e.message === 'timeout'
@@ -2138,7 +2191,9 @@ function renderBingo() {
   let items = categories.filter(c => isBingo(c));
   if (q) items = items.filter(c => c.name.toLowerCase().includes(q) || (c.theme||'').toLowerCase().includes(q));
   items = maybeSortAZ(items, 'bingo', 'name');
-  empty.style.display = items.length === 0 ? 'block' : 'none';
+  let liveItems = liveBingoCats;
+  if (q) liveItems = liveItems.filter(c => c.name.toLowerCase().includes(q));
+  empty.style.display = (items.length === 0 && liveItems.length === 0) ? 'block' : 'none';
   grid.innerHTML = items.map(c => {
     const miniSrc = c.miniGameImage || c.bannerData || null;
     const bannerHtml = miniSrc
@@ -2156,7 +2211,7 @@ function renderBingo() {
         ${c.theme ? `<div style="font-size:0.78rem;font-weight:700;color:var(--text);margin-bottom:0.4rem;">${esc(c.theme)}</div>` : ''}
       </div>
     </div>`;
-  }).join('');
+  }).join('') + liveItems.map(liveCategoryCardHTML).join('');
 }
 
 function renderMiniGames() {
@@ -2246,11 +2301,14 @@ function renderLibrary() {
   });
   filtered = maybeSortAZ(filtered, 'library', 'name');
 
-  document.getElementById('lib-results-meta').textContent =
-    filtered.length + ' of ' + categories.length + ' categories';
+  const liveShown = activeLibTypeFilters.size === 0; // live cats don't carry a `type` pill to filter by yet
+  const liveCards = liveShown ? [...liveTriviaCats, ...liveBingoCats].map(liveCategoryCardHTML).join('') : '';
 
-  document.getElementById('lib-empty').style.display = categories.length === 0 ? 'block' : 'none';
-  document.getElementById('category-grid').innerHTML = filtered.map(c => categoryCardHTML(c, categories.indexOf(c), '')).join('');
+  document.getElementById('lib-results-meta').textContent =
+    filtered.length + ' of ' + categories.length + ' categories' + (liveShown && (liveTriviaCats.length||liveBingoCats.length) ? ' + ' + (liveTriviaCats.length+liveBingoCats.length) + ' live' : '');
+
+  document.getElementById('lib-empty').style.display = (categories.length === 0 && !liveTriviaCats.length && !liveBingoCats.length) ? 'block' : 'none';
+  document.getElementById('category-grid').innerHTML = filtered.map(c => categoryCardHTML(c, categories.indexOf(c), '')).join('') + liveCards;
 }
 
 function categoryCardHTML(cat, idx, highlight) {
@@ -2288,6 +2346,34 @@ function categoryCardHTML(cat, idx, highlight) {
   </div>`;
 }
 
+// Card for a live Trivia/Bingo category (read straight from Trivia Admin /
+// Bingo Admin's own record) — no drag-to-reorder, no in-place edit form.
+// It's the same category everywhere, so editing happens where it's owned.
+function liveCategoryCardHTML(cat) {
+  const bannerHtml = cat.bannerData
+    ? `<div style="height:110px; overflow:hidden; border-radius:4px 4px 0 0; position:relative; background:var(--surface2); margin:-1.4rem -1.3rem 0.9rem;">
+        <img src="${cat.bannerData}" style="width:100%; height:100%; object-fit:cover; display:block;" alt="">
+      </div>`
+    : '';
+  const ownerLabel = cat._liveKind === 'bingo' ? 'Bingo Admin' : 'Trivia Admin';
+  return `<div class="category-card" style="${cat.bannerData ? 'padding-top:0;' : ''}">
+    ${bannerHtml}
+    <div class="category-card-header">
+      <div class="category-card-name">${esc(cat.name)}</div>
+      <span style="font-family:'Cinzel',serif;font-size:0.55rem;letter-spacing:0.1em;text-transform:uppercase;background:rgba(201,168,76,0.15);border:1px solid rgba(201,168,76,0.4);color:var(--gold);padding:2px 7px;border-radius:3px;white-space:nowrap;flex-shrink:0;">Live · ${ownerLabel}</span>
+    </div>
+    <div style="margin-bottom:0.5rem;">
+      <span class="badge badge-type">${esc(cat.type)}</span>
+    </div>
+    <div class="category-card-actions">
+      <button class="btn btn-sm btn-ghost" onclick="editLiveCategory('${cat._liveKind}')">Edit in ${ownerLabel}</button>
+    </div>
+  </div>`;
+}
+function editLiveCategory(kind) {
+  toast(`This is the same category ${kind==='bingo'?'Bingo':'Trivia'} Admin uses — edit its Venue Menu fields there and it updates here too.`);
+}
+
 // ═══════════════════════════════════════════════
 // SEARCH
 // ═══════════════════════════════════════════════
@@ -2318,14 +2404,18 @@ function runSearch() {
     (c.type && c.type.toLowerCase().includes(ql)) ||
     (c.tags && c.tags.toLowerCase().includes(ql))
   );
+  const liveMatches = [...liveTriviaCats, ...liveBingoCats].filter(c =>
+    c.name.toLowerCase().includes(ql) || (c.shows||[]).some(s => s.toLowerCase().includes(ql))
+  );
 
+  const total = matches.length + liveMatches.length;
   searchMeta.style.display = 'block';
-  searchMeta.textContent = matches.length > 0
-    ? `${matches.length} categor${matches.length === 1 ? 'y' : 'ies'} matching "${q}"`
+  searchMeta.textContent = total > 0
+    ? `${total} categor${total === 1 ? 'y' : 'ies'} matching "${q}"`
     : `No categories found for "${q}"`;
 
-  searchResults.style.display = matches.length > 0 ? 'grid' : 'none';
-  searchResults.innerHTML = matches.map(c => categoryCardHTML(c, categories.indexOf(c), q)).join('');
+  searchResults.style.display = total > 0 ? 'grid' : 'none';
+  searchResults.innerHTML = matches.map(c => categoryCardHTML(c, categories.indexOf(c), q)).join('') + liveMatches.map(liveCategoryCardHTML).join('');
 }
 
 // ═══════════════════════════════════════════════
@@ -3658,7 +3748,10 @@ function renderTrivia() {
   if (triviaSearchQ) items = items.filter(c => c.name.toLowerCase().includes(triviaSearchQ) || (c.theme||'').toLowerCase().includes(triviaSearchQ) || (c.shows||[]).some(s=>s.toLowerCase().includes(triviaSearchQ)));
   if (hasSidebarFilters()) items = items.filter(catMatchesSidebarFilters);
   items = maybeSortAZ(items, 'trivia', 'name');
-  empty.style.display = items.length === 0 ? 'block' : 'none';
+  let liveItems = liveTriviaCats;
+  if (triviaSearchQ) liveItems = liveItems.filter(c => c.name.toLowerCase().includes(triviaSearchQ) || (c.shows||[]).some(s=>s.toLowerCase().includes(triviaSearchQ)));
+  if (activeTriviaTierFilter) liveItems = liveItems.filter(c => c.plannerTier === activeTriviaTierFilter);
+  empty.style.display = (items.length === 0 && liveItems.length === 0) ? 'block' : 'none';
   grid.innerHTML = items.map(c => {
     const miniSrc = c.miniGameImage || c.bannerData || null;
     const bannerHtml = miniSrc
@@ -3677,7 +3770,7 @@ function renderTrivia() {
         ${tagsArray(c.tags).map(t=>t.trim()).filter(Boolean).length ? `<div style="display:flex;gap:5px;flex-wrap:wrap;">${tagsArray(c.tags).map(t=>t.trim()).filter(Boolean).map(t=>`<span class="badge" style="background:rgba(60,80,100,0.2);color:#9BB8D4;border:1px solid rgba(100,140,180,0.2);font-size:0.65rem;">${esc(t)}</span>`).join('')}</div>` : ''}
       </div>
     </div>`;
-  }).join('');
+  }).join('') + liveItems.map(liveCategoryCardHTML).join('');
 }
 
 function renderTriviaFilterChips() {
