@@ -1293,10 +1293,12 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getFirestore, collection, doc, getDocs, getDoc, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCIfAE1JGHsUGzzVH2pz1Vyj5b5OhA0tDQ",
   authDomain: "belladonna-hq.firebaseapp.com",
+  databaseURL: "https://belladonna-hq-default-rtdb.firebaseio.com",
   projectId: "belladonna-hq",
   storageBucket: "belladonna-hq.firebasestorage.app",
   messagingSenderId: "1021873183587",
@@ -1304,6 +1306,7 @@ const firebaseConfig = {
 };
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const rtdb = getDatabase(app);
 
 // ── EMAILJS INIT ──
 emailjs.init('PYAxWRvcETE-JmFYj');
@@ -1625,6 +1628,41 @@ async function loadFilterDims() {
   } catch(e) { filterDimOptions = { ...DEFAULTS }; }
 }
 
+// Trivia's and Bingo's real category records, read straight from the same
+// Realtime Database doc Trivia Admin / Bingo Admin edit — no separate
+// Venue Menu copy. Only ones tagged venueMenu.show are shown to guests.
+function mapLiveCategory(id, c, kind) {
+  const vm = c.venueMenu || {};
+  return {
+    _id: (kind==='bingo'?'bingo:':'trivia:') + id,
+    name: c.name || c.title || '(untitled)',
+    type: kind === 'bingo' ? 'Bingo' : 'Trivia',
+    theme: '',
+    published: true,
+    publishedTabs: [],
+    shows: Array.isArray(vm.shows) ? vm.shows : [],
+    bannerData: vm.bannerUrl || c.bgImage || c.squareImage || c.image || null,
+    miniGameImage: null
+  };
+}
+async function loadLiveCategories() {
+  try {
+    const [tSnap, bSnap] = await Promise.all([
+      get(ref(rtdb, 'trivia/categories')),
+      get(ref(rtdb, 'bingo/landing/categories'))
+    ]);
+    const tRaw = tSnap.exists() ? tSnap.val() : {};
+    const bRaw = bSnap.exists() ? bSnap.val() : {};
+    const live = [
+      ...Object.entries(tRaw).filter(([id,c]) => c && c.venueMenu && c.venueMenu.show).map(([id,c]) => mapLiveCategory(id, c, 'trivia')),
+      ...Object.entries(bRaw).filter(([id,c]) => c && c.venueMenu && c.venueMenu.show).map(([id,c]) => mapLiveCategory(id, c, 'bingo'))
+    ];
+    publishedCategories = publishedCategories.concat(live);
+  } catch(e) {
+    console.error('Live category load failed (Trivia/Bingo tabs will show Firestore-native items only):', e);
+  }
+}
+
 async function load() {
   try {
     const [nightsSnap, catsSnap] = await Promise.all([
@@ -1634,6 +1672,7 @@ async function load() {
     publishedNights = nightsSnap.docs.map(d => ({_id:d.id,...d.data()}))
       .filter(n => n.published).sort((a,b) => (a.position||999)-(b.position||999));
     publishedCategories = catsSnap.docs.map(d => ({_id:d.id,...d.data()}));
+    await loadLiveCategories();
     await loadFilterDims();
   await loadMenuConfig();
   } catch(e) {
