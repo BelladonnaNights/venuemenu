@@ -120,7 +120,7 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getDatabase, ref, get, update } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
-import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { initializeFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCIfAE1JGHsUGzzVH2pz1Vyj5b5OhA0tDQ",
@@ -133,7 +133,12 @@ const firebaseConfig = {
 };
 const app = initializeApp(firebaseConfig);
 const rtdb = getDatabase(app);
-const db = getFirestore(app);
+// experimentalAutoDetectLongPolling: the v10 modular SDK defaults to a
+// streaming-fetch transport that Safari (and some networks) silently kill
+// with a "Fetch API cannot load ... due to access control checks" error.
+// This makes it fall back to plain long-polling instead, same as the
+// compat SDK your other apps already use.
+const db = initializeFirestore(app, { experimentalAutoDetectLongPolling: true });
 
 function esc(str) { return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function norm(str) { return String(str||'').trim().toLowerCase().replace(/[^a-z0-9]+/g,' ').trim(); }
