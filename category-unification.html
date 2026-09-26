@@ -151,8 +151,8 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getDatabase, ref, get, update } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
-import { initializeFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getDatabase, ref, get, update, push, set as rtdbSet } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { initializeFirestore, collection, getDocs, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCIfAE1JGHsUGzzVH2pz1Vyj5b5OhA0tDQ",
@@ -289,6 +289,10 @@ function findBestMatch(name, pool, nameField) {
 function buildThemeMatches() {
   themeMatches = {};
   Object.entries(themes).forEach(([id, t]) => {
+    // Already handled in a previous run — hide it from this list. This
+    // never touches trivia/planner/themes itself; the theme doc stays
+    // exactly as it is, just marked done, so it stops cluttering this view.
+    if (t._migratedTo) return;
     const looksCoordinating = t.tier === 'coordinating-music' || COORD_KEYWORDS.some(k => norm(t.name).includes(k));
     const triviaHits = findBestMatch(t.name, triviaCats, 'name');
     const bingoHits = findBestMatch(t.name, bingoCats, 'title');
@@ -324,16 +328,45 @@ function renderThemeRows() {
   container.innerHTML = ids.map(id => {
     const m = themeMatches[id];
     const selectedValue = m.targetId ? `${m.collection}:${m.targetId}` : '';
+    const createBtns = m.status === 'nomatch' ? `
+      <button class="btn btn-sm" onclick="createCategoryFromTheme('${esc(id)}','trivia')">+ New Trivia</button>
+      <button class="btn btn-sm" onclick="createCategoryFromTheme('${esc(id)}','bingo')">+ New Bingo</button>` : '';
     return `<div class="row status-${m.status}" data-theme-id="${esc(id)}">
       <div class="row-name">${esc(m.name)}<div class="row-source">Planner theme</div></div>
       <select class="row-target-select" onchange="setThemeTarget('${esc(id)}', this.value)">
         <option value="">— no match, skip —</option>
         ${buildGroupedCategoryOptions(selectedValue)}
       </select>
+      ${createBtns}
       <span class="status-tag ${m.status}">${m.status}</span>
     </div>`;
   }).join('');
 }
+// Creates a bare new category doc (just the name) directly in the real
+// library — trivia/categories or bingo/landing/categories — and points this
+// row at it. The record's content (question sheet, banner images, song
+// list, etc.) still needs filling in afterward in Trivia Admin or Bingo
+// Admin; this only gives it a real, permanent, shared ID to build on.
+window.createCategoryFromTheme = async function(themeId, collection) {
+  const m = themeMatches[themeId];
+  if (!m) return;
+  if (!confirm(`Create a new ${collection === 'trivia' ? 'Trivia' : 'Bingo'} category called "${m.name}"? You'll still need to add its real content (sheet/songs/images) afterward.`)) return;
+  try {
+    const path = collection === 'trivia' ? 'trivia/categories' : 'bingo/landing/categories';
+    const newRef = push(ref(rtdb, path));
+    const data = collection === 'trivia'
+      ? { name: m.name, type: 'trivia', notes: 'Created from an unmatched Planner theme — needs real content added in Trivia Admin.', createdAt: Date.now() }
+      : { title: m.name, genre: '', status: 'coming', createdAt: Date.now() };
+    await rtdbSet(newRef, data);
+    // Reflect it locally immediately so the dropdown/list update without a full reload
+    if (collection === 'trivia') triviaCats[newRef.key] = data; else bingoCats[newRef.key] = data;
+    themeMatches[themeId] = { ...m, collection, targetId: newRef.key, status: 'matched' };
+    toast(`Created "${m.name}" — remember to fill in its real content.`, 'success');
+    renderThemeRows();
+  } catch (e) {
+    toast('Could not create category: ' + e.message, 'error');
+  }
+};
 window.setThemeTarget = function(themeId, value) {
   if (!value) { themeMatches[themeId] = { ...themeMatches[themeId], collection:'trivia', targetId:'', status:'nomatch' }; return; }
   const [collection, targetId] = value.split(':');
@@ -413,14 +446,12 @@ function renderVmRows() {
 
   container.innerHTML = ids.map(id => {
     const m = vmMatches[id];
-    const triviaOpts = Object.entries(triviaCats).map(([tid,v]) => `<option value="trivia:${tid}" ${m.collection==='trivia'&&m.targetId===tid?'selected':''}>Trivia: ${esc(v.name)}</option>`).join('');
-    const bingoOpts = Object.entries(bingoCats).map(([bid,v]) => `<option value="bingo:${bid}" ${m.collection==='bingo'&&m.targetId===bid?'selected':''}>Bingo: ${esc(v.title)}</option>`).join('');
+    const selectedValue = m.targetId ? `${m.collection}:${m.targetId}` : '';
     return `<div class="row status-${m.status}" data-vm-id="${esc(id)}">
       <div class="row-name">${esc(m.name)}<div class="row-source">Venue Menu listing</div></div>
       <select class="row-target-select" onchange="setVmTarget('${esc(id)}', this.value)">
         <option value="">— no match, skip —</option>
-        ${triviaOpts}
-        ${bingoOpts}
+        ${buildGroupedCategoryOptions(selectedValue)}
       </select>
       <span class="status-tag ${m.status}">${m.status}</span>
     </div>`;
