@@ -201,6 +201,38 @@ window.doSignIn = async function() {
 
 function esc(str) { return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function norm(str) { return String(str||'').trim().toLowerCase().replace(/[^a-z0-9]+/g,' ').trim(); }
+
+// Grouped, A–Z-within-group <option> list: Trivia's own type field
+// ('trivia'|'slideshow'|'canva'|'music') gives the group, plus a Bingo
+// group from bingo/landing/categories. Without this, every trivia/categories
+// entry rendered as an identical "Trivia: <name>" regardless of its real
+// type, so Music-type categories were indistinguishable from plain Trivia
+// ones in one long unsorted list — easy to miss, not actually absent.
+const TYPE_GROUP_LABELS = { trivia: 'Trivia', slideshow: 'Slideshow', canva: 'Canva', music: 'Music Trivia' };
+function buildGroupedCategoryOptions(selectedValue) {
+  const groups = { trivia: [], slideshow: [], canva: [], music: [] };
+  Object.entries(triviaCats).forEach(([id, v]) => {
+    const t = (v.type && groups[v.type]) ? v.type : 'trivia';
+    groups[t].push({ id, name: v.name || '(untitled)' });
+  });
+  let html = '';
+  ['trivia', 'slideshow', 'canva', 'music'].forEach(t => {
+    if (!groups[t].length) return;
+    const sorted = groups[t].slice().sort((a, b) => a.name.localeCompare(b.name));
+    html += `<optgroup label="${esc(TYPE_GROUP_LABELS[t])}">` +
+      sorted.map(c => `<option value="trivia:${esc(c.id)}" ${selectedValue === 'trivia:' + c.id ? 'selected' : ''}>${esc(c.name)}</option>`).join('') +
+      `</optgroup>`;
+  });
+  const bingoSorted = Object.entries(bingoCats)
+    .map(([id, v]) => ({ id, name: v.title || '(untitled)' }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+  if (bingoSorted.length) {
+    html += `<optgroup label="Bingo">` +
+      bingoSorted.map(c => `<option value="bingo:${esc(c.id)}" ${selectedValue === 'bingo:' + c.id ? 'selected' : ''}>${esc(c.name)}</option>`).join('') +
+      `</optgroup>`;
+  }
+  return html;
+}
 function toast(msg, type) {
   const el = document.createElement('div');
   el.className = 'toast ' + (type||'');
@@ -291,14 +323,12 @@ function renderThemeRows() {
 
   container.innerHTML = ids.map(id => {
     const m = themeMatches[id];
-    const triviaOpts = Object.entries(triviaCats).map(([tid,v]) => `<option value="trivia:${tid}" ${m.collection==='trivia'&&m.targetId===tid?'selected':''}>Trivia: ${esc(v.name)}</option>`).join('');
-    const bingoOpts = Object.entries(bingoCats).map(([bid,v]) => `<option value="bingo:${bid}" ${m.collection==='bingo'&&m.targetId===bid?'selected':''}>Bingo: ${esc(v.title)}</option>`).join('');
+    const selectedValue = m.targetId ? `${m.collection}:${m.targetId}` : '';
     return `<div class="row status-${m.status}" data-theme-id="${esc(id)}">
       <div class="row-name">${esc(m.name)}<div class="row-source">Planner theme</div></div>
       <select class="row-target-select" onchange="setThemeTarget('${esc(id)}', this.value)">
         <option value="">— no match, skip —</option>
-        ${triviaOpts}
-        ${bingoOpts}
+        ${buildGroupedCategoryOptions(selectedValue)}
       </select>
       <span class="status-tag ${m.status}">${m.status}</span>
     </div>`;
