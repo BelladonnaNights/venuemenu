@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Category Unification — Belladonna Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --gold: #C9A84C; --gold-light: #E8C97A; --gold-dim: #8B6B2A;
+    --ink: #0E0C0A; --surface: #16130F; --surface2: #1D1912; --surface3: #241F16;
+    --border: rgba(201,168,76,0.18); --border-strong: rgba(201,168,76,0.4);
+    --text: #E8DFC8; --text-muted: #9E8E6A; --text-dim: #6A5E42;
+    --danger: #C0654F; --success: #7DC996; --amber: #D3944F; --blue: #7BA7C7;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--ink); color: var(--text); font-family: 'Crimson Text', serif; min-height: 100vh; padding: 2rem; }
+  h1 { font-family: 'Cinzel', serif; font-size: 1.4rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--gold); margin-bottom: 0.3rem; }
+  .sub { color: var(--text-dim); font-size: 0.9rem; margin-bottom: 1.5rem; max-width: 780px; line-height: 1.6; }
+  .warn {
+    background: rgba(211,148,79,0.08); border: 1px solid rgba(211,148,79,0.35); border-radius: 8px;
+    padding: 1rem 1.25rem; font-size: 0.88rem; color: var(--amber); margin-bottom: 2rem; max-width: 780px; line-height: 1.6;
+  }
+  .step { margin-bottom: 2.5rem; }
+  .step-header { display: flex; align-items: center; gap: 12px; margin-bottom: 1rem; }
+  .step-num {
+    width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--border-strong);
+    display: flex; align-items: center; justify-content: center; font-family: 'Cinzel', serif;
+    font-size: 0.78rem; color: var(--gold); flex-shrink: 0;
+  }
+  .step-title { font-family: 'Cinzel', serif; font-size: 0.9rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--gold-light); }
+  .step-desc { color: var(--text-dim); font-size: 0.85rem; margin: 0.3rem 0 1rem 38px; max-width: 700px; line-height: 1.5; }
+
+  .row {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    padding: 0.9rem 1.1rem; margin-bottom: 0.55rem; display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
+  }
+  .row.status-matched { border-left: 3px solid var(--success); }
+  .row.status-ambiguous { border-left: 3px solid var(--amber); }
+  .row.status-nomatch { border-left: 3px solid var(--danger); }
+  .row.status-done { border-left: 3px solid var(--blue); opacity: 0.65; }
+
+  .row-name { font-family: 'Cinzel', serif; font-size: 0.88rem; color: var(--text); min-width: 200px; }
+  .row-source { font-size: 0.72rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em; }
+  .row-target-select {
+    flex: 1; min-width: 220px; background: var(--surface2); border: 1px solid var(--border); color: var(--text);
+    border-radius: 5px; padding: 0.45rem 0.7rem; font-family: 'Crimson Text', serif; font-size: 14px;
+  }
+  .status-tag {
+    font-family: 'Cinzel', serif; font-size: 0.6rem; letter-spacing: 0.06em; text-transform: uppercase;
+    padding: 3px 8px; border-radius: 4px; border: 1px solid var(--border);
+  }
+  .status-tag.matched { color: var(--success); }
+  .status-tag.ambiguous { color: var(--amber); }
+  .status-tag.nomatch { color: var(--danger); }
+  .status-tag.done { color: var(--blue); }
+
+  .btn {
+    padding: 0.5rem 1.1rem; border-radius: 5px; border: 1px solid var(--border-strong);
+    background: rgba(201,168,76,0.1); color: var(--gold); font-family: 'Cinzel', serif;
+    font-size: 0.66rem; letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer; transition: all 0.2s;
+  }
+  .btn:hover { background: rgba(201,168,76,0.18); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-lg { padding: 0.75rem 1.6rem; font-size: 0.75rem; }
+  .btn-danger { border-color: rgba(139,58,42,0.5); color: var(--danger); background: rgba(139,58,42,0.1); }
+  .empty { color: var(--text-dim); font-style: italic; padding: 1rem 0; }
+  .counts { font-size: 0.8rem; color: var(--text-dim); margin-bottom: 0.75rem; }
+  .toast-container { position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 999; display: flex; flex-direction: column; gap: 8px; }
+  .toast { background: var(--surface2); border: 1px solid var(--border-strong); border-radius: 5px; padding: 0.7rem 1.1rem; font-size: 0.88rem; }
+  .toast.success { border-color: rgba(125,201,150,0.5); color: var(--success); }
+  .toast.error { border-color: rgba(192,101,79,0.5); color: var(--danger); }
+  .log-box {
+    background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 1rem;
+    font-family: monospace; font-size: 0.78rem; max-height: 260px; overflow-y: auto; margin-top: 1rem; line-height: 1.6;
+  }
+  .divider { height: 1px; background: var(--border); margin: 2rem 0; }
+</style>
+</head>
+<body>
+
+<h1>Category Unification</h1>
+<div class="sub">One-time reconciliation: matches Planner's Trivia themes and Venue Menu's browsing categories back to the real game-content libraries (<code>trivia/categories</code> and <code>bingo/landing/categories</code>), so there's one record per category instead of three. Nothing is deleted here — this only copies fields forward and re-points references. Run this before any app code is updated to read the new fields.</div>
+
+<div class="warn">⚠ Some Planner "themes" tagged for a round-3 / coordinating slot are actually Bingo categories referenced by name, not Trivia categories. Anything that looks like this is flagged "Ambiguous" below — pick the real target manually rather than trusting an auto-match.</div>
+
+<!-- ═══ STEP 1: THEMES → TRIVIA/BINGO CATEGORIES ═══ -->
+<div class="step">
+  <div class="step-header"><div class="step-num">1</div><div class="step-title">Match Planner Themes to Real Categories</div></div>
+  <div class="step-desc">Every entry in <code>trivia/planner/themes</code>, matched by name to <code>trivia/categories</code> (or <code>bingo/landing/categories</code> for coordinating-music themes). Confirm or override each one, then apply.</div>
+  <div class="counts" id="theme-counts"></div>
+  <div id="theme-rows"></div>
+  <button class="btn btn-lg" onclick="applyThemeMatches()">Apply Confirmed Matches</button>
+</div>
+
+<div class="divider"></div>
+
+<!-- ═══ STEP 2: VENUE MENU CATEGORIES → REAL CATEGORIES ═══ -->
+<div class="step">
+  <div class="step-header"><div class="step-num">2</div><div class="step-title">Match Venue Menu Listings to Real Categories</div></div>
+  <div class="step-desc"><code>venueMenuCategories</code> docs tagged Trivia or Bingo, matched to the same real category libraries. Their venue-facing fields (description, banner, published tabs) get copied onto the matched record under a <code>venueMenu</code> field — nothing else on that record is touched.</div>
+  <div class="counts" id="vm-counts"></div>
+  <div id="vm-rows"></div>
+  <button class="btn btn-lg" onclick="applyVmMatches()">Apply Confirmed Matches</button>
+</div>
+
+<div class="divider"></div>
+
+<!-- ═══ STEP 3: REWRITE GIG REFERENCES ═══ -->
+<div class="step">
+  <div class="step-header"><div class="step-num">3</div><div class="step-title">Re-point Every Scheduled Gig</div></div>
+  <div class="step-desc">Only run this after Step 1 is fully applied (every theme matched, no ambiguous rows left). Rewrites every gig's <code>themeId</code>/<code>round3ThemeId</code> to point at the real category id instead of the old theme id, and tags which collection it lives in (<code>themeCollection</code>). <code>themeName</code>/<code>round3Name</code> are left untouched, since the rest of Planner already displays from those. Old theme docs are left in place — nothing is deleted.</div>
+  <div class="counts" id="gig-counts"></div>
+  <button class="btn btn-lg" onclick="migrateGigs()" id="gig-migrate-btn">Re-point Gig References</button>
+  <div class="log-box" id="gig-log" style="display:none;"></div>
+</div>
+
+<div class="toast-container" id="toast-container"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, get, update } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCIfAE1JGHsUGzzVH2pz1Vyj5b5OhA0tDQ",
+  authDomain: "belladonna-hq.firebaseapp.com",
+  databaseURL: "https://belladonna-hq-default-rtdb.firebaseio.com",
+  projectId: "belladonna-hq",
+  storageBucket: "belladonna-hq.firebasestorage.app",
+  messagingSenderId: "1021873183587",
+  appId: "1:1021873183587:web:def283bb7b5ca48e4f9156"
+};
+const app = initializeApp(firebaseConfig);
+const rtdb = getDatabase(app);
+const db = getFirestore(app);
+
+function esc(str) { return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function norm(str) { return String(str||'').trim().toLowerCase().replace(/[^a-z0-9]+/g,' ').trim(); }
+function toast(msg, type) {
+  const el = document.createElement('div');
+  el.className = 'toast ' + (type||'');
+  el.textContent = msg;
+  document.getElementById('toast-container').appendChild(el);
+  setTimeout(() => el.remove(), 3500);
+}
+
+let themes = {};        // id -> {..., name}
+let triviaCats = {};    // id -> {..., name (from f-name)}
+let bingoCats = {};     // id -> {..., title}
+let vmCats = [];        // [{id, ...}] from venueMenuCategories
+let themeMatches = {};  // themeId -> {collection:'trivia'|'bingo', targetId, status}
+let vmMatches = {};     // vmId -> {collection:'trivia'|'bingo', targetId, status}
+
+const COORD_KEYWORDS = ['coordinating', 'round3', 'round 3', 'music'];
+
+async function loadAll() {
+  const [themeSnap, catSnap, bingoSnap, vmSnap] = await Promise.all([
+    get(ref(rtdb, 'trivia/planner/themes')),
+    get(ref(rtdb, 'trivia/categories')),
+    get(ref(rtdb, 'bingo/landing/categories')),
+    getDocs(collection(db, 'venueMenuCategories'))
+  ]);
+  themes = themeSnap.exists() ? themeSnap.val() : {};
+  triviaCats = catSnap.exists() ? catSnap.val() : {};
+  bingoCats = bingoSnap.exists() ? bingoSnap.val() : {};
+  vmCats = vmSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+  buildThemeMatches();
+  buildVmMatches();
+  renderThemeRows();
+  renderVmRows();
+  renderGigCounts();
+}
+
+// ═══════════════════════════════════════════════
+// STEP 1: THEME MATCHING
+// ═══════════════════════════════════════════════
+function findBestMatch(name, pool, nameField) {
+  const target = norm(name);
+  if (!target) return [];
+  const exact = [];
+  const partial = [];
+  Object.entries(pool).forEach(([id, v]) => {
+    const n = norm(v[nameField]);
+    if (!n) return;
+    if (n === target) exact.push(id);
+    else if (n.includes(target) || target.includes(n)) partial.push(id);
+  });
+  return exact.length ? exact : partial;
+}
+
+function buildThemeMatches() {
+  themeMatches = {};
+  Object.entries(themes).forEach(([id, t]) => {
+    const looksCoordinating = t.tier === 'coordinating-music' || COORD_KEYWORDS.some(k => norm(t.name).includes(k));
+    const triviaHits = findBestMatch(t.name, triviaCats, 'name');
+    const bingoHits = findBestMatch(t.name, bingoCats, 'title');
+
+    let collection, targetId, status;
+    if (looksCoordinating) {
+      // Likely a bingo category referenced from a trivia round-3 slot
+      if (bingoHits.length === 1) { collection = 'bingo'; targetId = bingoHits[0]; status = 'matched'; }
+      else { collection = 'bingo'; targetId = bingoHits[0] || ''; status = 'ambiguous'; }
+    } else if (triviaHits.length === 1 && bingoHits.length === 0) {
+      collection = 'trivia'; targetId = triviaHits[0]; status = 'matched';
+    } else if (triviaHits.length === 0 && bingoHits.length === 1) {
+      collection = 'bingo'; targetId = bingoHits[0]; status = 'ambiguous'; // unexpected but flag it
+    } else if (triviaHits.length === 0 && bingoHits.length === 0) {
+      collection = 'trivia'; targetId = ''; status = 'nomatch';
+    } else {
+      collection = 'trivia'; targetId = triviaHits[0] || ''; status = 'ambiguous';
+    }
+    themeMatches[id] = { collection, targetId, status, name: t.name };
+  });
+}
+
+function renderThemeRows() {
+  const ids = Object.keys(themeMatches);
+  const counts = { matched: 0, ambiguous: 0, nomatch: 0 };
+  ids.forEach(id => counts[themeMatches[id].status]++);
+  document.getElementById('theme-counts').textContent =
+    `${ids.length} themes — ${counts.matched} matched, ${counts.ambiguous} ambiguous, ${counts.nomatch} no match`;
+
+  const container = document.getElementById('theme-rows');
+  if (!ids.length) { container.innerHTML = '<div class="empty">No planner themes found.</div>'; return; }
+
+  container.innerHTML = ids.map(id => {
+    const m = themeMatches[id];
+    const triviaOpts = Object.entries(triviaCats).map(([tid,v]) => `<option value="trivia:${tid}" ${m.collection==='trivia'&&m.targetId===tid?'selected':''}>Trivia: ${esc(v.name)}</option>`).join('');
+    const bingoOpts = Object.entries(bingoCats).map(([bid,v]) => `<option value="bingo:${bid}" ${m.collection==='bingo'&&m.targetId===bid?'selected':''}>Bingo: ${esc(v.title)}</option>`).join('');
+    return `<div class="row status-${m.status}" data-theme-id="${esc(id)}">
+      <div class="row-name">${esc(m.name)}<div class="row-source">Planner theme</div></div>
+      <select class="row-target-select" onchange="setThemeTarget('${esc(id)}', this.value)">
+        <option value="">— no match, skip —</option>
+        ${triviaOpts}
+        ${bingoOpts}
+      </select>
+      <span class="status-tag ${m.status}">${m.status}</span>
+    </div>`;
+  }).join('');
+}
+window.setThemeTarget = function(themeId, value) {
+  if (!value) { themeMatches[themeId] = { ...themeMatches[themeId], collection:'trivia', targetId:'', status:'nomatch' }; return; }
+  const [collection, targetId] = value.split(':');
+  themeMatches[themeId] = { ...themeMatches[themeId], collection, targetId, status: 'matched' };
+  renderThemeRows();
+};
+
+window.applyThemeMatches = async function() {
+  const confirmed = Object.entries(themeMatches).filter(([,m]) => m.status === 'matched' && m.targetId);
+  if (!confirmed.length) { toast('Nothing confirmed to apply yet.', 'error'); return; }
+  try {
+    const updates = {};
+    confirmed.forEach(([themeId, m]) => {
+      const theme = themes[themeId];
+      const path = m.collection === 'trivia' ? `trivia/categories/${m.targetId}` : `bingo/landing/categories/${m.targetId}`;
+      updates[`${path}/plannerUsage`] = {
+        timesUsed: theme.timesUsed || 0,
+        lastUsedDate: theme.lastUsedDate || null,
+        lastUsedVenueId: theme.lastUsedVenueId || null,
+        migratedFromThemeId: themeId
+      };
+    });
+    await update(ref(rtdb), updates);
+    // Mark themes as migrated (not deleted) so gig migration knows where they point
+    const themeFlags = {};
+    confirmed.forEach(([themeId, m]) => {
+      themeFlags[`trivia/planner/themes/${themeId}/_migratedTo`] = `${m.collection}:${m.targetId}`;
+    });
+    await update(ref(rtdb), themeFlags);
+    toast(`Applied ${confirmed.length} theme matches.`, 'success');
+    await loadAll();
+  } catch (e) {
+    toast('Failed: ' + e.message, 'error');
+  }
+};
+
+// ═══════════════════════════════════════════════
+// STEP 2: VENUE MENU CATEGORY MATCHING
+// ═══════════════════════════════════════════════
+function getVmTypes(c) {
+  const raw = [c.type, ...(c.shows||[]), ...(c.publishedTabs||[])].filter(Boolean).map(norm);
+  return raw;
+}
+function buildVmMatches() {
+  vmMatches = {};
+  vmCats.forEach(c => {
+    const types = getVmTypes(c);
+    const isTrivia = types.some(t => t.includes('trivia'));
+    const isBingo = types.some(t => t.includes('bingo'));
+    if (!isTrivia && !isBingo) return; // out of scope for this tool — sing-alongs/mini games untouched
+
+    const triviaHits = isTrivia ? findBestMatch(c.name, triviaCats, 'name') : [];
+    const bingoHits = isBingo ? findBestMatch(c.name, bingoCats, 'title') : [];
+
+    let collection, targetId, status;
+    if (isTrivia && !isBingo) {
+      collection = 'trivia'; targetId = triviaHits[0] || ''; status = triviaHits.length === 1 ? 'matched' : (triviaHits.length ? 'ambiguous' : 'nomatch');
+    } else if (isBingo && !isTrivia) {
+      collection = 'bingo'; targetId = bingoHits[0] || ''; status = bingoHits.length === 1 ? 'matched' : (bingoHits.length ? 'ambiguous' : 'nomatch');
+    } else {
+      // tagged both — flag for manual pick
+      collection = 'trivia'; targetId = triviaHits[0] || bingoHits[0] || ''; status = 'ambiguous';
+    }
+    vmMatches[c.id] = { collection, targetId, status, name: c.name };
+  });
+}
+
+function renderVmRows() {
+  const ids = Object.keys(vmMatches);
+  const counts = { matched: 0, ambiguous: 0, nomatch: 0 };
+  ids.forEach(id => counts[vmMatches[id].status]++);
+  document.getElementById('vm-counts').textContent =
+    `${ids.length} Trivia/Bingo listings found — ${counts.matched} matched, ${counts.ambiguous} ambiguous, ${counts.nomatch} no match`;
+
+  const container = document.getElementById('vm-rows');
+  if (!ids.length) { container.innerHTML = '<div class="empty">No Trivia/Bingo-tagged Venue Menu listings found.</div>'; return; }
+
+  container.innerHTML = ids.map(id => {
+    const m = vmMatches[id];
+    const triviaOpts = Object.entries(triviaCats).map(([tid,v]) => `<option value="trivia:${tid}" ${m.collection==='trivia'&&m.targetId===tid?'selected':''}>Trivia: ${esc(v.name)}</option>`).join('');
+    const bingoOpts = Object.entries(bingoCats).map(([bid,v]) => `<option value="bingo:${bid}" ${m.collection==='bingo'&&m.targetId===bid?'selected':''}>Bingo: ${esc(v.title)}</option>`).join('');
+    return `<div class="row status-${m.status}" data-vm-id="${esc(id)}">
+      <div class="row-name">${esc(m.name)}<div class="row-source">Venue Menu listing</div></div>
+      <select class="row-target-select" onchange="setVmTarget('${esc(id)}', this.value)">
+        <option value="">— no match, skip —</option>
+        ${triviaOpts}
+        ${bingoOpts}
+      </select>
+      <span class="status-tag ${m.status}">${m.status}</span>
+    </div>`;
+  }).join('');
+}
+window.setVmTarget = function(vmId, value) {
+  if (!value) { vmMatches[vmId] = { ...vmMatches[vmId], collection:'trivia', targetId:'', status:'nomatch' }; return; }
+  const [collection, targetId] = value.split(':');
+  vmMatches[vmId] = { ...vmMatches[vmId], collection, targetId, status: 'matched' };
+  renderVmRows();
+};
+
+window.applyVmMatches = async function() {
+  const confirmed = Object.entries(vmMatches).filter(([,m]) => m.status === 'matched' && m.targetId);
+  if (!confirmed.length) { toast('Nothing confirmed to apply yet.', 'error'); return; }
+  try {
+    const updates = {};
+    confirmed.forEach(([vmId, m]) => {
+      const vm = vmCats.find(c => c.id === vmId);
+      const path = m.collection === 'trivia' ? `trivia/categories/${m.targetId}` : `bingo/landing/categories/${m.targetId}`;
+      updates[`${path}/venueMenu`] = {
+        description: vm.theme || vm.desc || '',
+        publishedTabs: vm.publishedTabs || [],
+        shows: vm.shows || [],
+        position: vm.position ?? null,
+        migratedFromVmId: vmId
+      };
+    });
+    await update(ref(rtdb), updates);
+    toast(`Applied ${confirmed.length} Venue Menu matches.`, 'success');
+    await loadAll();
+  } catch (e) {
+    toast('Failed: ' + e.message, 'error');
+  }
+};
+
+// ═══════════════════════════════════════════════
+// STEP 3: GIG REFERENCE MIGRATION
+// ═══════════════════════════════════════════════
+function renderGigCounts() {
+  const migratedThemes = Object.values(themes).filter(t => t._migratedTo).length;
+  const totalThemes = Object.keys(themes).length;
+  document.getElementById('gig-counts').textContent =
+    `${migratedThemes} of ${totalThemes} themes migrated so far. ${migratedThemes < totalThemes ? 'Finish Step 1 before running this.' : 'Ready to re-point gigs.'}`;
+  document.getElementById('gig-migrate-btn').disabled = migratedThemes < totalThemes || totalThemes === 0;
+}
+
+window.migrateGigs = async function() {
+  const log = document.getElementById('gig-log');
+  log.style.display = 'block';
+  log.innerHTML = 'Loading gigs…';
+  try {
+    const gigsSnap = await get(ref(rtdb, 'trivia/planner/gigs'));
+    if (!gigsSnap.exists()) { log.innerHTML = 'No gigs found.'; return; }
+    const gigs = gigsSnap.val();
+    const updates = {};
+    let rewritten = 0, skipped = 0;
+    const lines = [];
+
+    Object.entries(gigs).forEach(([venueId, byDate]) => {
+      Object.entries(byDate || {}).forEach(([dateKey, gig]) => {
+        if (!gig) return;
+        let touched = false;
+        const patch = {};
+        if (gig.themeId && themes[gig.themeId] && themes[gig.themeId]._migratedTo) {
+          const [coll, targetId] = themes[gig.themeId]._migratedTo.split(':');
+          patch.themeId = targetId;
+          patch.themeCollection = coll;
+          touched = true;
+        }
+        if (gig.round3ThemeId && themes[gig.round3ThemeId] && themes[gig.round3ThemeId]._migratedTo) {
+          const [coll, targetId] = themes[gig.round3ThemeId]._migratedTo.split(':');
+          patch.round3ThemeId = targetId;
+          patch.round3ThemeCollection = coll;
+          touched = true;
+        }
+        if (touched) {
+          Object.entries(patch).forEach(([k,v]) => { updates[`trivia/planner/gigs/${venueId}/${dateKey}/${k}`] = v; });
+          rewritten++;
+          lines.push(`✓ ${venueId} / ${dateKey} — repointed`);
+        } else if (gig.themeId || gig.round3ThemeId) {
+          skipped++;
+        }
+      });
+    });
+
+    if (!Object.keys(updates).length) {
+      log.innerHTML = 'Nothing to rewrite — either no gigs reference migrated themes, or everything is already up to date.';
+      return;
+    }
+    await update(ref(rtdb), updates);
+    lines.push(`\nDone — ${rewritten} gigs repointed, ${skipped} left untouched (theme not migrated or no theme set).`);
+    log.innerHTML = lines.map(esc).join('<br>');
+    toast(`Repointed ${rewritten} gigs.`, 'success');
+  } catch (e) {
+    log.innerHTML = 'Failed: ' + esc(e.message);
+    toast('Migration failed: ' + e.message, 'error');
+  }
+};
+
+loadAll().catch(e => toast('Load failed: ' + e.message, 'error'));
+</script>
+</body>
+</html>
