@@ -3,76 +3,80 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Venue Sign In — Belladonna</title>
+<title>Belladonna Venue Portal</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
   :root {
     --gold: #C9A84C; --gold-light: #E8C97A; --gold-dim: #8B6B2A;
-    --ink: #0E0C0A; --surface: #1A1610; --surface2: #201C16;
-    --border: rgba(201,168,76,0.2); --border-strong: rgba(201,168,76,0.45);
+    --ink: #0E0C0A; --surface: #16130F; --surface2: #1D1912;
+    --border: rgba(201,168,76,0.18); --border-strong: rgba(201,168,76,0.4);
     --text: #E8DFC8; --text-muted: #9E8E6A; --text-dim: #6A5E42;
     --danger: #C0654F; --success: #7DC996;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
     background: var(--ink); color: var(--text); font-family: 'Crimson Text', serif;
-    min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center;
     padding: 2rem 1rem;
-    background-image: radial-gradient(ellipse at 20% 0%, rgba(201,168,76,0.05) 0%, transparent 60%);
+    background-image: radial-gradient(ellipse at 50% 0%, rgba(201,168,76,0.06) 0%, transparent 55%);
   }
-  .card {
-    width: 100%; max-width: 420px; background: var(--surface);
-    border: 1px solid var(--border-strong); border-radius: 10px; padding: 2.25rem 2rem;
-  }
+  .logo-mark { font-size: 2.2rem; margin-bottom: 0.5rem; text-align: center; filter: grayscale(0.15); }
   .brand {
-    font-family: 'Cinzel', serif; font-size: 1.3rem; letter-spacing: 0.1em;
-    text-transform: uppercase; text-align: center; margin-bottom: 0.3rem;
+    font-family: 'Cinzel', serif; font-size: 1.5rem; font-weight: 700; letter-spacing: 0.08em;
+    text-transform: uppercase; text-align: center; margin-bottom: 0.35rem; color: #fff;
   }
   .brand span { color: var(--gold); }
   .sub {
-    text-align: center; color: var(--text-dim); font-size: 0.85rem;
-    letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 2rem;
-    font-family: 'Cinzel', serif;
+    text-align: center; color: var(--text-dim); font-style: italic; font-size: 0.95rem;
+    margin-bottom: 2rem;
   }
-  .tabs { display: flex; gap: 6px; margin-bottom: 1.5rem; }
+  .card {
+    width: 100%; max-width: 420px; background: var(--surface);
+    border: 1px solid var(--border-strong); border-radius: 14px; padding: 2rem 1.9rem;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  }
+  .tabs {
+    display: flex; gap: 4px; margin-bottom: 1.75rem;
+    background: var(--surface2); border-radius: 99px; padding: 4px; border: 1px solid var(--border);
+  }
   .tab {
-    flex: 1; padding: 0.6rem; text-align: center; border: 1px solid var(--border);
-    border-radius: 5px; background: none; color: var(--text-muted); cursor: pointer;
-    font-family: 'Cinzel', serif; font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase;
-    transition: all 0.2s;
+    flex: 1; padding: 0.55rem 0.5rem; text-align: center; border: none; border-radius: 99px;
+    background: none; color: var(--text-muted); cursor: pointer;
+    font-family: 'Cinzel', serif; font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase;
+    transition: all 0.2s; line-height: 1.3;
   }
-  .tab.active { color: var(--gold); border-color: var(--border-strong); background: rgba(201,168,76,0.08); }
+  .tab.active { color: var(--ink); background: var(--gold); font-weight: 600; }
   .form-group { margin-bottom: 1rem; }
   label {
-    display: block; font-family: 'Cinzel', serif; font-size: 0.65rem; letter-spacing: 0.12em;
+    display: block; font-family: 'Cinzel', serif; font-size: 0.63rem; letter-spacing: 0.12em;
     text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.4rem;
   }
   input {
     width: 100%; background: var(--surface2); border: 1px solid var(--border); color: var(--text);
-    border-radius: 5px; padding: 0.65rem 0.85rem; font-family: 'Crimson Text', serif; font-size: 16px;
+    border-radius: 8px; padding: 0.7rem 0.9rem; font-family: 'Crimson Text', serif; font-size: 16px;
     outline: none; transition: border-color 0.2s;
   }
   input:focus { border-color: var(--gold-dim); }
   .btn {
-    width: 100%; padding: 0.75rem; border-radius: 5px; border: 1px solid var(--border-strong);
-    background: rgba(201,168,76,0.12); color: var(--gold); font-family: 'Cinzel', serif;
-    font-size: 0.75rem; letter-spacing: 0.12em; text-transform: uppercase; cursor: pointer;
-    transition: all 0.2s; margin-top: 0.5rem;
+    width: 100%; padding: 0.8rem; border-radius: 99px; border: 1px solid var(--gold);
+    background: var(--gold); color: var(--ink); font-family: 'Cinzel', serif;
+    font-size: 0.74rem; letter-spacing: 0.12em; text-transform: uppercase; cursor: pointer;
+    font-weight: 600; transition: all 0.2s; margin-top: 0.5rem;
   }
-  .btn:hover { background: rgba(201,168,76,0.2); }
+  .btn:hover { background: var(--gold-light); border-color: var(--gold-light); }
   .btn:disabled { opacity: 0.5; cursor: not-allowed; }
   .btn-ghost { background: none; color: var(--text-muted); border-color: var(--border); }
   .msg { font-size: 0.85rem; margin-top: 1rem; text-align: center; line-height: 1.5; display: none; }
   .msg.error { color: var(--danger); display: block; }
   .msg.success { color: var(--success); display: block; }
-  .hint { font-size: 0.78rem; color: var(--text-dim); margin-top: 0.3rem; font-style: italic; }
+  .hint { font-size: 0.78rem; color: var(--text-dim); margin-top: 0.35rem; font-style: italic; }
   .view { display: none; }
   .view.active { display: block; }
   .loc-list { display: grid; gap: 8px; margin: 1rem 0 1.5rem; }
   .loc-item {
     display: flex; align-items: center; justify-content: space-between;
-    background: var(--surface2); border: 1px solid var(--border); border-radius: 6px;
-    padding: 0.85rem 1rem; cursor: pointer; transition: all 0.15s;
+    background: var(--surface2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 0.9rem 1.1rem; cursor: pointer; transition: all 0.15s;
   }
   .loc-item:hover { border-color: var(--border-strong); background: rgba(201,168,76,0.06); }
   .loc-name { font-family: 'Cinzel', serif; font-size: 0.85rem; letter-spacing: 0.04em; color: var(--text); }
@@ -87,19 +91,24 @@
     text-align: center; padding: 2rem 0; color: var(--text-dim); font-family: 'Cinzel', serif;
     font-size: 0.75rem; letter-spacing: 0.15em; text-transform: uppercase;
   }
+  .footer-mark {
+    margin-top: 1.75rem; font-family: 'Cinzel', serif; font-size: 0.68rem; letter-spacing: 0.25em;
+    text-transform: uppercase; color: var(--text-dim); text-align: center;
+  }
 </style>
 </head>
 <body>
 
-<div class="card">
-  <div class="brand">BELLADONNA <span>VENUE PORTAL</span></div>
-  <div class="sub">Your contract, your queue, your feedback</div>
+<div class="logo-mark">🥀</div>
+<div class="brand">BELLADONNA <span>VENUE PORTAL</span></div>
+<div class="sub">One account, every venue</div>
 
+<div class="card">
   <!-- ═══ SIGN IN / SIGN UP ═══ -->
   <div class="view active" id="view-auth">
     <div class="tabs">
       <button class="tab active" id="tab-signin" onclick="switchAuthTab('signin')">Sign In</button>
-      <button class="tab" id="tab-signup" onclick="switchAuthTab('signup')">First Time / Invite Code</button>
+      <button class="tab" id="tab-signup" onclick="switchAuthTab('signup')">Create Account</button>
     </div>
 
     <div id="signin-form">
@@ -127,7 +136,7 @@
       <div class="form-group">
         <label>Email</label>
         <input type="email" id="su-email" autocomplete="username">
-        <div class="hint">If you already have a Venue Portal account, use the same email — this code will just add the new location to it.</div>
+        <div class="hint">Already have a Venue Portal account? Use the same email — this code just adds the new location to it.</div>
       </div>
       <div class="form-group">
         <label>Set a Password</label>
@@ -146,7 +155,7 @@
 
   <!-- ═══ LOCATION PICKER ═══ -->
   <div class="view" id="view-locations">
-    <div class="sub" style="margin-bottom:1rem;">Signed in as <span id="loc-account-email" style="color:var(--gold-light);"></span></div>
+    <div class="sub" style="margin-bottom:1rem;font-size:0.85rem;">Signed in as <span id="loc-account-email" style="color:var(--gold-light);"></span></div>
     <div class="loc-list" id="loc-list"></div>
 
     <div class="divider"></div>
@@ -163,6 +172,8 @@
     <div class="small-link" onclick="doSignOut()">Sign out</div>
   </div>
 </div>
+
+<div class="footer-mark">Belladonna Nights</div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
@@ -187,17 +198,11 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 
 // ═══════════════════════════════════════════════
-// DATA MODEL
+// DATA MODEL (unchanged from the first pass)
 // ═══════════════════════════════════════════════
 // venueAccounts/{uid}          -> { email, name, createdAt }
 // venueAccess/{autoId}         -> { accountUid, venueId, venueName, role:'owner', createdAt }
-// venueSignupCodes/{CODE}      -> { venueId, venueName, used, usedByUid, createdAt, createdBy }
-//
-// Where the venue itself actually lives (venueMenuCategories / a future
-// "venues" doc) is intentionally decoupled from login — a signup code just
-// needs a venueId + venueName to point at. When the real venue record model
-// is finalized this can be tightened to pull venueName live instead of
-// caching it on the code.
+// venueSignupCodes/{CODE}      -> { venueId, venueName, used, usedByUid, createdAt }
 
 function showView(id) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
@@ -216,7 +221,6 @@ window.switchAuthTab = function(which) {
   document.getElementById('auth-msg').className = 'msg';
 };
 
-// ── SIGN IN ──
 window.doSignIn = async function() {
   const email = document.getElementById('si-email').value.trim();
   const password = document.getElementById('si-password').value;
@@ -225,7 +229,6 @@ window.doSignIn = async function() {
   btn.disabled = true; btn.textContent = 'Signing in…';
   try {
     await signInWithEmailAndPassword(auth, email, password);
-    // onAuthStateChanged picks it up from here
   } catch (e) {
     showMsg(friendlyAuthError(e), 'error');
     btn.disabled = false; btn.textContent = 'Sign In';
@@ -243,7 +246,6 @@ window.doResetPassword = async function() {
   }
 };
 
-// ── SIGN UP (first-time, consumes an invite code) ──
 window.doSignUp = async function() {
   const code = document.getElementById('su-code').value.trim().toUpperCase();
   const name = document.getElementById('su-name').value.trim();
@@ -256,7 +258,6 @@ window.doSignUp = async function() {
   btn.disabled = true; btn.textContent = 'Creating account…';
 
   try {
-    // Validate the code first, before creating any auth user
     const codeRef = doc(db, 'venueSignupCodes', code);
     const codeSnap = await getDoc(codeRef);
     if (!codeSnap.exists()) throw new Error('CODE_NOT_FOUND');
@@ -270,8 +271,6 @@ window.doSignUp = async function() {
       await setDoc(doc(db, 'venueAccounts', uid), { email, name, createdAt: serverTimestamp() });
     } catch (authErr) {
       if (authErr.code === 'auth/email-already-in-use') {
-        // They already have a Venue Portal account — sign them in with the
-        // password they just typed instead of creating a duplicate account.
         const cred = await signInWithEmailAndPassword(auth, email, password);
         uid = cred.user.uid;
       } else {
@@ -279,7 +278,6 @@ window.doSignUp = async function() {
       }
     }
 
-    // Link this venue to the account
     await addDoc(collection(db, 'venueAccess'), {
       accountUid: uid,
       venueId: codeData.venueId,
@@ -290,7 +288,6 @@ window.doSignUp = async function() {
     await updateDoc(codeRef, { used: true, usedByUid: uid, usedAt: serverTimestamp() });
 
     showMsg('Account ready — taking you in…', 'success');
-    // onAuthStateChanged will pick up the session and move to the location picker
   } catch (e) {
     if (e.message === 'CODE_NOT_FOUND') showMsg("That invite code wasn't found — double check it against your welcome email.", 'error');
     else if (e.message === 'CODE_USED') showMsg('That invite code has already been used. If this is your second location, sign in first and add it from there.', 'error');
@@ -299,7 +296,6 @@ window.doSignUp = async function() {
   }
 };
 
-// ── ADD LOCATION (already signed in) ──
 window.toggleAddLocation = function() {
   const form = document.getElementById('add-loc-form');
   form.style.display = form.style.display === 'none' ? 'block' : 'none';
@@ -332,7 +328,6 @@ window.addLocationToAccount = async function() {
   }
 };
 
-// ── SIGN OUT ──
 window.doSignOut = async function() {
   await signOut(auth);
   localStorage.removeItem('belladonnaVenueId');
@@ -340,7 +335,6 @@ window.doSignOut = async function() {
   showView('view-auth');
 };
 
-// ── ON AUTH STATE ──
 onAuthStateChanged(auth, user => {
   if (!user) { showView('view-auth'); return; }
   showView('view-loading');
@@ -365,7 +359,6 @@ async function loadLocationsForAccount(user) {
     return;
   }
 
-  // Multiple locations — show the picker
   const list = document.getElementById('loc-list');
   list.innerHTML = venues.map(v =>
     `<div class="loc-item" data-venue-id="${esc(v.venueId)}" data-venue-name="${esc(v.venueName||'')}">
@@ -384,8 +377,6 @@ async function loadLocationsForAccount(user) {
 function selectVenue(v) {
   localStorage.setItem('belladonnaVenueId', v.venueId);
   localStorage.setItem('belladonnaVenueName', v.venueName || '');
-  // venue.html (or whichever portal page this feeds) should read these two
-  // localStorage keys to know which venue's contract/queue/feedback to show.
   const params = new URLSearchParams(window.location.search);
   const returnTo = params.get('return') || 'venue-portal.html';
   window.location.href = returnTo + (returnTo.includes('?') ? '&' : '?') + 'venue=' + encodeURIComponent(v.venueId);
