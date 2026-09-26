@@ -75,9 +75,38 @@
     font-family: monospace; font-size: 0.78rem; max-height: 260px; overflow-y: auto; margin-top: 1rem; line-height: 1.6;
   }
   .divider { height: 1px; background: var(--border); margin: 2rem 0; }
+
+  .signin-gate { min-height: 70vh; display: flex; align-items: center; justify-content: center; }
+  .gate-card { width: 100%; max-width: 380px; background: var(--surface); border: 1px solid var(--border-strong); border-radius: 10px; padding: 2rem; }
+  .gate-title { font-family: 'Cinzel', serif; font-size: 1rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--gold); margin-bottom: 0.3rem; text-align: center; }
+  .gate-sub { color: var(--text-dim); font-size: 0.85rem; text-align: center; margin-bottom: 1.5rem; font-style: italic; }
+  .gate-field { margin-bottom: 1rem; }
+  .gate-field label { display: block; font-family: 'Cinzel', serif; font-size: 0.62rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.4rem; }
+  .gate-field input { width: 100%; background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: 6px; padding: 0.65rem 0.85rem; font-family: 'Crimson Text', serif; font-size: 16px; outline: none; }
+  .gate-msg { font-size: 0.82rem; color: var(--danger); margin-top: 0.75rem; display: none; }
 </style>
 </head>
 <body>
+
+<!-- ═══ SIGN-IN GATE ═══ -->
+<div class="signin-gate" id="signin-gate">
+  <div class="gate-card">
+    <div class="gate-title">Belladonna Admin</div>
+    <div class="gate-sub">Sign in with your Gateway account to continue</div>
+    <div class="gate-field">
+      <label>Email</label>
+      <input type="email" id="gate-email" autocomplete="username" onkeydown="if(event.key==='Enter')doSignIn()">
+    </div>
+    <div class="gate-field">
+      <label>Password</label>
+      <input type="password" id="gate-password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doSignIn()">
+    </div>
+    <button class="btn btn-lg" id="gate-signin-btn" onclick="doSignIn()" style="width:100%;">Sign In</button>
+    <div class="gate-msg" id="gate-msg"></div>
+  </div>
+</div>
+
+<div id="main-content" style="display:none;">
 
 <h1>Category Unification</h1>
 <div class="sub">One-time reconciliation: matches Planner's Trivia themes and Venue Menu's browsing categories back to the real game-content libraries (<code>trivia/categories</code> and <code>bingo/landing/categories</code>), so there's one record per category instead of three. Nothing is deleted here — this only copies fields forward and re-points references. Run this before any app code is updated to read the new fields.</div>
@@ -115,10 +144,13 @@
   <div class="log-box" id="gig-log" style="display:none;"></div>
 </div>
 
+</div><!-- /#main-content -->
+
 <div class="toast-container" id="toast-container"></div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { getDatabase, ref, get, update } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 import { initializeFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
@@ -132,6 +164,7 @@ const firebaseConfig = {
   appId: "1:1021873183587:web:def283bb7b5ca48e4f9156"
 };
 const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
 const rtdb = getDatabase(app);
 // experimentalAutoDetectLongPolling: the v10 modular SDK defaults to a
 // streaming-fetch transport that Safari (and some networks) silently kill
@@ -139,6 +172,32 @@ const rtdb = getDatabase(app);
 // This makes it fall back to plain long-polling instead, same as the
 // compat SDK your other apps already use.
 const db = initializeFirestore(app, { experimentalAutoDetectLongPolling: true });
+
+// ── Sign-in gate ──────────────────────────────────────────────────────────
+// admin.html and bingo-index.html both require a signed-in Belladonna
+// Gateway account (Firebase Auth) before touching any data — this tool
+// never did that. Whether or not that's the exact cause of the load
+// failures you saw, it's a real gap, so it's gated the same way now.
+onAuthStateChanged(auth, user => {
+  document.getElementById('signin-gate').style.display = user ? 'none' : 'flex';
+  document.getElementById('main-content').style.display = user ? 'block' : 'none';
+  if (user) loadAll().catch(e => toast('Load failed: ' + e.message, 'error'));
+});
+window.doSignIn = async function() {
+  const email = document.getElementById('gate-email').value.trim();
+  const password = document.getElementById('gate-password').value;
+  const msgEl = document.getElementById('gate-msg');
+  const btn = document.getElementById('gate-signin-btn');
+  if (!email || !password) { msgEl.textContent = 'Enter your email and password.'; msgEl.style.display = 'block'; return; }
+  btn.disabled = true; btn.textContent = 'Signing in…';
+  try {
+    await signInWithEmailAndPassword(auth, email, password);
+  } catch (e) {
+    msgEl.textContent = 'Sign-in failed (' + (e.code || e.message) + ').';
+    msgEl.style.display = 'block';
+    btn.disabled = false; btn.textContent = 'Sign In';
+  }
+};
 
 function esc(str) { return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function norm(str) { return String(str||'').trim().toLowerCase().replace(/[^a-z0-9]+/g,' ').trim(); }
@@ -432,7 +491,8 @@ window.migrateGigs = async function() {
   }
 };
 
-loadAll().catch(e => toast('Load failed: ' + e.message, 'error'));
+// loadAll() now runs from the onAuthStateChanged handler above, once someone
+// is actually signed in — not unconditionally on page load.
 </script>
 </body>
 </html>
