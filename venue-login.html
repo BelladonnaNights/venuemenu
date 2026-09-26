@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Venue Sign In — Belladonna</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --gold: #C9A84C; --gold-light: #E8C97A; --gold-dim: #8B6B2A;
+    --ink: #0E0C0A; --surface: #1A1610; --surface2: #201C16;
+    --border: rgba(201,168,76,0.2); --border-strong: rgba(201,168,76,0.45);
+    --text: #E8DFC8; --text-muted: #9E8E6A; --text-dim: #6A5E42;
+    --danger: #C0654F; --success: #7DC996;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--ink); color: var(--text); font-family: 'Crimson Text', serif;
+    min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    padding: 2rem 1rem;
+    background-image: radial-gradient(ellipse at 20% 0%, rgba(201,168,76,0.05) 0%, transparent 60%);
+  }
+  .card {
+    width: 100%; max-width: 420px; background: var(--surface);
+    border: 1px solid var(--border-strong); border-radius: 10px; padding: 2.25rem 2rem;
+  }
+  .brand {
+    font-family: 'Cinzel', serif; font-size: 1.3rem; letter-spacing: 0.1em;
+    text-transform: uppercase; text-align: center; margin-bottom: 0.3rem;
+  }
+  .brand span { color: var(--gold); }
+  .sub {
+    text-align: center; color: var(--text-dim); font-size: 0.85rem;
+    letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 2rem;
+    font-family: 'Cinzel', serif;
+  }
+  .tabs { display: flex; gap: 6px; margin-bottom: 1.5rem; }
+  .tab {
+    flex: 1; padding: 0.6rem; text-align: center; border: 1px solid var(--border);
+    border-radius: 5px; background: none; color: var(--text-muted); cursor: pointer;
+    font-family: 'Cinzel', serif; font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase;
+    transition: all 0.2s;
+  }
+  .tab.active { color: var(--gold); border-color: var(--border-strong); background: rgba(201,168,76,0.08); }
+  .form-group { margin-bottom: 1rem; }
+  label {
+    display: block; font-family: 'Cinzel', serif; font-size: 0.65rem; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.4rem;
+  }
+  input {
+    width: 100%; background: var(--surface2); border: 1px solid var(--border); color: var(--text);
+    border-radius: 5px; padding: 0.65rem 0.85rem; font-family: 'Crimson Text', serif; font-size: 16px;
+    outline: none; transition: border-color 0.2s;
+  }
+  input:focus { border-color: var(--gold-dim); }
+  .btn {
+    width: 100%; padding: 0.75rem; border-radius: 5px; border: 1px solid var(--border-strong);
+    background: rgba(201,168,76,0.12); color: var(--gold); font-family: 'Cinzel', serif;
+    font-size: 0.75rem; letter-spacing: 0.12em; text-transform: uppercase; cursor: pointer;
+    transition: all 0.2s; margin-top: 0.5rem;
+  }
+  .btn:hover { background: rgba(201,168,76,0.2); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-ghost { background: none; color: var(--text-muted); border-color: var(--border); }
+  .msg { font-size: 0.85rem; margin-top: 1rem; text-align: center; line-height: 1.5; display: none; }
+  .msg.error { color: var(--danger); display: block; }
+  .msg.success { color: var(--success); display: block; }
+  .hint { font-size: 0.78rem; color: var(--text-dim); margin-top: 0.3rem; font-style: italic; }
+  .view { display: none; }
+  .view.active { display: block; }
+  .loc-list { display: grid; gap: 8px; margin: 1rem 0 1.5rem; }
+  .loc-item {
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--surface2); border: 1px solid var(--border); border-radius: 6px;
+    padding: 0.85rem 1rem; cursor: pointer; transition: all 0.15s;
+  }
+  .loc-item:hover { border-color: var(--border-strong); background: rgba(201,168,76,0.06); }
+  .loc-name { font-family: 'Cinzel', serif; font-size: 0.85rem; letter-spacing: 0.04em; color: var(--text); }
+  .loc-arrow { color: var(--gold-dim); }
+  .divider { height: 1px; background: var(--border); margin: 1.5rem 0; }
+  .small-link {
+    text-align: center; font-size: 0.78rem; color: var(--text-dim); margin-top: 1rem;
+    cursor: pointer; text-decoration: underline;
+  }
+  .small-link:hover { color: var(--gold); }
+  .spinner {
+    text-align: center; padding: 2rem 0; color: var(--text-dim); font-family: 'Cinzel', serif;
+    font-size: 0.75rem; letter-spacing: 0.15em; text-transform: uppercase;
+  }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div class="brand">BELLADONNA <span>VENUE PORTAL</span></div>
+  <div class="sub">Your contract, your queue, your feedback</div>
+
+  <!-- ═══ SIGN IN / SIGN UP ═══ -->
+  <div class="view active" id="view-auth">
+    <div class="tabs">
+      <button class="tab active" id="tab-signin" onclick="switchAuthTab('signin')">Sign In</button>
+      <button class="tab" id="tab-signup" onclick="switchAuthTab('signup')">First Time / Invite Code</button>
+    </div>
+
+    <div id="signin-form">
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="si-email" autocomplete="username">
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="si-password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doSignIn()">
+      </div>
+      <button class="btn" id="si-btn" onclick="doSignIn()">Sign In</button>
+      <div class="small-link" onclick="doResetPassword()">Forgot password?</div>
+    </div>
+
+    <div id="signup-form" style="display:none;">
+      <div class="form-group">
+        <label>Invite Code <span style="color:var(--text-dim);font-weight:400;text-transform:none;letter-spacing:0;">— from your welcome email</span></label>
+        <input type="text" id="su-code" style="text-transform:uppercase;letter-spacing:0.08em;" placeholder="e.g. RUSTY-ANCHOR-4F2A">
+      </div>
+      <div class="form-group">
+        <label>Your Name</label>
+        <input type="text" id="su-name" autocomplete="name">
+      </div>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="su-email" autocomplete="username">
+        <div class="hint">If you already have a Venue Portal account, use the same email — this code will just add the new location to it.</div>
+      </div>
+      <div class="form-group">
+        <label>Set a Password</label>
+        <input type="password" id="su-password" autocomplete="new-password" onkeydown="if(event.key==='Enter')doSignUp()">
+      </div>
+      <button class="btn" id="su-btn" onclick="doSignUp()">Create Account</button>
+    </div>
+
+    <div class="msg" id="auth-msg"></div>
+  </div>
+
+  <!-- ═══ LOADING ═══ -->
+  <div class="view" id="view-loading">
+    <div class="spinner">Loading your locations…</div>
+  </div>
+
+  <!-- ═══ LOCATION PICKER ═══ -->
+  <div class="view" id="view-locations">
+    <div class="sub" style="margin-bottom:1rem;">Signed in as <span id="loc-account-email" style="color:var(--gold-light);"></span></div>
+    <div class="loc-list" id="loc-list"></div>
+
+    <div class="divider"></div>
+    <div id="add-loc-toggle" class="small-link" onclick="toggleAddLocation()">+ Add another location with an invite code</div>
+    <div id="add-loc-form" style="display:none;margin-top:1rem;">
+      <div class="form-group">
+        <label>Invite Code</label>
+        <input type="text" id="al-code" style="text-transform:uppercase;letter-spacing:0.08em;">
+      </div>
+      <button class="btn btn-ghost" onclick="addLocationToAccount()">Add Location</button>
+    </div>
+
+    <div class="divider"></div>
+    <div class="small-link" onclick="doSignOut()">Sign out</div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import {
+  getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword,
+  sendPasswordResetEmail, signOut, onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import {
+  getFirestore, doc, getDoc, setDoc, updateDoc, collection, query, where, getDocs, addDoc, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCIfAE1JGHsUGzzVH2pz1Vyj5b5OhA0tDQ",
+  authDomain: "belladonna-hq.firebaseapp.com",
+  projectId: "belladonna-hq",
+  storageBucket: "belladonna-hq.firebasestorage.app",
+  messagingSenderId: "1021873183587",
+  appId: "1:1021873183587:web:def283bb7b5ca48e4f9156"
+};
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+// ═══════════════════════════════════════════════
+// DATA MODEL
+// ═══════════════════════════════════════════════
+// venueAccounts/{uid}          -> { email, name, createdAt }
+// venueAccess/{autoId}         -> { accountUid, venueId, venueName, role:'owner', createdAt }
+// venueSignupCodes/{CODE}      -> { venueId, venueName, used, usedByUid, createdAt, createdBy }
+//
+// Where the venue itself actually lives (venueMenuCategories / a future
+// "venues" doc) is intentionally decoupled from login — a signup code just
+// needs a venueId + venueName to point at. When the real venue record model
+// is finalized this can be tightened to pull venueName live instead of
+// caching it on the code.
+
+function showView(id) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+function showMsg(text, type) {
+  const el = document.getElementById('auth-msg');
+  el.textContent = text;
+  el.className = 'msg ' + type;
+}
+window.switchAuthTab = function(which) {
+  document.getElementById('tab-signin').classList.toggle('active', which === 'signin');
+  document.getElementById('tab-signup').classList.toggle('active', which === 'signup');
+  document.getElementById('signin-form').style.display = which === 'signin' ? 'block' : 'none';
+  document.getElementById('signup-form').style.display = which === 'signup' ? 'block' : 'none';
+  document.getElementById('auth-msg').className = 'msg';
+};
+
+// ── SIGN IN ──
+window.doSignIn = async function() {
+  const email = document.getElementById('si-email').value.trim();
+  const password = document.getElementById('si-password').value;
+  if (!email || !password) { showMsg('Enter your email and password.', 'error'); return; }
+  const btn = document.getElementById('si-btn');
+  btn.disabled = true; btn.textContent = 'Signing in…';
+  try {
+    await signInWithEmailAndPassword(auth, email, password);
+    // onAuthStateChanged picks it up from here
+  } catch (e) {
+    showMsg(friendlyAuthError(e), 'error');
+    btn.disabled = false; btn.textContent = 'Sign In';
+  }
+};
+
+window.doResetPassword = async function() {
+  const email = document.getElementById('si-email').value.trim();
+  if (!email) { showMsg('Enter your email above first, then click "Forgot password?" again.', 'error'); return; }
+  try {
+    await sendPasswordResetEmail(auth, email);
+    showMsg('Password reset email sent — check your inbox.', 'success');
+  } catch (e) {
+    showMsg(friendlyAuthError(e), 'error');
+  }
+};
+
+// ── SIGN UP (first-time, consumes an invite code) ──
+window.doSignUp = async function() {
+  const code = document.getElementById('su-code').value.trim().toUpperCase();
+  const name = document.getElementById('su-name').value.trim();
+  const email = document.getElementById('su-email').value.trim();
+  const password = document.getElementById('su-password').value;
+  if (!code || !name || !email || !password) { showMsg('Fill in every field.', 'error'); return; }
+  if (password.length < 6) { showMsg('Password needs to be at least 6 characters.', 'error'); return; }
+
+  const btn = document.getElementById('su-btn');
+  btn.disabled = true; btn.textContent = 'Creating account…';
+
+  try {
+    // Validate the code first, before creating any auth user
+    const codeRef = doc(db, 'venueSignupCodes', code);
+    const codeSnap = await getDoc(codeRef);
+    if (!codeSnap.exists()) throw new Error('CODE_NOT_FOUND');
+    const codeData = codeSnap.data();
+    if (codeData.used) throw new Error('CODE_USED');
+
+    let uid;
+    try {
+      const cred = await createUserWithEmailAndPassword(auth, email, password);
+      uid = cred.user.uid;
+      await setDoc(doc(db, 'venueAccounts', uid), { email, name, createdAt: serverTimestamp() });
+    } catch (authErr) {
+      if (authErr.code === 'auth/email-already-in-use') {
+        // They already have a Venue Portal account — sign them in with the
+        // password they just typed instead of creating a duplicate account.
+        const cred = await signInWithEmailAndPassword(auth, email, password);
+        uid = cred.user.uid;
+      } else {
+        throw authErr;
+      }
+    }
+
+    // Link this venue to the account
+    await addDoc(collection(db, 'venueAccess'), {
+      accountUid: uid,
+      venueId: codeData.venueId,
+      venueName: codeData.venueName || '',
+      role: 'owner',
+      createdAt: serverTimestamp()
+    });
+    await updateDoc(codeRef, { used: true, usedByUid: uid, usedAt: serverTimestamp() });
+
+    showMsg('Account ready — taking you in…', 'success');
+    // onAuthStateChanged will pick up the session and move to the location picker
+  } catch (e) {
+    if (e.message === 'CODE_NOT_FOUND') showMsg("That invite code wasn't found — double check it against your welcome email.", 'error');
+    else if (e.message === 'CODE_USED') showMsg('That invite code has already been used. If this is your second location, sign in first and add it from there.', 'error');
+    else showMsg(friendlyAuthError(e), 'error');
+    btn.disabled = false; btn.textContent = 'Create Account';
+  }
+};
+
+// ── ADD LOCATION (already signed in) ──
+window.toggleAddLocation = function() {
+  const form = document.getElementById('add-loc-form');
+  form.style.display = form.style.display === 'none' ? 'block' : 'none';
+};
+window.addLocationToAccount = async function() {
+  const code = document.getElementById('al-code').value.trim().toUpperCase();
+  if (!code) return;
+  const user = auth.currentUser;
+  if (!user) return;
+  try {
+    const codeRef = doc(db, 'venueSignupCodes', code);
+    const codeSnap = await getDoc(codeRef);
+    if (!codeSnap.exists()) { alert("That invite code wasn't found."); return; }
+    const codeData = codeSnap.data();
+    if (codeData.used) { alert('That invite code has already been used.'); return; }
+
+    await addDoc(collection(db, 'venueAccess'), {
+      accountUid: user.uid,
+      venueId: codeData.venueId,
+      venueName: codeData.venueName || '',
+      role: 'owner',
+      createdAt: serverTimestamp()
+    });
+    await updateDoc(codeRef, { used: true, usedByUid: user.uid, usedAt: serverTimestamp() });
+    document.getElementById('al-code').value = '';
+    document.getElementById('add-loc-form').style.display = 'none';
+    loadLocationsForAccount(user);
+  } catch (e) {
+    alert('Could not add that location: ' + e.message);
+  }
+};
+
+// ── SIGN OUT ──
+window.doSignOut = async function() {
+  await signOut(auth);
+  localStorage.removeItem('belladonnaVenueId');
+  localStorage.removeItem('belladonnaVenueName');
+  showView('view-auth');
+};
+
+// ── ON AUTH STATE ──
+onAuthStateChanged(auth, user => {
+  if (!user) { showView('view-auth'); return; }
+  showView('view-loading');
+  loadLocationsForAccount(user);
+});
+
+async function loadLocationsForAccount(user) {
+  document.getElementById('loc-account-email').textContent = user.email || '';
+  const q = query(collection(db, 'venueAccess'), where('accountUid', '==', user.uid));
+  const snap = await getDocs(q);
+  const venues = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+  if (venues.length === 0) {
+    showView('view-auth');
+    switchAuthTab('signup');
+    showMsg("This account isn't linked to any venue yet — enter an invite code below.", 'error');
+    return;
+  }
+
+  if (venues.length === 1) {
+    selectVenue(venues[0]);
+    return;
+  }
+
+  // Multiple locations — show the picker
+  const list = document.getElementById('loc-list');
+  list.innerHTML = venues.map(v =>
+    `<div class="loc-item" data-venue-id="${esc(v.venueId)}" data-venue-name="${esc(v.venueName||'')}">
+      <span class="loc-name">${esc(v.venueName || 'Unnamed Venue')}</span>
+      <span class="loc-arrow">→</span>
+    </div>`
+  ).join('');
+  list.querySelectorAll('.loc-item').forEach(el => {
+    el.addEventListener('click', () => {
+      selectVenue({ venueId: el.dataset.venueId, venueName: el.dataset.venueName });
+    });
+  });
+  showView('view-locations');
+}
+
+function selectVenue(v) {
+  localStorage.setItem('belladonnaVenueId', v.venueId);
+  localStorage.setItem('belladonnaVenueName', v.venueName || '');
+  // venue.html (or whichever portal page this feeds) should read these two
+  // localStorage keys to know which venue's contract/queue/feedback to show.
+  const params = new URLSearchParams(window.location.search);
+  const returnTo = params.get('return') || 'venue-portal.html';
+  window.location.href = returnTo + (returnTo.includes('?') ? '&' : '?') + 'venue=' + encodeURIComponent(v.venueId);
+}
+
+function esc(str) {
+  return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function friendlyAuthError(e) {
+  const code = e.code || '';
+  if (code === 'auth/invalid-credential' || code === 'auth/wrong-password' || code === 'auth/user-not-found') return 'Email or password not recognized.';
+  if (code === 'auth/too-many-requests') return 'Too many attempts — wait a moment and try again.';
+  if (code === 'auth/invalid-email') return 'That email address looks off.';
+  return e.message || 'Something went wrong — try again.';
+}
+</script>
+</body>
+</html>
