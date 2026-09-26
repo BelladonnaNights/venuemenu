@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Venue Portal — Belladonna</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --gold: #C9A84C; --gold-light: #E8C97A; --gold-dim: #8B6B2A;
+    --ink: #0E0C0A; --surface: #16130F; --surface2: #1D1912; --surface3: #241F16;
+    --border: rgba(201,168,76,0.18); --border-strong: rgba(201,168,76,0.4);
+    --text: #E8DFC8; --text-muted: #9E8E6A; --text-dim: #6A5E42;
+    --danger: #C0654F; --success: #7DC996; --amber: #D3944F;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--ink); color: var(--text); font-family: 'Crimson Text', serif; font-size: 17px;
+    min-height: 100vh;
+    background-image: radial-gradient(ellipse at 20% 0%, rgba(201,168,76,0.04) 0%, transparent 60%);
+  }
+  .site-header {
+    border-bottom: 1px solid var(--border-strong); padding: 1.25rem 1.5rem;
+    display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+    background: rgba(14,12,10,0.9); backdrop-filter: blur(8px); position: sticky; top: 0; z-index: 200;
+  }
+  .header-left { display: flex; flex-direction: column; }
+  .wordmark { font-family: 'Cinzel', serif; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #fff; font-size: 1.15rem; }
+  .wordmark span { color: var(--gold); }
+  .venue-name-label { font-size: 0.85rem; color: var(--text-muted); font-style: italic; margin-top: 2px; }
+  .header-right { display: flex; align-items: center; gap: 10px; }
+  .switch-loc-btn, .signout-btn {
+    background: none; border: 1px solid var(--border); color: var(--text-muted);
+    font-family: 'Cinzel', serif; font-size: 0.63rem; letter-spacing: 0.1em; text-transform: uppercase;
+    padding: 0.5rem 0.9rem; border-radius: 99px; cursor: pointer; transition: all 0.2s;
+  }
+  .switch-loc-btn:hover, .signout-btn:hover { color: var(--gold); border-color: var(--border-strong); }
+
+  .tabs-wrap { border-bottom: 1px solid var(--border); overflow-x: auto; }
+  .tabs { display: flex; gap: 4px; padding: 0 1.5rem; max-width: 1000px; margin: 0 auto; }
+  .tab {
+    background: none; border: none; cursor: pointer; white-space: nowrap;
+    font-family: 'Cinzel', serif; font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--text-muted); padding: 0.9rem 1.1rem; border-bottom: 2px solid transparent; transition: all 0.2s;
+  }
+  .tab:hover { color: var(--gold-light); }
+  .tab.active { color: var(--gold); border-bottom-color: var(--gold); }
+
+  .page { max-width: 1000px; margin: 0 auto; padding: 2.25rem 1.5rem 4rem; }
+  .view { display: none; }
+  .view.active { display: block; }
+
+  .page-title { font-family: 'Cinzel', serif; font-size: 1.4rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--gold); margin-bottom: 0.4rem; }
+  .page-sub { color: var(--text-dim); font-style: italic; margin-bottom: 2rem; max-width: 640px; }
+
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1.5rem 1.75rem; margin-bottom: 1.25rem; }
+  .caveat {
+    background: rgba(211,148,79,0.08); border: 1px solid rgba(211,148,79,0.3); border-radius: 8px;
+    padding: 0.9rem 1.1rem; font-size: 0.9rem; color: var(--amber); margin-bottom: 1.5rem; font-style: italic;
+  }
+  .contract-body { line-height: 1.7; color: var(--text); white-space: pre-wrap; }
+  .contract-updated { font-size: 0.8rem; color: var(--text-dim); margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+
+  .feedback-types { display: grid; grid-template-columns: repeat(auto-fit,minmax(180px,1fr)); gap: 12px; margin-bottom: 2rem; }
+  .fb-type-btn {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1.1rem;
+    cursor: pointer; text-align: left; transition: all 0.2s; color: var(--text);
+  }
+  .fb-type-btn:hover { border-color: var(--border-strong); }
+  .fb-type-btn.active { border-color: var(--gold); background: rgba(201,168,76,0.08); }
+  .fb-type-title { font-family: 'Cinzel', serif; font-size: 0.85rem; letter-spacing: 0.05em; color: var(--gold-light); margin-bottom: 0.3rem; }
+  .fb-type-desc { font-size: 0.82rem; color: var(--text-dim); }
+
+  label { display: block; font-family: 'Cinzel', serif; font-size: 0.63rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.4rem; }
+  .form-group { margin-bottom: 1.1rem; }
+  input, select, textarea {
+    width: 100%; background: var(--surface2); border: 1px solid var(--border); color: var(--text);
+    border-radius: 8px; padding: 0.7rem 0.9rem; font-family: 'Crimson Text', serif; font-size: 16px; outline: none;
+  }
+  textarea { min-height: 120px; resize: vertical; }
+  input:focus, select:focus, textarea:focus { border-color: var(--gold-dim); }
+  .btn {
+    padding: 0.75rem 1.6rem; border-radius: 99px; border: 1px solid var(--gold);
+    background: var(--gold); color: var(--ink); font-family: 'Cinzel', serif;
+    font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer;
+    font-weight: 600; transition: all 0.2s;
+  }
+  .btn:hover { background: var(--gold-light); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .msg { font-size: 0.85rem; margin-top: 1rem; display: none; }
+  .msg.error { color: var(--danger); display: block; }
+  .msg.success { color: var(--success); display: block; }
+
+  .impact-choice { display: flex; gap: 10px; margin-bottom: 1.1rem; }
+  .impact-opt {
+    flex: 1; border: 1px solid var(--border); border-radius: 8px; padding: 0.9rem; cursor: pointer;
+    text-align: center; font-family: 'Cinzel', serif; font-size: 0.72rem; letter-spacing: 0.06em;
+    text-transform: uppercase; color: var(--text-muted); transition: all 0.2s;
+  }
+  .impact-opt.selected { border-color: var(--gold); color: var(--gold); background: rgba(201,168,76,0.08); }
+
+  .collab-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(260px,1fr)); gap: 14px; }
+  .collab-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1.25rem; }
+  .collab-name { font-family: 'Cinzel', serif; font-size: 0.95rem; color: var(--gold-light); margin-bottom: 0.4rem; }
+  .collab-desc { font-size: 0.9rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 0.6rem; }
+  .collab-code { font-family: monospace; font-size: 0.82rem; color: var(--gold-dim); }
+
+  .empty { color: var(--text-dim); font-style: italic; padding: 2rem 0; text-align: center; }
+  .queue-soon { text-align: center; padding: 3rem 1rem; color: var(--text-dim); }
+  .queue-soon-icon { font-size: 2.5rem; margin-bottom: 1rem; }
+</style>
+</head>
+<body>
+
+<div class="site-header">
+  <div class="header-left">
+    <div class="wordmark">BELLADONNA <span>PORTAL</span></div>
+    <div class="venue-name-label" id="venue-name-label">Loading venue…</div>
+  </div>
+  <div class="header-right">
+    <button class="switch-loc-btn" id="switch-loc-btn" onclick="goToLogin()" style="display:none;">Switch Location</button>
+    <button class="signout-btn" onclick="signOutAndLeave()">Sign Out</button>
+  </div>
+</div>
+
+<div class="tabs-wrap">
+  <div class="tabs">
+    <button class="tab active" data-view="view-contract" onclick="switchView('view-contract')">Contract</button>
+    <button class="tab" data-view="view-feedback" onclick="switchView('view-feedback')">Feedback</button>
+    <button class="tab" data-view="view-concurrent" onclick="switchView('view-concurrent')">Concurrent Event</button>
+    <button class="tab" data-view="view-queue" onclick="switchView('view-queue')">Category Queue</button>
+    <button class="tab" data-view="view-collab" onclick="switchView('view-collab')">Collaborators</button>
+  </div>
+</div>
+
+<div class="page">
+
+  <!-- ═══ CONTRACT ═══ -->
+  <div class="view active" id="view-contract">
+    <div class="page-title">Your Contract</div>
+    <div class="page-sub">A read-only copy of the agreement on file, for reference.</div>
+    <div class="caveat">Some minor tweaks and changes may have been made since your version was signed. This copy is for quick reference — your original signed agreement is the governing document.</div>
+    <div class="card">
+      <div class="contract-body" id="contract-body">Loading…</div>
+      <div class="contract-updated" id="contract-updated"></div>
+    </div>
+  </div>
+
+  <!-- ═══ FEEDBACK ═══ -->
+  <div class="view" id="view-feedback">
+    <div class="page-title">Feedback</div>
+    <div class="page-sub">Pick what this is about — each goes straight to the Belladonna team.</div>
+    <div class="feedback-types" id="fb-types">
+      <div class="fb-type-btn active" data-type="question" onclick="selectFbType('question')">
+        <div class="fb-type-title">Question</div>
+        <div class="fb-type-desc">Something you need to know from us</div>
+      </div>
+      <div class="fb-type-btn" data-type="comment" onclick="selectFbType('comment')">
+        <div class="fb-type-title">Comment</div>
+        <div class="fb-type-desc">General thoughts or observations</div>
+      </div>
+      <div class="fb-type-btn" data-type="complaint" onclick="selectFbType('complaint')">
+        <div class="fb-type-title">Complaint</div>
+        <div class="fb-type-desc">Something that needs fixing</div>
+      </div>
+      <div class="fb-type-btn" data-type="categoryRequest" onclick="selectFbType('categoryRequest')">
+        <div class="fb-type-title">Category Request</div>
+        <div class="fb-type-desc">A theme or category you'd like to see</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="form-group">
+        <label>Your Name</label>
+        <input type="text" id="fb-name">
+      </div>
+      <div class="form-group">
+        <label>Email <span style="color:var(--text-dim);font-weight:400;text-transform:none;letter-spacing:0;">(so we can follow up)</span></label>
+        <input type="email" id="fb-email">
+      </div>
+      <div class="form-group">
+        <label id="fb-message-label">Your Question</label>
+        <textarea id="fb-message" placeholder="Tell us what's on your mind…"></textarea>
+      </div>
+      <button class="btn" id="fb-submit-btn" onclick="submitFeedback()">Send</button>
+      <div class="msg" id="fb-msg"></div>
+    </div>
+  </div>
+
+  <!-- ═══ CONCURRENT EVENT ═══ -->
+  <div class="view" id="view-concurrent">
+    <div class="page-title">Concurrent Event Notice</div>
+    <div class="page-sub">Let us know about anything at your venue that will affect our gig — a game day party running late, another booking that overlaps, or a cancellation.</div>
+    <div class="card">
+      <div class="form-group">
+        <label>Date of the Event</label>
+        <input type="date" id="ce-date">
+      </div>
+      <label style="margin-bottom:0.6rem;">How Does This Affect Our Gig?</label>
+      <div class="impact-choice">
+        <div class="impact-opt selected" data-impact="delay" onclick="selectImpact('delay')">Delayed Start</div>
+        <div class="impact-opt" data-impact="cancel" onclick="selectImpact('cancel')">Cancels the Gig</div>
+      </div>
+      <div class="form-group" id="ce-newtime-group">
+        <label>New Start Time</label>
+        <input type="time" id="ce-newtime">
+      </div>
+      <div class="form-group">
+        <label>Tell Us What's Going On</label>
+        <textarea id="ce-description" placeholder="e.g. We have a Game Day Party 2-8pm, so trivia will need to start an hour late this week."></textarea>
+      </div>
+      <button class="btn" id="ce-submit-btn" onclick="submitConcurrentEvent()">Send Notice</button>
+      <div class="msg" id="ce-msg"></div>
+    </div>
+  </div>
+
+  <!-- ═══ CATEGORY QUEUE ═══ -->
+  <div class="view" id="view-queue">
+    <div class="page-title">Category Queue</div>
+    <div class="page-sub">See and reorder what's scheduled at your venue.</div>
+    <div class="card">
+      <div class="queue-soon">
+        <div class="queue-soon-icon">🗓️</div>
+        <div style="font-family:'Cinzel',serif;color:var(--gold-light);letter-spacing:0.05em;margin-bottom:0.5rem;">Coming Soon</div>
+        <div>This is the next piece being built — a drag-to-reorder queue of your upcoming nights, linked live to the actual Trivia and Bingo schedules.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ COLLABORATORS ═══ -->
+  <div class="view" id="view-collab">
+    <div class="page-title">Collaborators</div>
+    <div class="page-sub">Local businesses and services we know and trust.</div>
+    <div class="collab-grid" id="collab-grid">
+      <div class="empty">Loading…</div>
+    </div>
+  </div>
+
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import {
+  getFirestore, doc, getDoc, collection, addDoc, getDocs, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCIfAE1JGHsUGzzVH2pz1Vyj5b5OhA0tDQ",
+  authDomain: "belladonna-hq.firebaseapp.com",
+  projectId: "belladonna-hq",
+  storageBucket: "belladonna-hq.firebasestorage.app",
+  messagingSenderId: "1021873183587",
+  appId: "1:1021873183587:web:def283bb7b5ca48e4f9156"
+};
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+// ═══════════════════════════════════════════════
+// DATA MODEL ADDED BY THIS PAGE
+// ═══════════════════════════════════════════════
+// contracts/current          -> { html/text, updatedAt }
+// venueFeedback/{autoId}      -> { type, venueId, venueName, name, email, message, status:'new', createdAt }
+// concurrentEventNotices/{id} -> { venueId, venueName, date, impactType, newTime, description, status:'new', createdAt }
+// collaborators/{autoId}      -> { name, description, referralCode, link }
+//
+// NOTE ON EMAIL: submitting feedback/notices here only writes to Firestore.
+// Actually emailing the team on new-doc requires a Cloud Function (or the
+// "Trigger Email" Firebase Extension) watching these collections — that's a
+// Firebase Console step, not something this static page can do on its own.
+
+let venueId = null;
+let venueName = '';
+let selectedFbType = 'question';
+let selectedImpact = 'delay';
+
+const params = new URLSearchParams(window.location.search);
+venueId = params.get('venue') || localStorage.getItem('belladonnaVenueId');
+venueName = localStorage.getItem('belladonnaVenueName') || '';
+
+function goToLogin() {
+  window.location.href = 'venue-login.html?return=venue-portal.html';
+}
+window.goToLogin = goToLogin;
+window.signOutAndLeave = async function() {
+  await signOut(auth);
+  localStorage.removeItem('belladonnaVenueId');
+  localStorage.removeItem('belladonnaVenueName');
+  goToLogin();
+};
+
+onAuthStateChanged(auth, user => {
+  if (!user) { goToLogin(); return; }
+  if (!venueId) { goToLogin(); return; }
+  document.getElementById('venue-name-label').textContent = venueName || 'Your Venue';
+  init();
+});
+
+function switchView(id) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.view === id));
+}
+window.switchView = switchView;
+
+function esc(str) {
+  return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+async function init() {
+  loadContract();
+  loadCollaborators();
+}
+
+// ── CONTRACT ──
+async function loadContract() {
+  try {
+    const snap = await getDoc(doc(db, 'contracts', 'current'));
+    if (snap.exists()) {
+      const d = snap.data();
+      document.getElementById('contract-body').textContent = d.text || d.html || '(No contract text on file yet.)';
+      if (d.updatedAt && d.updatedAt.toDate) {
+        document.getElementById('contract-updated').textContent = 'Last updated ' + d.updatedAt.toDate().toLocaleDateString();
+      }
+    } else {
+      document.getElementById('contract-body').textContent = 'No contract has been posted yet — check back soon, or reach out to Belladonna directly.';
+    }
+  } catch (e) {
+    document.getElementById('contract-body').textContent = 'Could not load the contract right now.';
+  }
+}
+
+// ── FEEDBACK ──
+const fbLabels = {
+  question: { label: 'Your Question', placeholder: "What do you need to know?" },
+  comment: { label: 'Your Comment', placeholder: "Share your thoughts…" },
+  complaint: { label: 'What Needs Fixing', placeholder: "Tell us what happened…" },
+  categoryRequest: { label: 'The Category You Want', placeholder: "e.g. an 80s rock night, a Disney bingo theme…" }
+};
+window.selectFbType = function(type) {
+  selectedFbType = type;
+  document.querySelectorAll('.fb-type-btn').forEach(b => b.classList.toggle('active', b.dataset.type === type));
+  document.getElementById('fb-message-label').textContent = fbLabels[type].label;
+  document.getElementById('fb-message').placeholder = fbLabels[type].placeholder;
+};
+window.submitFeedback = async function() {
+  const name = document.getElementById('fb-name').value.trim();
+  const email = document.getElementById('fb-email').value.trim();
+  const message = document.getElementById('fb-message').value.trim();
+  const msgEl = document.getElementById('fb-msg');
+  if (!message) { msgEl.textContent = 'Please write a message before sending.'; msgEl.className = 'msg error'; return; }
+
+  const btn = document.getElementById('fb-submit-btn');
+  btn.disabled = true; btn.textContent = 'Sending…';
+  try {
+    await addDoc(collection(db, 'venueFeedback'), {
+      type: selectedFbType, venueId, venueName, name, email, message,
+      status: 'new', createdAt: serverTimestamp()
+    });
+    msgEl.textContent = 'Sent — thank you!';
+    msgEl.className = 'msg success';
+    document.getElementById('fb-message').value = '';
+  } catch (e) {
+    msgEl.textContent = 'Could not send: ' + e.message;
+    msgEl.className = 'msg error';
+  }
+  btn.disabled = false; btn.textContent = 'Send';
+};
+
+// ── CONCURRENT EVENT ──
+window.selectImpact = function(impact) {
+  selectedImpact = impact;
+  document.querySelectorAll('.impact-opt').forEach(o => o.classList.toggle('selected', o.dataset.impact === impact));
+  document.getElementById('ce-newtime-group').style.display = impact === 'delay' ? 'block' : 'none';
+};
+window.submitConcurrentEvent = async function() {
+  const date = document.getElementById('ce-date').value;
+  const newTime = document.getElementById('ce-newtime').value;
+  const description = document.getElementById('ce-description').value.trim();
+  const msgEl = document.getElementById('ce-msg');
+  if (!date || !description) { msgEl.textContent = 'Please fill in the date and a short description.'; msgEl.className = 'msg error'; return; }
+
+  const btn = document.getElementById('ce-submit-btn');
+  btn.disabled = true; btn.textContent = 'Sending…';
+  try {
+    await addDoc(collection(db, 'concurrentEventNotices'), {
+      venueId, venueName, date, impactType: selectedImpact,
+      newTime: selectedImpact === 'delay' ? newTime : null,
+      description, status: 'new', createdAt: serverTimestamp()
+    });
+    msgEl.textContent = 'Notice sent — thank you for the heads up!';
+    msgEl.className = 'msg success';
+    document.getElementById('ce-description').value = '';
+  } catch (e) {
+    msgEl.textContent = 'Could not send: ' + e.message;
+    msgEl.className = 'msg error';
+  }
+  btn.disabled = false; btn.textContent = 'Send Notice';
+};
+
+// ── COLLABORATORS ──
+async function loadCollaborators() {
+  const grid = document.getElementById('collab-grid');
+  try {
+    const snap = await getDocs(collection(db, 'collaborators'));
+    if (snap.empty) { grid.innerHTML = '<div class="empty">No collaborators listed yet.</div>'; return; }
+    grid.innerHTML = snap.docs.map(d => {
+      const c = d.data();
+      return `<div class="collab-card">
+        <div class="collab-name">${esc(c.name)}</div>
+        <div class="collab-desc">${esc(c.description || '')}</div>
+        ${c.referralCode ? `<div class="collab-code">Code: ${esc(c.referralCode)}</div>` : ''}
+        ${c.link ? `<div style="margin-top:0.5rem;"><a href="${esc(c.link)}" target="_blank" style="color:var(--gold-dim);font-size:0.85rem;">${esc(c.link)}</a></div>` : ''}
+      </div>`;
+    }).join('');
+  } catch (e) {
+    grid.innerHTML = '<div class="empty">Could not load collaborators.</div>';
+  }
+}
+</script>
+</body>
+</html>

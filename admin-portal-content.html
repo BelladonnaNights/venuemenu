@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portal Content — Belladonna Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --gold: #C9A84C; --gold-light: #E8C97A; --gold-dim: #8B6B2A;
+    --ink: #0E0C0A; --surface: #16130F; --surface2: #1D1912;
+    --border: rgba(201,168,76,0.18); --border-strong: rgba(201,168,76,0.4);
+    --text: #E8DFC8; --text-muted: #9E8E6A; --text-dim: #6A5E42;
+    --success: #7DC996; --danger: #C0654F;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--ink); color: var(--text); font-family: 'Crimson Text', serif; min-height: 100vh; padding: 2rem; }
+  h1 { font-family: 'Cinzel', serif; font-size: 1.4rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--gold); margin-bottom: 0.3rem; }
+  .sub { color: var(--text-dim); font-size: 0.9rem; margin-bottom: 1.75rem; max-width: 720px; line-height: 1.6; }
+  .section-title {
+    font-family: 'Cinzel', serif; font-size: 0.72rem; letter-spacing: 0.15em; text-transform: uppercase;
+    color: var(--gold); margin-bottom: 0.75rem; display: flex; align-items: center; gap: 10px;
+  }
+  .section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1.25rem; margin-bottom: 2rem; }
+  label { display: block; font-family: 'Cinzel', serif; font-size: 0.62rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.4rem; }
+  input, textarea { width: 100%; background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: 5px; padding: 0.65rem 0.85rem; font-family: 'Crimson Text', serif; font-size: 15px; outline: none; }
+  textarea { min-height: 240px; resize: vertical; line-height: 1.5; }
+  .form-group { margin-bottom: 1rem; }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.9rem; }
+  .btn { padding: 0.55rem 1.2rem; border-radius: 4px; border: 1px solid var(--border-strong); background: rgba(201,168,76,0.1); color: var(--gold); font-family: 'Cinzel', serif; font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer; }
+  .btn:hover { background: rgba(201,168,76,0.18); }
+  .btn-danger { border-color: rgba(139,58,42,0.5); color: var(--danger); background: rgba(139,58,42,0.1); }
+  .btn-sm { padding: 0.35rem 0.8rem; font-size: 0.62rem; }
+  .collab-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 0.8rem 1rem; margin-bottom: 0.6rem; }
+  .collab-name { font-family: 'Cinzel', serif; font-size: 0.9rem; color: var(--gold-light); }
+  .collab-meta { font-size: 0.78rem; color: var(--text-dim); }
+  .toast-container { position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 999; display: flex; flex-direction: column; gap: 8px; }
+  .toast { background: var(--surface2); border: 1px solid var(--border-strong); border-radius: 5px; padding: 0.7rem 1.1rem; font-size: 0.88rem; }
+  .toast.success { border-color: rgba(125,201,150,0.5); color: var(--success); }
+  .toast.error { border-color: rgba(192,101,79,0.5); color: var(--danger); }
+  .empty { color: var(--text-dim); font-style: italic; padding: 1rem 0; }
+</style>
+</head>
+<body>
+
+<h1>Portal Content</h1>
+<div class="sub">The contract text and collaborators directory shown to venues in the Venue Portal.</div>
+
+<div class="section-title">Contract Text</div>
+<div class="card">
+  <div class="form-group">
+    <label>Text shown to venues <span style="color:var(--text-dim);font-weight:400;text-transform:none;letter-spacing:0;">— the "minor tweaks may have been made" caveat is added automatically, don't repeat it here</span></label>
+    <textarea id="contract-text" placeholder="Paste the current contract text here…"></textarea>
+  </div>
+  <button class="btn" onclick="saveContract()">Save Contract</button>
+</div>
+
+<div class="section-title">Collaborators</div>
+<div class="card">
+  <div class="form-grid">
+    <div class="form-group">
+      <label>Name</label>
+      <input type="text" id="c-name" placeholder="e.g. Line Dancing Lady">
+    </div>
+    <div class="form-group">
+      <label>Referral Code</label>
+      <input type="text" id="c-code" placeholder="optional">
+    </div>
+  </div>
+  <div class="form-group">
+    <label>Description</label>
+    <input type="text" id="c-desc" placeholder="What they do, why we recommend them">
+  </div>
+  <div class="form-group">
+    <label>Link</label>
+    <input type="text" id="c-link" placeholder="optional — website, booking page, etc.">
+  </div>
+  <button class="btn" onclick="addCollaborator()">Add Collaborator</button>
+</div>
+
+<div id="collab-list"></div>
+
+<div class="toast-container" id="toast-container"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import {
+  getFirestore, doc, getDoc, setDoc, collection, getDocs, addDoc, deleteDoc, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCIfAE1JGHsUGzzVH2pz1Vyj5b5OhA0tDQ",
+  authDomain: "belladonna-hq.firebaseapp.com",
+  projectId: "belladonna-hq",
+  storageBucket: "belladonna-hq.firebasestorage.app",
+  messagingSenderId: "1021873183587",
+  appId: "1:1021873183587:web:def283bb7b5ca48e4f9156"
+};
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+function esc(str) {
+  return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function toast(msg, type) {
+  const el = document.createElement('div');
+  el.className = 'toast ' + (type || '');
+  el.textContent = msg;
+  document.getElementById('toast-container').appendChild(el);
+  setTimeout(() => el.remove(), 3000);
+}
+
+async function loadContract() {
+  const snap = await getDoc(doc(db, 'contracts', 'current'));
+  if (snap.exists()) document.getElementById('contract-text').value = snap.data().text || '';
+}
+window.saveContract = async function() {
+  try {
+    await setDoc(doc(db, 'contracts', 'current'), {
+      text: document.getElementById('contract-text').value,
+      updatedAt: serverTimestamp()
+    }, { merge: true });
+    toast('Contract saved.', 'success');
+  } catch (e) {
+    toast('Save failed: ' + e.message, 'error');
+  }
+};
+
+async function loadCollaborators() {
+  const snap = await getDocs(collection(db, 'collaborators'));
+  const list = document.getElementById('collab-list');
+  if (snap.empty) { list.innerHTML = '<div class="empty">No collaborators yet.</div>'; return; }
+  list.innerHTML = snap.docs.map(d => {
+    const c = d.data();
+    return `<div class="collab-row">
+      <div>
+        <div class="collab-name">${esc(c.name)}</div>
+        <div class="collab-meta">${esc(c.description || '')}${c.referralCode ? ' · Code: ' + esc(c.referralCode) : ''}</div>
+      </div>
+      <button class="btn btn-danger btn-sm" onclick="deleteCollaborator('${d.id}')">Remove</button>
+    </div>`;
+  }).join('');
+}
+window.addCollaborator = async function() {
+  const name = document.getElementById('c-name').value.trim();
+  if (!name) { toast('Give it a name.', 'error'); return; }
+  try {
+    await addDoc(collection(db, 'collaborators'), {
+      name,
+      description: document.getElementById('c-desc').value.trim(),
+      referralCode: document.getElementById('c-code').value.trim(),
+      link: document.getElementById('c-link').value.trim(),
+      createdAt: serverTimestamp()
+    });
+    document.getElementById('c-name').value = '';
+    document.getElementById('c-desc').value = '';
+    document.getElementById('c-code').value = '';
+    document.getElementById('c-link').value = '';
+    toast('Added.', 'success');
+    loadCollaborators();
+  } catch (e) {
+    toast('Could not add: ' + e.message, 'error');
+  }
+};
+window.deleteCollaborator = async function(id) {
+  if (!confirm('Remove this collaborator?')) return;
+  try {
+    await deleteDoc(doc(db, 'collaborators', id));
+    toast('Removed.', 'success');
+    loadCollaborators();
+  } catch (e) {
+    toast('Could not remove: ' + e.message, 'error');
+  }
+};
+
+loadContract();
+loadCollaborators();
+</script>
+</body>
+</html>
