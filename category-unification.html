@@ -115,6 +115,10 @@
   <div style="margin-top:0.6rem;"><button class="btn" onclick="backfillUnifiedFlags()">Fix: Mark Already-Migrated Categories as Unified</button></div>
 </div>
 
+<div class="warn">⚠ Step 2 used to force "Show this category on the Venue Menu" ON for every migrated listing, even ones that were never actually published on the old Venue Menu. Click this once to correct it — it checks each migrated category against what its old listing actually said and unchecks the ones that were never really published. Safe to click any time; it only ever turns show off, never on, and never touches a category you've edited by hand since.
+  <div style="margin-top:0.6rem;"><button class="btn" onclick="fixAutoPublishedShow()">Fix: Un-check Wrongly Auto-Published Categories</button></div>
+</div>
+
 <!-- ═══ STEP 1: THEMES → TRIVIA/BINGO CATEGORIES ═══ -->
 <div class="step">
   <div class="step-header"><div class="step-num">1</div><div class="step-title">Match Planner Themes to Real Categories</div></div>
@@ -297,6 +301,44 @@ window.backfillUnifiedFlags = async function() {
   try {
     await update(ref(rtdb), updates);
     toast(`Marked ${count} already-migrated categories as unified.`, 'success');
+  } catch (e) {
+    toast('Failed: ' + e.message, 'error');
+  }
+};
+
+// One-click fix for a past bug: every Venue Menu listing migrated through
+// Step 2 got venueMenu.show forced to true, whether or not that listing was
+// actually published on the old Venue Menu. That's the opposite of "show
+// this category on the Venue Menu should be UNCHECKED unless I want it to
+// show" — so this walks every already-migrated category, checks what its
+// OLD venueMenuCategories doc actually says (published / publishedTabs),
+// and turns show back off for anything that was never really published.
+// Never touches anything a category has been given directly in Trivia/Bingo
+// Admin since — only ones still carrying migratedFromVmId untouched.
+window.fixAutoPublishedShow = async function() {
+  const updates = {};
+  let fixed = 0, checked = 0;
+  vmCats.forEach(vm => {
+    if (!vm._migratedTo) return;
+    const [coll, id] = vm._migratedTo.split(':');
+    if (!coll || !id) return;
+    const pool = coll === 'trivia' ? triviaCats : bingoCats;
+    const target = pool[id];
+    if (!target || !target.venueMenu) return;
+    if (target.venueMenu.migratedFromVmId !== vm.id) return; // only ones this tool set, not since hand-edited
+    checked++;
+    const wasActuallyPublished = !!(vm.published || (Array.isArray(vm.publishedTabs) && vm.publishedTabs.length > 0));
+    if (target.venueMenu.show === true && !wasActuallyPublished) {
+      const path = coll === 'trivia' ? 'trivia/categories' : 'bingo/landing/categories';
+      updates[`${path}/${id}/venueMenu/show`] = false;
+      fixed++;
+    }
+  });
+  if (!checked) { toast('Nothing to check — no migrated Venue Menu categories found.', 'error'); return; }
+  if (!fixed) { toast(`Checked ${checked} migrated categories — none were wrongly auto-published.`, 'success'); return; }
+  try {
+    await update(ref(rtdb), updates);
+    toast(`Un-published ${fixed} of ${checked} migrated categories that were never actually published — they'll show unchecked in Trivia/Bingo Admin now.`, 'success');
   } catch (e) {
     toast('Failed: ' + e.message, 'error');
   }
@@ -587,9 +629,17 @@ function renderVmRows() {
 // shape (description/publishedTabs/shows/position, no "show" flag at all),
 // so even a fully-migrated category could never appear as a live Venue
 // Menu listing — nothing was ever setting venueMenu.show to true.
+//
+// IMPORTANT: show is only turned on when the OLD Firestore doc was itself
+// actually published (published / publishedTabs on the old venueMenuCategories
+// doc). Migrating an old listing into the unified record is not the same as
+// deciding to publish it — a category she'd built out but never published
+// should land here still unchecked, matching "unchecked unless I want it to
+// show" in Trivia/Bingo Admin. Previously this always forced show:true,
+// which is why categories were showing up published that she never checked.
 function vmFieldsFromDoc(vm) {
   return {
-    show: true,
+    show: !!(vm.published || (Array.isArray(vm.publishedTabs) && vm.publishedTabs.length > 0)),
     description: vm.theme || vm.desc || '',
     shows: vm.shows || [],
     bannerUrl: vm.bannerData || vm.bannerUrl || '',
