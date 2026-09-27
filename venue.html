@@ -1641,7 +1641,7 @@ function mapLiveCategory(id, c, kind) {
     _id: (kind==='bingo'?'bingo:':'trivia:') + id,
     name: c.name || c.title || '(untitled)',
     type: kind === 'bingo' ? 'Bingo' : 'Trivia',
-    theme: '',
+    theme: vm.description || '',
     published: true,
     publishedTabs: [],
     shows: Array.isArray(vm.shows) ? vm.shows : [],
