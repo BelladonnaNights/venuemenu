@@ -1481,6 +1481,25 @@
   </div>
 </div>
 
+<!-- ═══ LIVE CATEGORY INFO (read-only — this is the same doc Trivia/Bingo
+     Admin owns; this just shows where else it's showing) ═══ -->
+<div class="modal-backdrop" id="live-cat-info-modal">
+  <div class="modal" style="max-width:420px;">
+    <div class="modal-header">
+      <span class="modal-title" id="live-cat-info-title">Category</span>
+      <button class="modal-close" onclick="closeLiveCategoryInfo()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-label" style="margin-bottom:0.5rem;">Where This Shows</div>
+      <div id="live-cat-info-list" style="display:flex;flex-direction:column;gap:6px;font-size:0.85rem;color:var(--text-muted);"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeLiveCategoryInfo()">Close</button>
+      <button class="btn" id="live-cat-info-edit-btn" onclick="editLiveCategory()">Edit in Trivia Admin</button>
+    </div>
+  </div>
+</div>
+
 <!-- ═══ NEW/EDIT NIGHT MODAL ═══ -->
 <div class="modal-backdrop" id="night-modal">
   <div class="modal" style="max-width:800px;">
@@ -1829,7 +1848,7 @@ import {
   query, orderBy, onSnapshot
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { getDatabase, ref, get, push, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
 // ═══════════════════════════════════════════════
 // FIREBASE INIT
@@ -1902,6 +1921,7 @@ function mapLiveCategory(id, c, kind){
   return {
     _liveId: id,
     _liveKind: kind, // 'trivia' | 'bingo'
+    _rawType: c.type || null, // the actual Trivia Admin type field ('music'|'trivia'|…), for the subtype label — `type` below is just the generic Trivia/Bingo pill
     name: c.name || c.title || '(untitled)',
     type: kind === 'bingo' ? 'Bingo' : 'Trivia',
     theme: '',
@@ -2366,12 +2386,40 @@ function liveCategoryCardHTML(cat) {
       <span class="badge badge-type">${esc(cat.type)}</span>
     </div>
     <div class="category-card-actions">
-      <button class="btn btn-sm btn-ghost" onclick="editLiveCategory('${cat._liveKind}')">Edit in ${ownerLabel}</button>
+      <button class="btn btn-sm btn-ghost" onclick="openLiveCategoryInfo('${cat._liveKind}','${cat._liveId}')">Where This Shows</button>
     </div>
   </div>`;
 }
-function editLiveCategory(kind) {
-  toast(`This is the same category ${kind==='bingo'?'Bingo':'Trivia'} Admin uses — edit its Venue Menu fields there and it updates here too.`);
+// Read-only cross-app reference for a live (Trivia/Bingo-owned) category —
+// this doc IS the category everywhere, so this just tells you which other
+// apps are already reading it and how it labels itself there. Never
+// writes anything; derived purely from fields already on the doc.
+let liveCatInfoKind = null;
+function triviaSubtypeLabel(cat) {
+  return (cat && (cat._rawType === 'music' || cat.plannerTier === 'music-bingo' || cat.plannerTier === 'coordinating-music'))
+    ? 'Music Trivia' : 'Evergreen Trivia';
+}
+function openLiveCategoryInfo(kind, liveId) {
+  const pool = kind === 'bingo' ? liveBingoCats : liveTriviaCats;
+  const cat = pool.find(c => c._liveId === liveId);
+  if (!cat) return;
+  liveCatInfoKind = kind;
+  const ownerLabel = kind === 'bingo' ? 'Bingo Admin' : 'Trivia Admin';
+  const subtype = kind === 'bingo' ? 'Bingo' : triviaSubtypeLabel(cat);
+  document.getElementById('live-cat-info-title').textContent = cat.name;
+  document.getElementById('live-cat-info-list').innerHTML = [
+    `Planner — as ${subtype}`,
+    `${ownerLabel} — as ${subtype}`,
+    `Venue Menu (public) — as a ${kind === 'bingo' ? 'Bingo' : 'Trivia'} category`
+  ].map(r => '<div>&#8226; ' + esc(r) + '</div>').join('');
+  document.getElementById('live-cat-info-edit-btn').textContent = 'Edit in ' + ownerLabel;
+  document.getElementById('live-cat-info-modal').classList.add('open');
+}
+function closeLiveCategoryInfo() {
+  document.getElementById('live-cat-info-modal').classList.remove('open');
+}
+function editLiveCategory() {
+  toast(`This is the same category ${liveCatInfoKind==='bingo'?'Bingo':'Trivia'} Admin uses — edit it there and it updates here too.`);
 }
 
 // ═══════════════════════════════════════════════
@@ -2551,14 +2599,52 @@ function handleCatMiniUrl(url) {
   setCatMiniPreview(trimmed || null);
 }
 
+// A brand-new (not edit) category whose Type is Trivia or Bingo doesn't get
+// its own separate Firestore doc here — it gets created directly as a real,
+// full category in trivia/categories or bingo/landing/categories (the same
+// place Trivia Admin / Bingo Admin / Planner all read from), with
+// venueMenu.show already turned on since creating it here means you want it
+// published. That's the one gap that made Venue-Menu-created categories not
+// show up anywhere else; this closes it. Editing an existing Firestore-only
+// category (from before this fix) still goes through the old path — those
+// get folded in by running category-unification.html on them.
+async function createUnifiedFromVenueMenu(name, typeRaw, theme, shows, notes, bannerData) {
+  const isBingoType = typeRaw.toLowerCase().includes('bingo');
+  const path = isBingoType ? 'bingo/landing/categories' : 'trivia/categories';
+  const newRef = ref(rtdb, path);
+  const newId = push(newRef).key;
+  const venueMenu = { show: true, description: theme || notes || '', shows, bannerUrl: bannerData || '' };
+  const data = isBingoType
+    ? { title: name, genre: '', status: 'coming', createdAt: Date.now(), unified: true, venueMenu }
+    : { name, type: 'trivia', notes: notes || 'Created from the Venue Menu — add sheets/images/music in Trivia Admin.', createdAt: Date.now(), unified: true, venueMenu };
+  await set(ref(rtdb, path + '/' + newId), data);
+  return { id: newId, kind: isBingoType ? 'bingo' : 'trivia' };
+}
+
 async function saveCategoryFromModal() {
   const name = document.getElementById('cat-name').value.trim();
   if (!name) { toast('Category name is required', 'error'); return; }
 
   const showsRaw = document.getElementById('cat-shows').value;
   const shows = showsRaw.split(/[\n|]/).map(s => s.trim()).filter(Boolean);
+  const typeVal = document.getElementById('cat-type').value.trim();
 
   const isEdit = editingCatIndex >= 0;
+  if (!isEdit && /\b(trivia|bingo)\b/i.test(typeVal)) {
+    try {
+      const themeVal = document.getElementById('cat-theme').value.trim();
+      const notesVal = document.getElementById('cat-notes').value.trim();
+      const result = await createUnifiedFromVenueMenu(name, typeVal, themeVal, shows, notesVal, catBannerData);
+      toast(`Category added — created directly in ${result.kind === 'bingo' ? 'Bingo' : 'Trivia'} Admin's library, already showing on the Venue Menu.`);
+      closeCatModal();
+      await loadLiveCategories();
+      renderLibrary();
+    } catch (e) {
+      toast(e.message || 'Save failed — check connection', 'error');
+    }
+    return;
+  }
+
   const existing = isEdit ? categories[editingCatIndex] : {};
   const cat = {
     ...(existing._id ? { _id: existing._id } : {}),
