@@ -2410,15 +2410,13 @@ function liveCategoryCardHTML(cat) {
   const ownerLabel = cat._liveKind === 'bingo' ? 'Bingo Admin' : 'Trivia Admin';
   return `<div class="category-card" style="${cat.bannerData ? 'padding-top:0;' : ''}">
     ${bannerHtml}
-    <div class="category-card-header">
-      <div class="category-card-name">${esc(cat.name)}</div>
-      <span style="font-family:'Cinzel',serif;font-size:0.55rem;letter-spacing:0.1em;text-transform:uppercase;background:rgba(201,168,76,0.15);border:1px solid rgba(201,168,76,0.4);color:var(--gold);padding:2px 7px;border-radius:3px;white-space:nowrap;flex-shrink:0;">Live · ${ownerLabel}</span>
-    </div>
-    <div style="margin-bottom:0.5rem; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+    <div class="category-card-name" style="margin-bottom:0.35rem;">${esc(cat.name)}</div>
+    <div style="display:flex; flex-direction:column; align-items:flex-start; gap:5px; margin-bottom:0.5rem;">
+      <span style="font-family:'Cinzel',serif;font-size:0.55rem;letter-spacing:0.1em;text-transform:uppercase;background:rgba(201,168,76,0.15);border:1px solid rgba(201,168,76,0.4);color:var(--gold);padding:2px 7px;border-radius:3px;white-space:nowrap;">Live · ${ownerLabel}</span>
       <span class="badge badge-type">${esc(cat.type)}</span>
-      ${cat.venueMenuShow
-        ? `<span style="font-family:'Cinzel',serif;font-size:0.55rem;letter-spacing:0.1em;text-transform:uppercase;background:rgba(42,107,58,0.2);border:1px solid rgba(42,107,58,0.5);color:#5AC47A;padding:2px 7px;border-radius:3px;white-space:nowrap;">Published (Public)</span>`
-        : `<span style="font-family:'Cinzel',serif;font-size:0.55rem;letter-spacing:0.1em;text-transform:uppercase;background:rgba(120,120,120,0.15);border:1px solid rgba(150,150,150,0.35);color:var(--text-dim);padding:2px 7px;border-radius:3px;white-space:nowrap;">Not Published</span>`}
+      ${!cat.venueMenuShow
+        ? `<span style="font-family:'Cinzel',serif;font-size:0.55rem;letter-spacing:0.1em;text-transform:uppercase;background:rgba(120,120,120,0.15);border:1px solid rgba(150,150,150,0.35);color:var(--text-dim);padding:2px 7px;border-radius:3px;white-space:nowrap;">Not Published</span>`
+        : ''}
     </div>
     ${cat.description ? `<div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:0.6rem;line-height:1.4;">${esc(cat.description)}</div>` : ''}
     <div class="category-card-actions">
@@ -2447,11 +2445,9 @@ function openLiveCategoryInfo(kind, liveId) {
   const ownerLabel = kind === 'bingo' ? 'Bingo Admin' : 'Trivia Admin';
   const subtype = kind === 'bingo' ? 'Bingo' : triviaSubtypeLabel(cat);
   document.getElementById('live-cat-info-title').textContent = cat.name;
-  document.getElementById('live-cat-info-list').innerHTML = [
-    `Planner — as ${subtype}`,
-    `${ownerLabel} — as ${subtype}`,
-    `Venue Menu (public) — as a ${kind === 'bingo' ? 'Bingo' : 'Trivia'} category`
-  ].map(r => '<div>&#8226; ' + esc(r) + '</div>').join('');
+  const whereRows = [`Planner — as ${subtype}`, `${ownerLabel} — as ${subtype}`];
+  if (cat.venueMenuShow) whereRows.push(`Venue Menu (public) — as a ${kind === 'bingo' ? 'Bingo' : 'Trivia'} category`);
+  document.getElementById('live-cat-info-list').innerHTML = whereRows.map(r => '<div>&#8226; ' + esc(r) + '</div>').join('');
   document.getElementById('live-vm-owner-label').textContent = ownerLabel;
   document.getElementById('live-vm-show').checked = !!cat.venueMenuShow;
   document.getElementById('live-vm-description').value = cat.description || '';
@@ -5542,6 +5538,7 @@ Object.assign(window, {
   toggleSortAZ, setTriviaTierFilter, renderBingo, renderNights,
   initBattlesPage, saveBattlesPage, battlesHeroPreview, battlesAddParagraph, battlesUpdateParagraph, battlesRemoveParagraph, battlesMoveParaUp, battlesMoveParaDown,
   openAddCategoryModal, editCategory, deleteCategory, deleteCategoryFromModal,
+  openLiveCategoryInfo, closeLiveCategoryInfo, saveLiveCategoryEdit,
   toggleLibTypeFilter, clearLibTypeFilters,
   openSeasonalModal, closeSeasonalModal, saveSeasonalEvent, deleteSeasonalEvent, setSeasonalDateType, renderSeasonalAdmin, seToggleAlwaysOn,
   switchBookingsTab, adminCalNav, adminCalToggle, setCalMode, saveAvailability, setRequestFilter, updateRequestStatus, deleteRequest, initBookingsTab,
