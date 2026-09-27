@@ -941,7 +941,7 @@
       <button class="sidebar-toggle-btn" id="lib-filter-toggle" onclick="toggleSidebar('library')">⧉ Filters</button>
       <div style="flex:1; position:relative;">
         <span style="position:absolute;left:0.75rem;top:50%;transform:translateY(-50%);color:var(--text-dim);pointer-events:none;">🔍</span>
-        <input type="search" id="search-input" placeholder="Search shows, artists, titles, themes…" oninput="runSearch()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:4px;padding:0.6rem 0.9rem 0.6rem 2.4rem;font-family:'Crimson Text',serif;font-size:16px;width:100%;outline:none;">
+        <input type="search" autocomplete="off" id="search-input" placeholder="Search shows, artists, titles, themes…" oninput="runSearch()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:4px;padding:0.6rem 0.9rem 0.6rem 2.4rem;font-family:'Crimson Text',serif;font-size:16px;width:100%;outline:none;">
       </div>
       <div id="lib-type-pills" style="display:flex;gap:5px;flex-wrap:wrap;align-items:center;"></div>
       <button class="btn btn-sm btn-ghost" onclick="toggleSortAZ('library')" id="library-az-btn">A–Z</button>
@@ -966,7 +966,7 @@
         <button class="sidebar-toggle-btn" id="nights-filter-toggle" onclick="toggleSidebar('nights')">⧉ Filters</button>
         <div style="flex:1; position:relative;">
           <span style="position:absolute;left:0.75rem;top:50%;transform:translateY(-50%);color:var(--text-dim);pointer-events:none;">🔍</span>
-          <input type="search" id="night-search-input" placeholder="Search themed nights…" oninput="renderNights()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:4px;padding:0.6rem 0.9rem 0.6rem 2.4rem;font-family:'Crimson Text',serif;font-size:16px;width:100%;outline:none;">
+          <input type="search" autocomplete="off" id="night-search-input" placeholder="Search themed nights…" oninput="renderNights()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:4px;padding:0.6rem 0.9rem 0.6rem 2.4rem;font-family:'Crimson Text',serif;font-size:16px;width:100%;outline:none;">
         </div>
         <button class="btn btn-sm btn-ghost" onclick="openNightTagsModal()">Manage Filters</button>
         <button class="btn btn-sm btn-ghost" onclick="toggleSortAZ('nights')" id="nights-az-btn">A–Z</button>
@@ -989,7 +989,7 @@
       <button class="sidebar-toggle-btn" id="trivia-filter-toggle" onclick="toggleSidebar('trivia')">⧉ Filters</button>
       <div style="flex:1; position:relative;">
         <span style="position:absolute;left:0.75rem;top:50%;transform:translateY(-50%);color:var(--text-dim);pointer-events:none;">🔍</span>
-        <input type="search" id="trivia-search-input" placeholder="Search trivia…" oninput="renderTrivia()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:4px;padding:0.6rem 0.9rem 0.6rem 2.4rem;font-family:'Crimson Text',serif;font-size:16px;width:100%;outline:none;">
+        <input type="search" autocomplete="off" id="trivia-search-input" placeholder="Search trivia…" oninput="renderTrivia()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:4px;padding:0.6rem 0.9rem 0.6rem 2.4rem;font-family:'Crimson Text',serif;font-size:16px;width:100%;outline:none;">
       </div>
       <button class="btn btn-sm btn-ghost" onclick="openTriviaTagsModal()">Manage Filters</button>
       <button class="btn btn-sm btn-ghost" onclick="toggleSortAZ('trivia')" id="trivia-az-btn">A–Z</button>
@@ -1015,7 +1015,7 @@
     <div style="display:flex; align-items:center; gap:8px; margin-bottom:0.75rem; flex-wrap:wrap;">
       <div style="flex:1; position:relative;">
         <span style="position:absolute;left:0.75rem;top:50%;transform:translateY(-50%);color:var(--text-dim);pointer-events:none;">🔍</span>
-        <input type="search" id="bingo-search-input" placeholder="Search bingo…" oninput="renderBingo()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:4px;padding:0.6rem 0.9rem 0.6rem 2.4rem;font-family:'Crimson Text',serif;font-size:16px;width:100%;outline:none;">
+        <input type="search" autocomplete="off" id="bingo-search-input" placeholder="Search bingo…" oninput="renderBingo()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:4px;padding:0.6rem 0.9rem 0.6rem 2.4rem;font-family:'Crimson Text',serif;font-size:16px;width:100%;outline:none;">
       </div>
       <button class="btn btn-sm btn-ghost" onclick="toggleSortAZ('bingo')" id="bingo-az-btn">A–Z</button>
       <button class="btn btn-sm" onclick="openAddCategoryModal()">+ Add Bingo</button>
@@ -1034,7 +1034,7 @@
       <button class="sidebar-toggle-btn" id="mini-filter-toggle" onclick="toggleSidebar('minigames')">⧉ Filters</button>
       <div style="flex:1; position:relative;">
         <span style="position:absolute;left:0.75rem;top:50%;transform:translateY(-50%);color:var(--text-dim);pointer-events:none;">🔍</span>
-        <input type="search" id="mini-search-input" placeholder="Search mini games…" oninput="renderMiniGames()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:4px;padding:0.6rem 0.9rem 0.6rem 2.4rem;font-family:'Crimson Text',serif;font-size:16px;width:100%;outline:none;">
+        <input type="search" autocomplete="off" id="mini-search-input" placeholder="Search mini games…" oninput="renderMiniGames()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:4px;padding:0.6rem 0.9rem 0.6rem 2.4rem;font-family:'Crimson Text',serif;font-size:16px;width:100%;outline:none;">
       </div>
       <button class="btn btn-sm btn-ghost" onclick="openMiniTagsModal()">Manage Filters</button>
       <button class="btn btn-sm btn-ghost" onclick="toggleSortAZ('minigames')" id="minigames-az-btn">A–Z</button>
@@ -1055,7 +1055,7 @@
       <button class="sidebar-toggle-btn" id="singa-filter-toggle" onclick="toggleSidebar('singalongs')">⧉ Filters</button>
       <div style="flex:1; position:relative;">
         <span style="position:absolute;left:0.75rem;top:50%;transform:translateY(-50%);color:var(--text-dim);pointer-events:none;">🔍</span>
-        <input type="search" id="singa-search-input" placeholder="Search sing-alongs…" oninput="renderSingAlongs()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:4px;padding:0.6rem 0.9rem 0.6rem 2.4rem;font-family:'Crimson Text',serif;font-size:16px;width:100%;outline:none;">
+        <input type="search" autocomplete="off" id="singa-search-input" placeholder="Search sing-alongs…" oninput="renderSingAlongs()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:4px;padding:0.6rem 0.9rem 0.6rem 2.4rem;font-family:'Crimson Text',serif;font-size:16px;width:100%;outline:none;">
       </div>
       <button class="btn btn-sm btn-ghost" onclick="openSingaTagsModal()">Manage Filters</button>
       <button class="btn btn-sm btn-ghost" onclick="toggleSortAZ('singalongs')" id="singalongs-az-btn">A–Z</button>
@@ -1076,7 +1076,7 @@
     <div style="display:flex; align-items:center; gap:8px; margin-bottom:0.75rem; flex-wrap:wrap;">
       <div style="flex:1; position:relative;">
         <span style="position:absolute;left:0.75rem;top:50%;transform:translateY(-50%);color:var(--text-dim);pointer-events:none;">🔍</span>
-        <input type="search" id="waytoplay-search-input" placeholder="Search ways to play…" oninput="renderWayToPlay()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:4px;padding:0.6rem 0.9rem 0.6rem 2.4rem;font-family:'Crimson Text',serif;font-size:16px;width:100%;outline:none;">
+        <input type="search" autocomplete="off" id="waytoplay-search-input" placeholder="Search ways to play…" oninput="renderWayToPlay()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:4px;padding:0.6rem 0.9rem 0.6rem 2.4rem;font-family:'Crimson Text',serif;font-size:16px;width:100%;outline:none;">
       </div>
       <button class="btn btn-sm" onclick="openAddCategoryModal()">+ Add Ways to Play</button>
     </div>
@@ -1570,7 +1570,7 @@
         </div>
         <div class="form-group">
           <label class="form-label">Select Categories for This Night</label>
-          <input type="search" id="night-cat-search" placeholder="Filter categories…" style="margin-bottom:0.5rem;">
+          <input type="search" autocomplete="off" id="night-cat-search" placeholder="Filter categories…" style="margin-bottom:0.5rem;">
           <div class="cat-selector" id="night-cat-selector"></div>
         </div>
       </div>
