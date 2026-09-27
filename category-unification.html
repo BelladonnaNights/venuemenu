@@ -111,7 +111,9 @@
 <h1>Category Unification</h1>
 <div class="sub">One-time reconciliation: matches Planner's Trivia themes and Venue Menu's browsing categories back to the real game-content libraries (<code>trivia/categories</code> and <code>bingo/landing/categories</code>), so there's one record per category instead of three. Nothing is deleted here — this only copies fields forward and re-points references. All five apps (Planner, Trivia Admin, Bingo Admin, Venue Menu admin, and the public Venue Menu) already read/write these unified docs directly — this page is the step that actually merges everything that's still scattered into them. Run Step 1, then Step 2, then Step 3, in order, all the way through (including the "Create All Unmatched" buttons for anything with no automatic match) — that's what makes a theme or category that only ever lived in one app start showing up everywhere it should.</div>
 
-<div class="warn">⚠ Some Planner "themes" tagged for a round-3 / coordinating slot are actually Bingo categories referenced by name, not Trivia categories. Anything that looks like this is flagged "Ambiguous" below — pick the real target manually rather than trusting an auto-match.</div>
+<div class="warn">⚠ If you already ran Step 1 / Step 2 in an earlier session, click this once: it flags everything that was already matched back then as "unified," which is what Trivia Admin and Bingo Admin now use to decide what to show. Safe to click any time — it only ever adds that one flag, never touches anything else, and does nothing if there's nothing to backfill.
+  <div style="margin-top:0.6rem;"><button class="btn" onclick="backfillUnifiedFlags()">Fix: Mark Already-Migrated Categories as Unified</button></div>
+</div>
 
 <!-- ═══ STEP 1: THEMES → TRIVIA/BINGO CATEGORIES ═══ -->
 <div class="step">
@@ -254,23 +256,51 @@ let vmCats = [];        // [{id, ...}] from venueMenuCategories
 let themeMatches = {};  // themeId -> {collection:'trivia'|'bingo', targetId, status}
 let vmMatches = {};     // vmId -> {collection:'trivia'|'bingo', targetId, status}
 
-// NOTE: 'music' used to be in this list, which was a real bug — it made
-// EVERY theme with "music" in its name (e.g. "80s Music Trivia") get
-// treated as a round-3-coordinating slot and routed toward matching a
-// Bingo category by title. Since a music-trivia theme usually has no
-// same-named Bingo category, that left it stuck as "ambiguous" with an
-// empty target and no create button — the exact "not giving me an option
-// to create those" symptom. Only a genuine coordinating/round-3 reference
-// should route toward Bingo; a plain music-trivia theme belongs in Trivia
-// (see isMusicThemed below for how it still gets tagged as music content).
-const COORD_KEYWORDS = ['coordinating', 'round3', 'round 3'];
-// A theme is "music trivia" content (belongs in trivia/categories with
-// type 'music' and a "Music Bingo" tag) if its Planner tier says so, or
-// its name plainly says so — independent of the coordinating/round-3 check
-// above, which is about which COLLECTION it targets, not what it is.
+// A theme is "music trivia" content — belongs in trivia/categories, type
+// 'music', tagged "Music Bingo" — whenever its Planner tier says so
+// ("coordinating-music" or "music-bingo") or its name plainly says so.
+// This used to instead treat "coordinating-music"/round-3-sounding themes
+// as Bingo-category references and try to match them by title against
+// bingo/landing/categories — which is why themes like "Motown R&B" or
+// "Cover Songs" sat stuck as "ambiguous" with an empty target: there was
+// often no identically titled Bingo playlist to land on. Now anything
+// that looks like music trivia only ever targets Trivia.
 function isMusicThemed(theme, name) {
-  return (theme && theme.tier === 'music-bingo') || /music/i.test(name || '');
+  return (theme && (theme.tier === 'music-bingo' || theme.tier === 'coordinating-music')) || /music/i.test(name || '');
 }
+
+// One-click fix for anything matched in an earlier session, before the
+// "unified" flag existed — those categories are correct and complete, they
+// just never got the flag Trivia/Bingo Admin now use to decide what to
+// show. Purely additive: scans already-migrated themes/listings and sets
+// `unified: true` on whatever they point at. Safe to run repeatedly.
+window.backfillUnifiedFlags = async function() {
+  const updates = {};
+  let count = 0;
+  Object.values(themes).forEach(t => {
+    if (t._migratedTo) {
+      const [coll, id] = t._migratedTo.split(':');
+      if (!coll || !id) return;
+      updates[`${coll === 'trivia' ? 'trivia/categories' : 'bingo/landing/categories'}/${id}/unified`] = true;
+      count++;
+    }
+  });
+  vmCats.forEach(vm => {
+    if (vm._migratedTo) {
+      const [coll, id] = vm._migratedTo.split(':');
+      if (!coll || !id) return;
+      updates[`${coll === 'trivia' ? 'trivia/categories' : 'bingo/landing/categories'}/${id}/unified`] = true;
+      count++;
+    }
+  });
+  if (!count) { toast('Nothing to backfill — no previously-migrated items found.', 'error'); return; }
+  try {
+    await update(ref(rtdb), updates);
+    toast(`Marked ${count} already-migrated categories as unified.`, 'success');
+  } catch (e) {
+    toast('Failed: ' + e.message, 'error');
+  }
+};
 
 async function loadAll() {
   const [themeSnap, catSnap, bingoSnap, vmSnap] = await Promise.all([
@@ -315,19 +345,27 @@ function buildThemeMatches() {
     // never touches trivia/planner/themes itself; the theme doc stays
     // exactly as it is, just marked done, so it stops cluttering this view.
     if (t._migratedTo) return;
-    const looksCoordinating = t.tier === 'coordinating-music' || COORD_KEYWORDS.some(k => norm(t.name).includes(k));
     const triviaHits = findBestMatch(t.name, triviaCats, 'name');
     const bingoHits = findBestMatch(t.name, bingoCats, 'title');
 
     let collection, targetId, status;
-    if (looksCoordinating) {
-      // Likely a bingo category referenced from a trivia round-3 slot
-      if (bingoHits.length === 1) { collection = 'bingo'; targetId = bingoHits[0]; status = 'matched'; }
-      else { collection = 'bingo'; targetId = bingoHits[0] || ''; status = 'ambiguous'; }
+    if (isMusicThemed(t, t.name)) {
+      // Music trivia rounds (tier "coordinating-music"/"music-bingo", or a
+      // name that says so) belong in Trivia with type 'music' — always.
+      // This used to route these at a Bingo category by title instead,
+      // which is why themes like "Motown R&B" or "Cover Songs" sat stuck
+      // as "ambiguous" with an empty target: there was often no identically
+      // titled Bingo playlist to land on. Now it never looks at Bingo at
+      // all for these — it only checks whether a matching Trivia category
+      // already exists.
+      if (triviaHits.length === 1) { collection = 'trivia'; targetId = triviaHits[0]; status = 'matched'; }
+      else if (triviaHits.length === 0) { collection = 'trivia'; targetId = ''; status = 'nomatch'; }
+      else { collection = 'trivia'; targetId = triviaHits[0]; status = 'ambiguous'; }
     } else if (triviaHits.length === 1 && bingoHits.length === 0) {
       collection = 'trivia'; targetId = triviaHits[0]; status = 'matched';
     } else if (triviaHits.length === 0 && bingoHits.length === 1) {
-      collection = 'bingo'; targetId = bingoHits[0]; status = 'ambiguous'; // unexpected but flag it
+      // A single, unambiguous title match — no real reason to distrust this.
+      collection = 'bingo'; targetId = bingoHits[0]; status = 'matched';
     } else if (triviaHits.length === 0 && bingoHits.length === 0) {
       collection = 'trivia'; targetId = ''; status = 'nomatch';
     } else {
@@ -350,7 +388,7 @@ function renderThemeRows() {
   container.innerHTML = ids.map(id => {
     const m = themeMatches[id];
     const selectedValue = m.targetId ? `${m.collection}:${m.targetId}` : '';
-    const createBtns = m.status === 'nomatch' ? `
+    const createBtns = (m.status === 'nomatch' || m.status === 'ambiguous') ? `
       <button class="btn btn-sm" onclick="createCategoryFromTheme('${esc(id)}','trivia')">+ New Trivia</button>
       <button class="btn btn-sm" onclick="createCategoryFromTheme('${esc(id)}','bingo')">+ New Bingo</button>` : '';
     return `<div class="row status-${m.status}" data-theme-id="${esc(id)}">
@@ -389,8 +427,8 @@ async function doCreateCategoryFromTheme(themeId, collection) {
   if (tags.length) plannerFields.tags = tags;
   if (Array.isArray(theme.pairsWith) && theme.pairsWith.length) plannerFields.pairsWith = theme.pairsWith;
   const data = collection === 'trivia'
-    ? { name: m.name, type: musicThemed ? 'music' : 'trivia', notes: 'Created from an unmatched Planner theme — needs real content added in Trivia Admin.', createdAt: Date.now(), ...plannerFields }
-    : { title: m.name, genre: '', status: 'coming', createdAt: Date.now(), ...plannerFields };
+    ? { name: m.name, type: musicThemed ? 'music' : 'trivia', notes: 'Created from an unmatched Planner theme — needs real content added in Trivia Admin.', createdAt: Date.now(), unified: true, ...plannerFields }
+    : { title: m.name, genre: '', status: 'coming', createdAt: Date.now(), unified: true, ...plannerFields };
   await rtdbSet(newRef, data);
   // Reflect it locally immediately so the dropdown/list update without a full reload
   if (collection === 'trivia') triviaCats[newRef.key] = data; else bingoCats[newRef.key] = data;
@@ -455,6 +493,10 @@ window.applyThemeMatches = async function() {
         lastUsedVenueId: theme.lastUsedVenueId || null,
         migratedFromThemeId: themeId
       };
+      // Marks this category as part of the unified system — Trivia Admin
+      // and Bingo Admin use this to show only categories that have been
+      // through this process, hiding untouched pre-existing ones.
+      updates[`${path}/unified`] = true;
       // Carry the Planner-owned fields the old theme doc actually held —
       // this was the missing piece: this function used to write ONLY
       // plannerUsage, so a theme's tags/tier/pairs (e.g. "Comedians") were
@@ -524,7 +566,7 @@ function renderVmRows() {
   container.innerHTML = ids.map(id => {
     const m = vmMatches[id];
     const selectedValue = m.targetId ? `${m.collection}:${m.targetId}` : '';
-    const createBtns = m.status === 'nomatch' ? `
+    const createBtns = (m.status === 'nomatch' || m.status === 'ambiguous') ? `
       <button class="btn btn-sm" onclick="createCategoryFromVm('${esc(id)}','trivia')">+ New Trivia</button>
       <button class="btn btn-sm" onclick="createCategoryFromVm('${esc(id)}','bingo')">+ New Bingo</button>` : '';
     return `<div class="row status-${m.status}" data-vm-id="${esc(id)}">
@@ -562,9 +604,11 @@ async function doCreateCategoryFromVm(vmId, collection) {
   const path = collection === 'trivia' ? 'trivia/categories' : 'bingo/landing/categories';
   const newRef = push(ref(rtdb, path));
   const venueMenu = vmFieldsFromDoc(vm);
+  const musicThemed = collection === 'trivia' && isMusicThemed(null, m.name);
+  const tags = musicThemed ? ['Music Bingo'] : undefined;
   const data = collection === 'trivia'
-    ? { name: m.name, type: 'trivia', notes: 'Created from an unmatched Venue Menu listing — needs real content added in Trivia Admin.', createdAt: Date.now(), venueMenu }
-    : { title: m.name, genre: '', status: 'coming', createdAt: Date.now(), venueMenu };
+    ? { name: m.name, type: musicThemed ? 'music' : 'trivia', notes: 'Created from an unmatched Venue Menu listing — needs real content added in Trivia Admin.', createdAt: Date.now(), unified: true, venueMenu, ...(tags ? {tags} : {}) }
+    : { title: m.name, genre: '', status: 'coming', createdAt: Date.now(), unified: true, venueMenu };
   await rtdbSet(newRef, data);
   if (collection === 'trivia') triviaCats[newRef.key] = data; else bingoCats[newRef.key] = data;
   vmMatches[vmId] = { ...m, collection, targetId: newRef.key, status: 'matched' };
@@ -615,6 +659,7 @@ window.applyVmMatches = async function() {
       const target = (m.collection === 'trivia' ? triviaCats[m.targetId] : bingoCats[m.targetId]) || {};
       const existingVm = target.venueMenu || {};
       updates[`${path}/venueMenu`] = { ...existingVm, ...vmFieldsFromDoc(vm) };
+      updates[`${path}/unified`] = true;
     });
     await update(ref(rtdb), updates);
     // Mark each source venueMenuCategories doc as handled — additive only,
