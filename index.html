@@ -1984,9 +1984,11 @@ function toId(name) {
 }
 
 // Read Trivia's and Bingo's real category records directly from the
-// Realtime Database and keep only the ones tagged to show on the Venue
-// Menu (venueMenu.show). Failure here never blocks the rest of the page —
-// worst case, the Trivia/Bingo tabs just show the Firestore-native items.
+// Realtime Database. This is the ADMIN view, so it loads every live
+// category regardless of venueMenu.show — show/unshow only controls what
+// the PUBLIC venue.html displays, never what you can see and manage here.
+// Failure here never blocks the rest of the page — worst case, the
+// Trivia/Bingo tabs just show the Firestore-native items.
 async function loadLiveCategories() {
   try {
     const [tSnap, bSnap] = await Promise.all([
@@ -1996,11 +1998,11 @@ async function loadLiveCategories() {
     const tRaw = tSnap.exists() ? tSnap.val() : {};
     const bRaw = bSnap.exists() ? bSnap.val() : {};
     liveTriviaCats = Object.entries(tRaw)
-      .filter(([id,c]) => c && c.venueMenu && c.venueMenu.show)
+      .filter(([id,c]) => !!c)
       .map(([id,c]) => mapLiveCategory(id, c, 'trivia'))
       .sort((a,b) => a.name.localeCompare(b.name));
     liveBingoCats = Object.entries(bRaw)
-      .filter(([id,c]) => c && c.venueMenu && c.venueMenu.show)
+      .filter(([id,c]) => !!c)
       .map(([id,c]) => mapLiveCategory(id, c, 'bingo'))
       .sort((a,b) => a.name.localeCompare(b.name));
   } catch(e) {
@@ -2412,8 +2414,11 @@ function liveCategoryCardHTML(cat) {
       <div class="category-card-name">${esc(cat.name)}</div>
       <span style="font-family:'Cinzel',serif;font-size:0.55rem;letter-spacing:0.1em;text-transform:uppercase;background:rgba(201,168,76,0.15);border:1px solid rgba(201,168,76,0.4);color:var(--gold);padding:2px 7px;border-radius:3px;white-space:nowrap;flex-shrink:0;">Live · ${ownerLabel}</span>
     </div>
-    <div style="margin-bottom:0.5rem;">
+    <div style="margin-bottom:0.5rem; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
       <span class="badge badge-type">${esc(cat.type)}</span>
+      ${cat.venueMenuShow
+        ? `<span style="font-family:'Cinzel',serif;font-size:0.55rem;letter-spacing:0.1em;text-transform:uppercase;background:rgba(42,107,58,0.2);border:1px solid rgba(42,107,58,0.5);color:#5AC47A;padding:2px 7px;border-radius:3px;white-space:nowrap;">Published (Public)</span>`
+        : `<span style="font-family:'Cinzel',serif;font-size:0.55rem;letter-spacing:0.1em;text-transform:uppercase;background:rgba(120,120,120,0.15);border:1px solid rgba(150,150,150,0.35);color:var(--text-dim);padding:2px 7px;border-radius:3px;white-space:nowrap;">Not Published</span>`}
     </div>
     ${cat.description ? `<div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:0.6rem;line-height:1.4;">${esc(cat.description)}</div>` : ''}
     <div class="category-card-actions">
