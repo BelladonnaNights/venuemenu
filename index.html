@@ -2377,7 +2377,7 @@ function categoryCardHTML(cat, idx, highlight) {
   // Trivia Admin displays it at (.cat-banner there).
   const catBanner = cat.bgImage || cat.bannerData || null;
   const bannerHtml = catBanner
-    ? `<div style="aspect-ratio:16/4; width:100%; overflow:hidden; border-radius:4px 4px 0 0; position:relative; background:var(--surface2); margin:-1.4rem -1.3rem 0.9rem;">
+    ? `<div style="aspect-ratio:16/4; overflow:hidden; border-radius:4px 4px 0 0; position:relative; background:var(--surface2); margin:-1.4rem -1.3rem 0.9rem;">
         <img src="${catBanner}" style="width:100%; height:100%; object-fit:cover; display:block;" alt="">
       </div>`
     : '';
@@ -2415,7 +2415,7 @@ function liveCategoryCardHTML(cat) {
   // at (.cat-banner there) — mapLiveCategory already reads bgImage as the
   // banner source, this just makes it look the same size here as it does there.
   const bannerHtml = cat.bannerData
-    ? `<div style="aspect-ratio:16/4; width:100%; overflow:hidden; border-radius:4px 4px 0 0; position:relative; background:var(--surface2); margin:-1.4rem -1.3rem 0.9rem;">
+    ? `<div style="aspect-ratio:16/4; overflow:hidden; border-radius:4px 4px 0 0; position:relative; background:var(--surface2); margin:-1.4rem -1.3rem 0.9rem;">
         <img src="${cat.bannerData}" style="width:100%; height:100%; object-fit:cover; display:block;" alt="">
       </div>`
     : '';
