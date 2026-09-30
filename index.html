@@ -2210,6 +2210,7 @@ function isBingo(cat) {
 }
 
 function isMiniGame(cat) {
+  if (cat.plannerTier === 'mini-games') return true;
   return getTypes(cat).some(t =>
     t === 'mini game' || t === 'mini-game' || t === 'minigame' || t === 'mini games'
   );
@@ -2680,14 +2681,22 @@ function handleCatMiniUrl(url) {
 // category (from before this fix) still goes through the old path — those
 // get folded in by running category-unification.html on them.
 async function createUnifiedFromVenueMenu(name, typeRaw, theme, shows, notes, bannerData) {
-  const isBingoType = typeRaw.toLowerCase().includes('bingo');
+  const typeLower = typeRaw.toLowerCase();
+  const isBingoType = typeLower.includes('bingo');
+  // Sing-Along / Mini Game typed here get the matching plannerTier so the
+  // same category is recognized as one everywhere — Planner, Trivia Admin,
+  // and this app's own Sing-Alongs/Mini Games tabs — not just wherever it
+  // was first created.
+  const plannerTier = /sing[\s-]?along/.test(typeLower) ? 'sing-along'
+    : /mini[\s-]?game/.test(typeLower) ? 'mini-games'
+    : null;
   const path = isBingoType ? 'bingo/landing/categories' : 'trivia/categories';
   const newRef = ref(rtdb, path);
   const newId = push(newRef).key;
   const venueMenu = { show: true, description: theme || notes || '', shows, bannerUrl: bannerData || '' };
   const data = isBingoType
     ? { title: name, genre: '', status: 'coming', createdAt: Date.now(), unified: true, venueMenu }
-    : { name, type: 'trivia', notes: notes || 'Created from the Venue Menu — add sheets/images/music in Trivia Admin.', createdAt: Date.now(), unified: true, venueMenu };
+    : { name, type: 'trivia', plannerTier, notes: notes || 'Created from the Venue Menu — add sheets/images/music in Trivia Admin.', createdAt: Date.now(), unified: true, venueMenu };
   await set(ref(rtdb, path + '/' + newId), data);
   return { id: newId, kind: isBingoType ? 'bingo' : 'trivia' };
 }
@@ -2701,7 +2710,7 @@ async function saveCategoryFromModal() {
   const typeVal = document.getElementById('cat-type').value.trim();
 
   const isEdit = editingCatIndex >= 0;
-  if (!isEdit && /\b(trivia|bingo)\b/i.test(typeVal)) {
+  if (!isEdit && /\b(trivia|bingo|sing[\s-]?alongs?|mini[\s-]?games?)\b/i.test(typeVal)) {
     try {
       const themeVal = document.getElementById('cat-theme').value.trim();
       const notesVal = document.getElementById('cat-notes').value.trim();
@@ -3053,6 +3062,44 @@ function filterNightCatSelector() {
   });
 }
 
+// A Themed Night here and a "Theme Night Vault" category in the Planner are
+// now kept as one linked pair: the first time a Night is saved, a matching
+// trivia/categories record (plannerTier:'theme-night') is created for it
+// automatically, and night.linkedCategoryId remembers which one. From then
+// on, saving the Night from either side pushes name/description/published/
+// banner onto the other. Planner's own saveTheme() does the mirror image of
+// this — see the "THEME NIGHT <-> VENUE MENU NIGHT LINK" block there.
+async function createLinkedCategoryForNight(night) {
+  const path = 'trivia/categories';
+  const newRef = ref(rtdb, path);
+  const newId = push(newRef).key;
+  const venueMenu = { show: !!night.published, description: night.description || '', bannerUrl: night.bannerData || '' };
+  const data = {
+    name: night.name,
+    type: 'trivia',
+    plannerTier: 'theme-night',
+    notes: 'Created from the Venue Menu (Themed Nights) — add sheets/images/music in Trivia Admin.',
+    createdAt: Date.now(),
+    unified: true,
+    linkedNightId: night._id,
+    venueMenu
+  };
+  await set(ref(rtdb, path + '/' + newId), data);
+  return newId;
+}
+async function syncLinkedCategoryFromNight(night) {
+  if (!night.linkedCategoryId) return;
+  const p = 'trivia/categories/' + night.linkedCategoryId;
+  try {
+    await update(ref(rtdb), {
+      [`${p}/name`]: night.name,
+      [`${p}/venueMenu/show`]: !!night.published,
+      [`${p}/venueMenu/description`]: night.description || '',
+      [`${p}/venueMenu/bannerUrl`]: night.bannerData || ''
+    });
+  } catch(e) { console.warn('Could not sync linked Theme Night category:', e); }
+}
+
 async function saveNight() {
   const name = document.getElementById('night-name').value.trim();
   if (!name) { toast('Night name is required', 'error'); return; }
@@ -3080,14 +3127,21 @@ async function saveNight() {
     published: document.getElementById('night-published').checked,
     description: document.getElementById('night-description').value.trim(),
     adminNotes: document.getElementById('night-admin-notes').value.trim(),
-    nightTagsList: document.getElementById('night-tags-input').value.split(',').map(t=>t.trim()).filter(Boolean)
+    nightTagsList: document.getElementById('night-tags-input').value.split(',').map(t=>t.trim()).filter(Boolean),
+    linkedCategoryId: existing.linkedCategoryId || null
   };
 
   try {
     await saveNightDoc(night);
+    if (!night.linkedCategoryId) {
+      night.linkedCategoryId = await createLinkedCategoryForNight(night);
+      await saveNightDoc(night); // persist the new link
+    } else {
+      await syncLinkedCategoryFromNight(night);
+    }
     if (isEdit) nights[editingNightIndex] = night;
     else nights.push(night);
-    toast(isEdit ? 'Night updated' : 'Themed night created');
+    toast(isEdit ? 'Night updated' : 'Themed night created — linked category added to Trivia Admin/Planner too.');
   } catch(e) {
     toast(e.message || 'Save failed — check connection', 'error'); return;
   }
@@ -4049,6 +4103,10 @@ async function onTriviaTagListDrop(e, i) {
 // ═══════════════════════════════════════════════
 
 function isSingAlong(cat) {
+  // A category tagged Sing-Along in the Planner (plannerTier on the live
+  // trivia/categories record) counts here too, not just the old free-text
+  // Type field — otherwise a Planner-created Sing-Along never shows up here.
+  if (cat.plannerTier === 'sing-along') return true;
   return getTypes(cat).some(t =>
     t === 'sing-along' || t === 'sing along' || t === 'singalong' || t === 'sing-alongs' || t === 'sing alongs'
   );
