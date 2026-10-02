@@ -920,6 +920,8 @@
     <button class="nav-tab" onclick="switchView('seasonal')">Carousel Calendar</button>
     <button class="nav-tab" onclick="switchView('bookings')">Bookings</button>
     <button class="nav-tab" onclick="switchView('import')">Import</button>
+    <button class="nav-tab" onclick="switchView('feedback')">Feedback Inbox</button>
+    <button class="nav-tab" onclick="switchView('portal')">Portal Content</button>
   </nav>
   <div class="header-account" style="display:flex;align-items:center;gap:10px;margin-left:auto;">
     <span id="gateway-user-label" style="font-size:0.72rem;color:var(--text-dim);"></span>
@@ -1338,6 +1340,54 @@
       <div style="font-family:Cinzel,serif;font-size:0.85rem;letter-spacing:0.15em;text-transform:uppercase;margin-bottom:0.5rem;">No Events Yet</div>
       <p style="font-size:0.9rem;">Add your first event to start building the rolling calendar.</p>
     </div>
+  </div>
+
+  <!-- ═══ FEEDBACK INBOX VIEW (folded in from admin-feedback-inbox.html) ═══ -->
+  <div class="view" id="view-feedback">
+    <div class="section-title">Feedback Inbox</div>
+    <p style="color:var(--text-muted);font-size:0.9rem;margin-bottom:1.25rem;max-width:720px;">Everything venues submit through the Venue Portal — questions, comments, complaints, category requests, and concurrent event notices — in one place.</p>
+    <div id="fi-type-filters" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:0.75rem;"></div>
+    <div id="fi-status-filters" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1.5rem;"></div>
+    <div id="fi-rows"></div>
+  </div>
+
+  <!-- ═══ PORTAL CONTENT VIEW (folded in from admin-portal-content.html) ═══ -->
+  <div class="view" id="view-portal">
+    <div class="section-title">Portal Content</div>
+    <p style="color:var(--text-muted);font-size:0.9rem;margin-bottom:1.25rem;max-width:720px;">The contract text and collaborators directory shown to venues in the Venue Portal.</p>
+
+    <div class="section-title" style="font-size:0.68rem;">Contract Text</div>
+    <div class="card" style="margin-bottom:2rem;">
+      <div class="form-group" style="margin-bottom:1rem;">
+        <label style="font-family:'Cinzel',serif;font-size:0.62rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);">Text shown to venues <span style="color:var(--text-dim);font-weight:400;text-transform:none;letter-spacing:0;">— the "minor tweaks may have been made" caveat is added automatically, don't repeat it here</span></label>
+        <textarea id="pc-contract-text" style="min-height:220px;" placeholder="Paste the current contract text here…"></textarea>
+      </div>
+      <button class="btn" onclick="savePortalContract()">Save Contract</button>
+    </div>
+
+    <div class="section-title" style="font-size:0.68rem;">Collaborators</div>
+    <div class="card" style="margin-bottom:1.5rem;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.9rem;margin-bottom:1rem;">
+        <div class="form-group">
+          <label style="font-family:'Cinzel',serif;font-size:0.62rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);">Name</label>
+          <input type="text" id="pc-c-name" placeholder="e.g. Line Dancing Lady">
+        </div>
+        <div class="form-group">
+          <label style="font-family:'Cinzel',serif;font-size:0.62rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);">Referral Code</label>
+          <input type="text" id="pc-c-code" placeholder="optional">
+        </div>
+      </div>
+      <div class="form-group" style="margin-bottom:1rem;">
+        <label style="font-family:'Cinzel',serif;font-size:0.62rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);">Description</label>
+        <input type="text" id="pc-c-desc" placeholder="What they do, why we recommend them">
+      </div>
+      <div class="form-group" style="margin-bottom:1rem;">
+        <label style="font-family:'Cinzel',serif;font-size:0.62rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);">Link</label>
+        <input type="text" id="pc-c-link" placeholder="optional — website, booking page, etc.">
+      </div>
+      <button class="btn" onclick="addPortalCollaborator()">Add Collaborator</button>
+    </div>
+    <div id="pc-collab-list"></div>
   </div>
 
 
@@ -1863,7 +1913,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/fireba
 import {
   getFirestore, collection, doc,
   getDocs, getDoc, setDoc, updateDoc, deleteDoc, writeBatch,
-  query, orderBy, onSnapshot
+  query, orderBy, onSnapshot, addDoc, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { getDatabase, ref, get, push, set, update } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
@@ -2165,10 +2215,12 @@ function switchView(name) {
   if (name === 'waytoplay') renderWayToPlay();
   if (name === 'battles') initBattlesPage();
   if (name === 'bookings') initBookingsTab();
+  if (name === 'feedback') loadFeedbackInbox();
+  if (name === 'portal') loadPortalContent();
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
   document.getElementById('view-' + name).classList.add('active');
-  const labelMap = { library: 'librar', nights: 'night', trivia: 'trivia', bingo: 'bingo', minigames: 'mini', singalongs: 'sing', import: 'import' };
+  const labelMap = { library: 'librar', nights: 'night', trivia: 'trivia', bingo: 'bingo', minigames: 'mini', singalongs: 'sing', import: 'import', feedback: 'feedback', portal: 'portal' };
   document.querySelectorAll('.nav-tab').forEach(t => {
     const key = labelMap[name] || name;
     if (t.textContent.toLowerCase().includes(key)) t.classList.add('active');
@@ -2210,7 +2262,6 @@ function isBingo(cat) {
 }
 
 function isMiniGame(cat) {
-  if (cat.plannerTier === 'mini-games') return true;
   return getTypes(cat).some(t =>
     t === 'mini game' || t === 'mini-game' || t === 'minigame' || t === 'mini games'
   );
@@ -2681,22 +2732,14 @@ function handleCatMiniUrl(url) {
 // category (from before this fix) still goes through the old path — those
 // get folded in by running category-unification.html on them.
 async function createUnifiedFromVenueMenu(name, typeRaw, theme, shows, notes, bannerData) {
-  const typeLower = typeRaw.toLowerCase();
-  const isBingoType = typeLower.includes('bingo');
-  // Sing-Along / Mini Game typed here get the matching plannerTier so the
-  // same category is recognized as one everywhere — Planner, Trivia Admin,
-  // and this app's own Sing-Alongs/Mini Games tabs — not just wherever it
-  // was first created.
-  const plannerTier = /sing[\s-]?along/.test(typeLower) ? 'sing-along'
-    : /mini[\s-]?game/.test(typeLower) ? 'mini-games'
-    : null;
+  const isBingoType = typeRaw.toLowerCase().includes('bingo');
   const path = isBingoType ? 'bingo/landing/categories' : 'trivia/categories';
   const newRef = ref(rtdb, path);
   const newId = push(newRef).key;
   const venueMenu = { show: true, description: theme || notes || '', shows, bannerUrl: bannerData || '' };
   const data = isBingoType
     ? { title: name, genre: '', status: 'coming', createdAt: Date.now(), unified: true, venueMenu }
-    : { name, type: 'trivia', plannerTier, notes: notes || 'Created from the Venue Menu — add sheets/images/music in Trivia Admin.', createdAt: Date.now(), unified: true, venueMenu };
+    : { name, type: 'trivia', notes: notes || 'Created from the Venue Menu — add sheets/images/music in Trivia Admin.', createdAt: Date.now(), unified: true, venueMenu };
   await set(ref(rtdb, path + '/' + newId), data);
   return { id: newId, kind: isBingoType ? 'bingo' : 'trivia' };
 }
@@ -2710,7 +2753,7 @@ async function saveCategoryFromModal() {
   const typeVal = document.getElementById('cat-type').value.trim();
 
   const isEdit = editingCatIndex >= 0;
-  if (!isEdit && /\b(trivia|bingo|sing[\s-]?alongs?|mini[\s-]?games?)\b/i.test(typeVal)) {
+  if (!isEdit && /\b(trivia|bingo)\b/i.test(typeVal)) {
     try {
       const themeVal = document.getElementById('cat-theme').value.trim();
       const notesVal = document.getElementById('cat-notes').value.trim();
@@ -3062,44 +3105,6 @@ function filterNightCatSelector() {
   });
 }
 
-// A Themed Night here and a "Theme Night Vault" category in the Planner are
-// now kept as one linked pair: the first time a Night is saved, a matching
-// trivia/categories record (plannerTier:'theme-night') is created for it
-// automatically, and night.linkedCategoryId remembers which one. From then
-// on, saving the Night from either side pushes name/description/published/
-// banner onto the other. Planner's own saveTheme() does the mirror image of
-// this — see the "THEME NIGHT <-> VENUE MENU NIGHT LINK" block there.
-async function createLinkedCategoryForNight(night) {
-  const path = 'trivia/categories';
-  const newRef = ref(rtdb, path);
-  const newId = push(newRef).key;
-  const venueMenu = { show: !!night.published, description: night.description || '', bannerUrl: night.bannerData || '' };
-  const data = {
-    name: night.name,
-    type: 'trivia',
-    plannerTier: 'theme-night',
-    notes: 'Created from the Venue Menu (Themed Nights) — add sheets/images/music in Trivia Admin.',
-    createdAt: Date.now(),
-    unified: true,
-    linkedNightId: night._id,
-    venueMenu
-  };
-  await set(ref(rtdb, path + '/' + newId), data);
-  return newId;
-}
-async function syncLinkedCategoryFromNight(night) {
-  if (!night.linkedCategoryId) return;
-  const p = 'trivia/categories/' + night.linkedCategoryId;
-  try {
-    await update(ref(rtdb), {
-      [`${p}/name`]: night.name,
-      [`${p}/venueMenu/show`]: !!night.published,
-      [`${p}/venueMenu/description`]: night.description || '',
-      [`${p}/venueMenu/bannerUrl`]: night.bannerData || ''
-    });
-  } catch(e) { console.warn('Could not sync linked Theme Night category:', e); }
-}
-
 async function saveNight() {
   const name = document.getElementById('night-name').value.trim();
   if (!name) { toast('Night name is required', 'error'); return; }
@@ -3127,21 +3132,14 @@ async function saveNight() {
     published: document.getElementById('night-published').checked,
     description: document.getElementById('night-description').value.trim(),
     adminNotes: document.getElementById('night-admin-notes').value.trim(),
-    nightTagsList: document.getElementById('night-tags-input').value.split(',').map(t=>t.trim()).filter(Boolean),
-    linkedCategoryId: existing.linkedCategoryId || null
+    nightTagsList: document.getElementById('night-tags-input').value.split(',').map(t=>t.trim()).filter(Boolean)
   };
 
   try {
     await saveNightDoc(night);
-    if (!night.linkedCategoryId) {
-      night.linkedCategoryId = await createLinkedCategoryForNight(night);
-      await saveNightDoc(night); // persist the new link
-    } else {
-      await syncLinkedCategoryFromNight(night);
-    }
     if (isEdit) nights[editingNightIndex] = night;
     else nights.push(night);
-    toast(isEdit ? 'Night updated' : 'Themed night created — linked category added to Trivia Admin/Planner too.');
+    toast(isEdit ? 'Night updated' : 'Themed night created');
   } catch(e) {
     toast(e.message || 'Save failed — check connection', 'error'); return;
   }
@@ -4103,10 +4101,6 @@ async function onTriviaTagListDrop(e, i) {
 // ═══════════════════════════════════════════════
 
 function isSingAlong(cat) {
-  // A category tagged Sing-Along in the Planner (plannerTier on the live
-  // trivia/categories record) counts here too, not just the old free-text
-  // Type field — otherwise a Planner-created Sing-Along never shows up here.
-  if (cat.plannerTier === 'sing-along') return true;
   return getTypes(cat).some(t =>
     t === 'sing-along' || t === 'sing along' || t === 'singalong' || t === 'sing-alongs' || t === 'sing alongs'
   );
@@ -5158,8 +5152,8 @@ async function saveSeasonalEvent() {
 
   try {
     await persistSeasonalEvents();
-    showToast('Event saved');
-  } catch(e) { showToast('Save failed: ' + e.message, true); }
+    toast('Event saved', 'success');
+  } catch(e) { toast('Save failed: ' + e.message, 'error'); }
 }
 
 async function deleteSeasonalEvent() {
@@ -5171,8 +5165,8 @@ async function deleteSeasonalEvent() {
 
   try {
     await persistSeasonalEvents();
-    showToast('Event deleted');
-  } catch(e) { showToast('Delete failed: ' + (e.code || e.message || 'unknown error'), true); }
+    toast('Event deleted', 'success');
+  } catch(e) { toast('Delete failed: ' + (e.code || e.message || 'unknown error'), 'error'); }
 }
 
 
@@ -5270,8 +5264,8 @@ function renderAdminCal() {
 async function saveAvailability() {
   try {
     await setDoc(doc(db, 'venueMenuConfig', 'availability'), { dates: adminAvailDates });
-    showToast('Availability saved');
-  } catch(e) { showToast('Save failed: ' + e.message, true); }
+    toast('Availability saved', 'success');
+  } catch(e) { toast('Save failed: ' + e.message, 'error'); }
 }
 
 // ── REQUESTS INBOX ──
@@ -5347,16 +5341,16 @@ function renderRequests() {
 async function updateRequestStatus(id, status) {
   try {
     await updateDoc(doc(db, 'venueMenuBookingRequests', id), { status });
-    showToast('Updated to ' + status);
-  } catch(e) { showToast('Update failed', true); }
+    toast('Updated to ' + status, 'success');
+  } catch(e) { toast('Update failed', 'error'); }
 }
 
 async function deleteRequest(id) {
   if (!confirm('Permanently delete this request?')) return;
   try {
     await deleteDoc(doc(db, 'venueMenuBookingRequests', id));
-    showToast('Request deleted');
-  } catch(e) { showToast('Delete failed: ' + (e.code || e.message || 'unknown error'), true); }
+    toast('Request deleted', 'success');
+  } catch(e) { toast('Delete failed: ' + (e.code || e.message || 'unknown error'), 'error'); }
 }
 
 
@@ -5602,9 +5596,181 @@ async function saveBattlesPage() {
   battlesReadFields();
   try {
     await setDoc(doc(db, 'venueMenuConfig', 'battlesPage'), battlesPageData);
-    showToast('Battles page saved');
-  } catch(e) { showToast('Save failed: ' + e.message, true); }
+    toast('Battles page saved', 'success');
+  } catch(e) { toast('Save failed: ' + e.message, 'error'); }
 }
+
+// ═══════════════════════════════════════════════
+// FEEDBACK INBOX (folded in from admin-feedback-inbox.html)
+// ═══════════════════════════════════════════════
+let fiAllItems = [];
+let fiTypeFilter = 'all';
+let fiStatusFilter = 'all';
+let fiLoaded = false;
+const FI_TYPE_LABELS = { question: 'Question', comment: 'Comment', complaint: 'Complaint', categoryRequest: 'Category Request', concurrent: 'Concurrent Event' };
+
+async function loadFeedbackInbox() {
+  if (fiLoaded) { renderFiFilters(); renderFiRows(); return; }
+  try {
+    const [fbSnap, ceSnap] = await Promise.all([
+      getDocs(collection(db, 'venueFeedback')),
+      getDocs(collection(db, 'concurrentEventNotices'))
+    ]);
+    const fb = fbSnap.docs.map(d => ({ id: d.id, source: 'venueFeedback', ...d.data() }));
+    const ce = ceSnap.docs.map(d => ({ id: d.id, source: 'concurrentEventNotices', type: 'concurrent', ...d.data() }));
+    fiAllItems = [...fb, ...ce].sort((a, b) => {
+      const ta = a.createdAt && a.createdAt.toMillis ? a.createdAt.toMillis() : 0;
+      const tb = b.createdAt && b.createdAt.toMillis ? b.createdAt.toMillis() : 0;
+      return tb - ta;
+    });
+    fiLoaded = true;
+    renderFiFilters();
+    renderFiRows();
+  } catch (e) {
+    document.getElementById('fi-rows').innerHTML = `<div class="empty-state"><p>Could not load: ${esc(e.message)}</p></div>`;
+  }
+}
+function renderFiFilters() {
+  const types = ['all', 'question', 'comment', 'complaint', 'categoryRequest', 'concurrent'];
+  document.getElementById('fi-type-filters').innerHTML = types.map(t => {
+    const count = t === 'all' ? fiAllItems.length : fiAllItems.filter(i => i.type === t).length;
+    return `<button class="filter-dim-tab${fiTypeFilter===t?' active':''}" onclick="setFiTypeFilter('${t}')">${t==='all'?'All Types':esc(FI_TYPE_LABELS[t]||t)} <span style="opacity:0.7;">${count}</span></button>`;
+  }).join('');
+  const statuses = ['all', 'new', 'read', 'handled'];
+  document.getElementById('fi-status-filters').innerHTML = statuses.map(s => {
+    const count = s === 'all' ? fiAllItems.length : fiAllItems.filter(i => (i.status||'new') === s).length;
+    return `<button class="filter-dim-tab${fiStatusFilter===s?' active':''}" onclick="setFiStatusFilter('${s}')">${s==='all'?'All Statuses':s.charAt(0).toUpperCase()+s.slice(1)} <span style="opacity:0.7;">${count}</span></button>`;
+  }).join('');
+}
+window.setFiTypeFilter = function(t) { fiTypeFilter = t; renderFiFilters(); renderFiRows(); };
+window.setFiStatusFilter = function(s) { fiStatusFilter = s; renderFiFilters(); renderFiRows(); };
+function fiFmtDate(ts) {
+  if (!ts || !ts.toDate) return '';
+  return ts.toDate().toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+}
+function renderFiRows() {
+  const filtered = fiAllItems.filter(i =>
+    (fiTypeFilter === 'all' || i.type === fiTypeFilter) &&
+    (fiStatusFilter === 'all' || (i.status || 'new') === fiStatusFilter)
+  );
+  const container = document.getElementById('fi-rows');
+  if (!filtered.length) { container.innerHTML = '<div class="empty-state"><p>Nothing here.</p></div>'; return; }
+  const STATUS_COLOR = { new: '#D3944F', read: '#7BA7C7', handled: '#7DC996' };
+  container.innerHTML = filtered.map(item => {
+    const status = item.status || 'new';
+    let body = '', meta = '';
+    if (item.source === 'concurrentEventNotices') {
+      const impactLabel = item.impactType === 'cancel'
+        ? '<span style="color:#C0654F;font-weight:600;">Cancels the gig</span>'
+        : `<span style="color:#D3944F;font-weight:600;">Delayed start${item.newTime ? ' — new time ' + esc(item.newTime) : ''}</span>`;
+      body = esc(item.description || '');
+      meta = `Event date: ${esc(item.date || '—')} · ${impactLabel}`;
+    } else {
+      body = esc(item.message || '');
+      meta = [item.name, item.email].filter(Boolean).map(esc).join(' · ') || 'No contact info given';
+    }
+    return `<div class="card-sm" style="border-left:3px solid ${STATUS_COLOR[status]};margin-bottom:0.7rem;${status==='handled'?'opacity:0.7;':''}">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-bottom:0.5rem;flex-wrap:wrap;">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <span class="badge badge-type">${esc(FI_TYPE_LABELS[item.type] || item.type)}</span>
+          <span style="font-family:'Cinzel',serif;font-size:0.78rem;color:var(--gold-light);">${esc(item.venueName || 'Unknown Venue')}</span>
+        </div>
+        <div style="font-size:0.78rem;color:var(--text-dim);">${fiFmtDate(item.createdAt)}</div>
+      </div>
+      <div style="color:var(--text);line-height:1.55;margin-bottom:0.6rem;">${body}</div>
+      <div style="font-size:0.82rem;color:var(--text-dim);margin-bottom:0.7rem;">${meta}</div>
+      <div style="display:flex;gap:6px;">
+        <button class="btn btn-sm${status==='new'?'':' btn-ghost'}" onclick="setFiStatus('${item.source}','${item.id}','new')">New</button>
+        <button class="btn btn-sm${status==='read'?'':' btn-ghost'}" onclick="setFiStatus('${item.source}','${item.id}','read')">Read</button>
+        <button class="btn btn-sm${status==='handled'?'':' btn-ghost'}" onclick="setFiStatus('${item.source}','${item.id}','handled')">Handled</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+window.setFiStatus = async function(source, id, status) {
+  try {
+    await updateDoc(doc(db, source, id), { status });
+    const item = fiAllItems.find(i => i.source === source && i.id === id);
+    if (item) item.status = status;
+    renderFiFilters();
+    renderFiRows();
+  } catch (e) {
+    toast('Could not update status: ' + e.message, 'error');
+  }
+};
+
+// ═══════════════════════════════════════════════
+// PORTAL CONTENT (folded in from admin-portal-content.html)
+// ═══════════════════════════════════════════════
+let pcLoaded = false;
+async function loadPortalContent() {
+  if (pcLoaded) return;
+  pcLoaded = true;
+  try {
+    const snap = await getDoc(doc(db, 'contracts', 'current'));
+    if (snap.exists()) document.getElementById('pc-contract-text').value = snap.data().text || '';
+  } catch (e) { toast('Could not load contract: ' + e.message, 'error'); }
+  loadPortalCollaborators();
+}
+window.savePortalContract = async function() {
+  try {
+    await setDoc(doc(db, 'contracts', 'current'), {
+      text: document.getElementById('pc-contract-text').value,
+      updatedAt: serverTimestamp()
+    }, { merge: true });
+    toast('Contract saved', 'success');
+  } catch (e) {
+    toast('Save failed: ' + e.message, 'error');
+  }
+};
+async function loadPortalCollaborators() {
+  const list = document.getElementById('pc-collab-list');
+  try {
+    const snap = await getDocs(collection(db, 'collaborators'));
+    if (snap.empty) { list.innerHTML = '<div class="empty-state"><p>No collaborators yet.</p></div>'; return; }
+    list.innerHTML = snap.docs.map(d => {
+      const c = d.data();
+      return `<div class="card-sm" style="display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-bottom:0.6rem;">
+        <div>
+          <div style="font-family:'Cinzel',serif;font-size:0.9rem;color:var(--gold-light);">${esc(c.name)}</div>
+          <div style="font-size:0.78rem;color:var(--text-dim);">${esc(c.description || '')}${c.referralCode ? ' · Code: ' + esc(c.referralCode) : ''}</div>
+        </div>
+        <button class="btn btn-sm btn-danger" onclick="deletePortalCollaborator('${d.id}')">Remove</button>
+      </div>`;
+    }).join('');
+  } catch (e) { list.innerHTML = `<div class="empty-state"><p>Could not load: ${esc(e.message)}</p></div>`; }
+}
+window.addPortalCollaborator = async function() {
+  const name = document.getElementById('pc-c-name').value.trim();
+  if (!name) { toast('Give it a name.', 'error'); return; }
+  try {
+    await addDoc(collection(db, 'collaborators'), {
+      name,
+      description: document.getElementById('pc-c-desc').value.trim(),
+      referralCode: document.getElementById('pc-c-code').value.trim(),
+      link: document.getElementById('pc-c-link').value.trim(),
+      createdAt: serverTimestamp()
+    });
+    document.getElementById('pc-c-name').value = '';
+    document.getElementById('pc-c-desc').value = '';
+    document.getElementById('pc-c-code').value = '';
+    document.getElementById('pc-c-link').value = '';
+    toast('Collaborator added', 'success');
+    loadPortalCollaborators();
+  } catch (e) {
+    toast('Could not add: ' + e.message, 'error');
+  }
+};
+window.deletePortalCollaborator = async function(id) {
+  if (!confirm('Remove this collaborator?')) return;
+  try {
+    await deleteDoc(doc(db, 'collaborators', id));
+    toast('Removed', 'success');
+    loadPortalCollaborators();
+  } catch (e) {
+    toast('Could not remove: ' + e.message, 'error');
+  }
+};
 
 Object.assign(window, {
   switchView, renderLibrary, runSearch, renderMiniGames, renderWayToPlay,
