@@ -198,6 +198,25 @@
   }
   .desc-contact:hover { background: rgba(201,168,76,0.08); }
 
+  /* ── VENUE PORTAL PANELS (Contract / Feedback / Concurrent Event / Collaborators) ── */
+  .vp-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1.5rem 1.75rem; max-width: 720px; margin-bottom: 1.5rem; }
+  .vp-field { margin-bottom: 1.1rem; }
+  .vp-field label { display: block; font-family: 'Cinzel', serif; font-size: 0.62rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.45rem; }
+  .vp-field input, .vp-field textarea, .vp-field select {
+    width: 100%; background: var(--surface2); border: 1px solid var(--border); color: var(--text);
+    border-radius: 5px; padding: 0.65rem 0.9rem; font-family: 'Crimson Text', serif; font-size: 16px; outline: none; transition: border-color 0.2s;
+  }
+  .vp-field input:focus, .vp-field textarea:focus, .vp-field select:focus { border-color: var(--gold-dim); }
+  .vp-field textarea { min-height: 120px; resize: vertical; }
+  .vp-field select option { background: var(--surface2); }
+  .vp-row { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 0.9rem 1.1rem; margin-bottom: 0.7rem; }
+  .vp-row-name { font-family: 'Cinzel', serif; font-size: 1rem; color: var(--gold-light); margin-bottom: 0.25rem; }
+  .vp-row-meta { font-size: 0.85rem; color: var(--text-dim); }
+  .vp-empty { color: var(--text-dim); font-style: italic; padding: 1rem 0; }
+  .vp-msg { font-size: 0.85rem; padding: 0.7rem 1rem; margin-bottom: 1rem; border-left: 3px solid; border-radius: 0 6px 6px 0; display: none; max-width: 720px; }
+  .vp-msg.success { display: block; background: rgba(125,201,150,0.08); border-color: #7DC996; color: #7DC996; }
+  .vp-msg.error { display: block; background: rgba(192,101,79,0.08); border-color: #C0654F; color: #C0654F; }
+
   /* ── FILTER SIDEBAR ── */
   .app-layout { display: flex; align-items: flex-start; }
   .filter-sidebar {
@@ -266,12 +285,22 @@
     background: var(--surface); border: 1px solid var(--border);
     border-radius: 6px; overflow: hidden; cursor: pointer;
     transition: border-color 0.2s, transform 0.15s;
+    position: relative;
   }
   .night-card:hover { border-color: var(--border-strong); transform: translateY(-2px); }
   .night-card-img { width: 100%; aspect-ratio: 4/5; object-fit: cover; display: block; background: var(--surface2); }
   .night-card-body { padding: 0.75rem; }
   .night-name { font-family: 'Cinzel', serif; font-size: 0.82rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text); margin-bottom: 0.3rem; }
   .night-desc { font-size: 0.83rem; color: var(--text-muted); line-height: 1.4; }
+  .star-toggle-btn {
+    position: absolute; top: 0.5rem; right: 0.5rem; z-index: 2;
+    width: 2rem; height: 2rem; border-radius: 50%; border: 1px solid var(--border-strong);
+    background: rgba(14,12,10,0.65); color: var(--text-muted); font-size: 1.1rem;
+    line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
+  }
+  .star-toggle-btn:hover { color: var(--gold-light); border-color: var(--gold); }
+  .star-toggle-btn.on { color: var(--gold); border-color: var(--gold); background: rgba(201,168,76,0.18); }
   .empty-state { text-align: center; padding: 5rem 2rem; color: var(--text-dim); }
   .empty-state h2 { font-family: 'Cinzel', serif; font-size: 1rem; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.5rem; color: var(--text-muted); }
 
@@ -728,7 +757,13 @@
       <button class="nav-tab active" id="nav-menu" onclick="navigateTo('menu')">Main Menu</button>
       <button class="nav-tab" id="nav-themed" onclick="navigateTo('themed')">Themed Nights</button>
       <button class="nav-tab" id="nav-singalongs" onclick="navigateTo('singalongs')">Sing-Alongs</button>
+      <button class="nav-tab venue-only-nav" style="display:none;" id="nav-contract" onclick="navigateTo('contract')">Contract</button>
+      <button class="nav-tab venue-only-nav" style="display:none;" id="nav-feedback" onclick="navigateTo('feedback')">Feedback</button>
+      <button class="nav-tab venue-only-nav" style="display:none;" id="nav-concurrent" onclick="navigateTo('concurrent')">Concurrent Event</button>
+      <button class="nav-tab venue-only-nav" style="display:none;" id="nav-collaborators" onclick="navigateTo('collaborators')">Collaborators</button>
     </nav>
+    <span id="gateway-user-label" style="font-size:0.72rem;color:var(--text-dim);white-space:nowrap;"></span>
+    <button class="sidebar-toggle-btn" onclick="gatewaySignOut()" style="white-space:nowrap;">Sign Out</button>
     <button class="cart-btn" id="cart-btn" onclick="openCart()">
       🛒
       <span class="cart-count" id="cart-count">0</span>
@@ -1222,6 +1257,88 @@
       <button class="atc-btn" id="atc-ticketed" onclick="addToCart('ticketed', 'Ticketed Events')" style="margin-top:0.75rem;">＋ Add to Cart</button></div>
   </div>
 
+  <!-- ═══ VENUE MODE: CONTRACT (ported from venue-portal.html) ═══ -->
+  <div class="view" id="view-contract">
+    <div class="desc-view">
+      <div class="desc-title">Contract</div>
+      <div class="vp-card">
+        <div id="vp-contract-text" style="color:var(--text-muted);line-height:1.8;white-space:pre-wrap;">Loading…</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ VENUE MODE: FEEDBACK (ported from venue-portal.html) ═══ -->
+  <div class="view" id="view-feedback">
+    <div class="desc-view">
+      <div class="desc-title">Feedback</div>
+      <div class="vp-card">
+        <div class="vp-msg" id="vp-feedback-msg"></div>
+        <div class="vp-field">
+          <label>Type</label>
+          <select id="vp-fb-type">
+            <option value="question">Question</option>
+            <option value="comment">Comment</option>
+            <option value="complaint">Complaint</option>
+            <option value="categoryRequest">Category Request</option>
+          </select>
+        </div>
+        <div class="vp-field">
+          <label>Your Name (optional)</label>
+          <input type="text" id="vp-fb-name" placeholder="Your name">
+        </div>
+        <div class="vp-field">
+          <label>Email (optional)</label>
+          <input type="email" id="vp-fb-email" placeholder="you@email.com">
+        </div>
+        <div class="vp-field">
+          <label>Message</label>
+          <textarea id="vp-fb-message" placeholder="What's on your mind?"></textarea>
+        </div>
+        <button class="desc-contact" onclick="submitVenueFeedback()">✦ Send</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ VENUE MODE: CONCURRENT EVENT NOTICE (ported from venue-portal.html) ═══ -->
+  <div class="view" id="view-concurrent">
+    <div class="desc-view">
+      <div class="desc-title">Concurrent Event Notice</div>
+      <div class="desc-body" style="font-size:0.95rem;">Something else happening at your venue affecting your scheduled gig? Let us know.</div>
+      <div class="vp-card">
+        <div class="vp-msg" id="vp-concurrent-msg"></div>
+        <div class="vp-field">
+          <label>Gig Date</label>
+          <input type="date" id="vp-ce-date">
+        </div>
+        <div class="vp-field">
+          <label>Impact</label>
+          <select id="vp-ce-impact">
+            <option value="delay">Delayed start</option>
+            <option value="cancel">Cancels the gig</option>
+          </select>
+        </div>
+        <div class="vp-field" id="vp-ce-newtime-wrap">
+          <label>New Start Time</label>
+          <input type="text" id="vp-ce-newtime" placeholder="e.g. 8:30pm">
+        </div>
+        <div class="vp-field">
+          <label>Description</label>
+          <textarea id="vp-ce-description" placeholder="What's going on?"></textarea>
+        </div>
+        <button class="desc-contact" onclick="submitConcurrentNotice()">✦ Submit Notice</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ VENUE MODE: COLLABORATORS (ported from venue-portal.html) ═══ -->
+  <div class="view" id="view-collaborators">
+    <div class="desc-view">
+      <div class="desc-title">Collaborators</div>
+      <div class="desc-body" style="font-size:0.95rem;">Belladonna-recommended collaborators for your venue.</div>
+      <div id="vp-collab-list"></div>
+    </div>
+  </div>
+
 </main><!-- end main-content -->
 </div><!-- end page-body -->
 
@@ -1296,8 +1413,9 @@
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, collection, doc, getDocs, getDoc, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getFirestore, collection, doc, getDocs, getDoc, setDoc, updateDoc, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCIfAE1JGHsUGzzVH2pz1Vyj5b5OhA0tDQ",
@@ -1311,9 +1429,89 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const rtdb = getDatabase(app);
+const auth = getAuth(app);
 
 // ── EMAILJS INIT ──
 emailjs.init('PYAxWRvcETE-JmFYj');
+
+// ── GATEWAY LOGIN GATE ──
+// Same pattern as Venue Menu Admin, but its own app key ("venueMenuPublic")
+// so a host/venue account granted access here can never reach the admin
+// tool (venue-menu-index.html), which is still gated on the separate
+// "venueMenu" key. Any signed-in Host or Venue account can get in — this
+// key is meant to be in accounts.html's OPEN_TO_ANY_SIGNED_IN list rather
+// than a per-account entitlement toggle, since every host/venue should be
+// able to use this page.
+const GATEWAY_APP_KEY = 'venueMenuPublic';
+const GATEWAY_SESSION_MS = 6*60*60*1000;
+function hasValidGatewaySession(){
+  try{
+    const raw = localStorage.getItem('gatewaySession_'+GATEWAY_APP_KEY);
+    if(!raw) return false;
+    const s = JSON.parse(raw);
+    return (Date.now()-s.ts) < GATEWAY_SESSION_MS;
+  }catch(e){ return false; }
+}
+if(!hasValidGatewaySession()){
+  window.location.href = 'https://belladonnanights.github.io/belladonna-gateway/accounts.html?return='+encodeURIComponent(window.location.href)+'&app='+GATEWAY_APP_KEY;
+}
+window.gatewaySignOut = function(){
+  try{ Object.keys(localStorage).filter(k=>k.startsWith('gatewaySession_')).forEach(k=>localStorage.removeItem(k)); }catch(e){}
+  signOut(auth).then(()=>{ window.location.href = 'https://belladonnanights.github.io/belladonna-gateway/accounts.html?return='+encodeURIComponent(window.location.href)+'&app='+GATEWAY_APP_KEY; });
+};
+
+// ── MODE (Venue vs Host) — resolved from the signed-in account's own
+// profile at users/{uid}. Everything the account needs (hostId, venueId,
+// starredCategories) lives on that one doc. ──────────────────────────────
+let currentUid = null;
+let currentProfile = null; // raw users/{uid} doc
+let currentMode = null;    // 'host' | 'venue' | null (unresolved/legacy)
+let currentVenueRecord = null; // matched hq_data/venues-list entry, venue mode only
+
+async function resolveVenueRecord(profile){
+  try{
+    const snap = await getDoc(doc(db, 'hq_data', 'venues-list'));
+    if(!snap.exists()) return null;
+    const list = JSON.parse(snap.data().value || '[]');
+    const vid = (profile.venueId||'').trim().toLowerCase();
+    if(vid){
+      const byId = list.find(v => (v.venueId||'').trim().toLowerCase() === vid);
+      if(byId) return byId;
+    }
+    const email = (profile.email||'').trim().toLowerCase();
+    if(email) return list.find(v => (v.gatewayEmail||'').trim().toLowerCase() === email) || null;
+    return null;
+  }catch(e){ console.error('Could not resolve venue record:', e); return null; }
+}
+
+async function initIdentity(user){
+  currentUid = user.uid;
+  const snap = await getDoc(doc(db, 'users', currentUid));
+  currentProfile = snap.exists() ? snap.data() : {};
+  currentMode = currentProfile.accountType === 'venue' ? 'venue' : (currentProfile.accountType === 'host' ? 'host' : null);
+
+  const nameLabel = document.getElementById('gateway-user-label');
+  if(nameLabel) nameLabel.textContent = (currentProfile.name || user.email || 'account') + (currentMode ? ' · ' + (currentMode === 'venue' ? 'Venue' : 'Host') : '');
+
+  if(currentMode === 'venue'){
+    currentVenueRecord = await resolveVenueRecord(currentProfile);
+    document.querySelectorAll('.venue-only-nav').forEach(el => el.style.display = '');
+  } else if(currentMode === 'host'){
+    document.querySelectorAll('.venue-only-nav').forEach(el => el.style.display = 'none');
+  } else {
+    // Unresolved — no accountType set on this profile yet. Don't block
+    // browsing, just hide the mode-specific tabs until Ahnna sets it.
+    document.querySelectorAll('.venue-only-nav').forEach(el => el.style.display = 'none');
+  }
+}
+
+onAuthStateChanged(auth, user => {
+  if(!user){
+    window.location.href = 'https://belladonnanights.github.io/belladonna-gateway/accounts.html?return='+encodeURIComponent(window.location.href)+'&app='+GATEWAY_APP_KEY;
+    return;
+  }
+  initIdentity(user).catch(e => console.error('Could not load account profile:', e));
+});
 
 // ── DATA ──
 let publishedNights = [];
@@ -1795,7 +1993,7 @@ function navigateTo(view, typeFilter) {
   window.scrollTo(0, 0);
   // Update nav tab active state
   document.querySelectorAll('#main-nav .nav-tab').forEach(t => t.classList.remove('active'));
-  const navMap = { menu:'nav-menu', themed:'nav-themed', singalongs:'nav-singalongs' };
+  const navMap = { menu:'nav-menu', themed:'nav-themed', singalongs:'nav-singalongs', contract:'nav-contract', feedback:'nav-feedback', concurrent:'nav-concurrent', collaborators:'nav-collaborators' };
   const activeNav = navMap[view];
   if (activeNav) document.getElementById(activeNav)?.classList.add('active');
   // Render the appropriate browse view
@@ -1808,6 +2006,10 @@ function navigateTo(view, typeFilter) {
   if (view === 'waytoplay')  renderWayToPlay();
   if (view === 'quickies')   renderQuickies();
   if (view === 'karaoke')    renderAlsoSee('karaoke');
+  if (view === 'contract')      loadContractView();
+  if (view === 'feedback')      loadFeedbackView();
+  if (view === 'concurrent')    loadConcurrentView();
+  if (view === 'collaborators') loadCollaboratorsView();
 }
 
 // ── FILTER SIDEBAR ──
@@ -1951,7 +2153,8 @@ function renderThemedNights() {
   empty.style.display = 'none';
   grid.innerHTML = filtered.map((n,i) => {
     const img = n.bannerData ? `<img class="night-card-img" src="${n.bannerData}" alt="${esc(n.name)}" loading="lazy">` : `<div class="night-card-img" style="display:flex;align-items:center;justify-content:center;background:var(--surface2);color:var(--text-dim);font-size:2rem;">🌙</div>`;
-    return `<div class="night-card" onclick="openNightDetail(${publishedNights.indexOf(n)})">${img}<div class="night-card-body"><div class="night-name">${esc(n.name)}</div>${n.description?`<div class="night-desc">${esc(n.description)}</div>`:''}</div></div>`;
+    const star = starBtnHtml('night', n._id);
+    return `<div class="night-card" onclick="openNightDetail(${publishedNights.indexOf(n)})">${img}${star}<div class="night-card-body"><div class="night-name">${esc(n.name)}</div>${n.description?`<div class="night-desc">${esc(n.description)}</div>`:''}</div></div>`;
   }).join('');
 }
 
@@ -1961,7 +2164,7 @@ function isMiniGame(c)  { return (c.type||'').toLowerCase().split(',').map(t=>t.
 function isSingAlong(c) { return (c.type||'').toLowerCase().split(',').map(t=>t.trim()).some(t=>t.includes('sing')); }
 function isBattles(c)   { return (c.publishedTabs||[]).includes('battles'); }
 
-function renderCategoryGrid(gridId, emptyId, filterFn) {
+function renderCategoryGrid(gridId, emptyId, filterFn, starKind) {
   const grid = document.getElementById(gridId);
   const empty = document.getElementById(emptyId);
   if (!grid) return;
@@ -1977,7 +2180,8 @@ function renderCategoryGrid(gridId, emptyId, filterFn) {
   grid.innerHTML = filtered.map(c => {
     const img = c.miniGameImage||c.bannerData;
     const imgEl = img ? '<img class="night-card-img" src="' + img + '" alt="' + esc(c.name) + '" loading="lazy" style="aspect-ratio:4/5;">' : '<div class="night-card-img" style="aspect-ratio:4/5;display:flex;align-items:center;justify-content:center;background:var(--surface2);color:var(--text-dim);font-size:2rem;">\uD83C\uDFB5</div>';
-    return '<div class="night-card">' + imgEl + '<div class="night-card-body"><div class="night-name">' + esc(c.name) + '</div>' + '</div></div>';
+    const star = starKind ? starBtnHtml(starKind, c._id) : '';
+    return '<div class="night-card">' + imgEl + star + '<div class="night-card-body"><div class="night-name">' + esc(c.name) + '</div>' + '</div></div>';
   }).join('');
 }
 
@@ -2035,7 +2239,7 @@ function renderBingo() {
   renderCategoryGrid('bingo-grid','bingo-empty', c => isBingo(c) && c.published);
 }
 function renderSingAlongs() {
-  renderCategoryGrid('singa-grid','singa-empty', c => isSingAlong(c) && ((c.publishedTabs||[]).includes('singa') || c.published));
+  renderCategoryGrid('singa-grid','singa-empty', c => isSingAlong(c) && ((c.publishedTabs||[]).includes('singa') || c.published), 'singa');
 }
 function renderMiniGames() {
   const q = (document.getElementById('mini-search')?.value || '').toLowerCase().trim();
@@ -2490,6 +2694,137 @@ Object.assign(window, {
   renderThemedNights, renderTrivia, renderBingo, renderSingAlongs, renderMiniGames, renderBattles,
   renderWayToPlay, renderQuickies, renderAlsoSee, loadBattlesPageContent
 });
+
+// ═══════════════════════════════════════════════
+// VENUE MODE — Contract / Feedback / Concurrent Event / Collaborators
+// (ported from venue-portal.html, now behind the shared Gateway login)
+// ═══════════════════════════════════════════════
+function vpMsg(id, text, type) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = text;
+  el.className = 'vp-msg ' + (type || '');
+}
+
+let vpContractLoaded = false;
+async function loadContractView() {
+  if (vpContractLoaded) return;
+  vpContractLoaded = true;
+  try {
+    const snap = await getDoc(doc(db, 'contracts', 'current'));
+    const text = snap.exists() ? (snap.data().text || '') : '';
+    document.getElementById('vp-contract-text').textContent =
+      (text || 'No contract on file yet — check back soon.') +
+      (text ? '\n\n(Minor tweaks may have been made since this was last updated.)' : '');
+  } catch (e) {
+    document.getElementById('vp-contract-text').textContent = 'Could not load the contract right now.';
+  }
+}
+
+function loadFeedbackView() {
+  vpMsg('vp-feedback-msg', '', '');
+}
+window.submitVenueFeedback = async function() {
+  vpMsg('vp-feedback-msg', '', '');
+  const type = document.getElementById('vp-fb-type').value;
+  const message = document.getElementById('vp-fb-message').value.trim();
+  if (!message) { vpMsg('vp-feedback-msg', 'Write a message first.', 'error'); return; }
+  try {
+    await addDoc(collection(db, 'venueFeedback'), {
+      type,
+      venueId: currentProfile.venueId || '',
+      venueName: (currentVenueRecord && currentVenueRecord.name) || currentProfile.name || '',
+      name: document.getElementById('vp-fb-name').value.trim(),
+      email: document.getElementById('vp-fb-email').value.trim(),
+      message,
+      status: 'new',
+      createdAt: serverTimestamp()
+    });
+    document.getElementById('vp-fb-message').value = '';
+    vpMsg('vp-feedback-msg', 'Sent — thank you!', 'success');
+  } catch (e) {
+    vpMsg('vp-feedback-msg', 'Could not send: ' + e.message, 'error');
+  }
+};
+
+function loadConcurrentView() {
+  vpMsg('vp-concurrent-msg', '', '');
+}
+window.submitConcurrentNotice = async function() {
+  vpMsg('vp-concurrent-msg', '', '');
+  const date = document.getElementById('vp-ce-date').value;
+  const impactType = document.getElementById('vp-ce-impact').value;
+  const newTime = document.getElementById('vp-ce-newtime').value.trim();
+  const description = document.getElementById('vp-ce-description').value.trim();
+  if (!date || !description) { vpMsg('vp-concurrent-msg', 'Date and description are both required.', 'error'); return; }
+  try {
+    await addDoc(collection(db, 'concurrentEventNotices'), {
+      venueId: currentProfile.venueId || '',
+      venueName: (currentVenueRecord && currentVenueRecord.name) || currentProfile.name || '',
+      date,
+      impactType,
+      newTime: impactType === 'delay' ? newTime : null,
+      description,
+      status: 'new',
+      createdAt: serverTimestamp()
+    });
+    document.getElementById('vp-ce-description').value = '';
+    document.getElementById('vp-ce-newtime').value = '';
+    vpMsg('vp-concurrent-msg', 'Notice sent — thank you!', 'success');
+  } catch (e) {
+    vpMsg('vp-concurrent-msg', 'Could not send: ' + e.message, 'error');
+  }
+};
+
+let vpCollabLoaded = false;
+async function loadCollaboratorsView() {
+  if (vpCollabLoaded) return;
+  vpCollabLoaded = true;
+  const list = document.getElementById('vp-collab-list');
+  try {
+    const snap = await getDocs(collection(db, 'collaborators'));
+    if (snap.empty) { list.innerHTML = '<div class="vp-empty">No collaborators listed yet.</div>'; return; }
+    list.innerHTML = snap.docs.map(d => {
+      const c = d.data();
+      const linkHtml = c.link ? `<a href="${escHtml(c.link)}" target="_blank" style="color:var(--gold);">Visit</a>` : '';
+      return `<div class="vp-row">
+        <div class="vp-row-name">${escHtml(c.name)}</div>
+        <div class="vp-row-meta">${escHtml(c.description || '')}${c.referralCode ? ' · Code: ' + escHtml(c.referralCode) : ''} ${linkHtml}</div>
+      </div>`;
+    }).join('');
+  } catch (e) {
+    list.innerHTML = '<div class="vp-empty">Could not load collaborators.</div>';
+  }
+}
+
+// ═══════════════════════════════════════════════
+// HOST MODE — "Pick Their Poison": star the Themed Nights and Sing-Alongs
+// a host would most love to run. Stored on their own Gateway profile
+// (users/{uid}.starredCategories) as "night:<id>" / "singa:<id>" strings.
+// ═══════════════════════════════════════════════
+function isStarred(kind, id) {
+  return !!(currentProfile.starredCategories || []).includes(kind + ':' + id);
+}
+function starBtnHtml(kind, id) {
+  if (currentMode !== 'host') return '';
+  const on = isStarred(kind, id);
+  return `<button class="star-toggle-btn${on?' on':''}" onclick="event.stopPropagation();toggleStar('${kind}','${id}')" title="${on?'Remove from your picks':'Mark as a category you would love to host'}">${on?'★':'☆'}</button>`;
+}
+window.toggleStar = async function(kind, id) {
+  if (currentMode !== 'host' || !currentUid) return;
+  const key = kind + ':' + id;
+  const set = new Set(currentProfile.starredCategories || []);
+  if (set.has(key)) set.delete(key); else set.add(key);
+  currentProfile.starredCategories = [...set];
+  // Re-render whichever grid is showing so the star reflects immediately
+  if (currentView === 'themed') renderThemedNights();
+  if (currentView === 'singalongs') renderSingAlongs();
+  try {
+    await updateDoc(doc(db, 'users', currentUid), { starredCategories: currentProfile.starredCategories });
+  } catch (e) {
+    console.error('Could not save your pick, will retry on next toggle:', e);
+  }
+};
 </script>
 
 <!-- Loading overlay -->
