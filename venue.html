@@ -1333,6 +1333,9 @@
       <div class="desc-title">Contract</div>
       <div class="vp-card">
         <div id="vp-contract-text" style="color:var(--text-muted);line-height:1.8;white-space:pre-wrap;">Loading…</div>
+        <div id="vp-contract-frame-wrap" style="display:none;margin-top:1rem;">
+          <iframe id="vp-contract-frame" style="width:100%;height:70vh;border:1px solid var(--border);border-radius:8px;background:#fff;"></iframe>
+        </div>
       </div>
     </div>
   </div>
@@ -1601,6 +1604,10 @@ async function initIdentity(user){
   const snap = await getDoc(doc(db, 'users', currentUid));
   currentProfile = snap.exists() ? snap.data() : {};
   currentMode = currentProfile.accountType === 'venue' ? 'venue' : (currentProfile.accountType === 'host' ? 'host' : null);
+  // Admins have no accountType of their own (they're not a host or a venue),
+  // so default their preview to Venue rather than letting the app fall back
+  // to a Host-like (no venue tabs) appearance on first load.
+  if (currentMode === null && canPreview()) previewMode = 'venue';
 
   const nameLabel = document.getElementById('gateway-user-label');
   if(nameLabel) nameLabel.textContent = (currentProfile.name || user.email || 'account') + (currentMode ? ' · ' + (currentMode === 'venue' ? 'Venue' : 'Host') : '');
@@ -2416,7 +2423,6 @@ function catTypeIcon(type) {
 // trivia" + "blockbuster trivia") reads as OR options within one round,
 // rather than an undifferentiated pile of chips.
 const NIGHT_ROUND_ORDER = ['Trivia','Bingo','Karaoke','Sing-Along','Mini Games','Other'];
-const NIGHT_ROUND_ICON  = { Trivia:'🧠', Bingo:'🎵', Karaoke:'🎤', 'Sing-Along':'🎶', 'Mini Games':'🎲', Other:'✦' };
 function nightRoundLabel(c) {
   if (isTrivia(c)) return 'Trivia';
   if (isBingo(c)) return 'Bingo';
@@ -2438,7 +2444,7 @@ function detailOptionCardHTML(c, roundLabel) {
     + '<div class="detail-option-name">' + esc(c.name) + '</div>'
     + (subBits.length ? '<div class="detail-option-sub">' + esc(subBits.join(' · ')) + '</div>' : '')
     + (hasSongList
-        ? '<div class="karaoke-songlist-toggle" onclick="toggleKaraokeSongs(\'' + songListId + '\')">🎤 View the ' + esc(c.name) + ' song list</div>'
+        ? '<div class="karaoke-songlist-toggle" onclick="toggleKaraokeSongs(\'' + songListId + '\')">View the ' + esc(c.name) + ' song list</div>'
           + '<ul class="karaoke-songlist" id="' + songListId + '">'
           + c.karaokeSongs.map(s => '<li>' + esc(s) + '</li>').join('')
           + '</ul>'
@@ -2459,7 +2465,7 @@ function renderNightRoundGroups(nightCats) {
       ? cards.reduce((acc, card, idx) => idx === 0 ? [card] : [...acc, '<div class="detail-or-divider">or</div>', card], [])
       : cards;
     return '<div class="detail-round-group">'
-      + '<div class="detail-round-header"><span class="round-icon">' + (NIGHT_ROUND_ICON[label] || '✦') + '</span> ' + esc(label) + ' ' + countNote + '</div>'
+      + '<div class="detail-round-header">' + esc(label) + ' ' + countNote + '</div>'
       + '<div class="detail-option-list">' + withDividers.join('') + '</div>'
       + '</div>';
   }).join('');
@@ -3122,10 +3128,24 @@ async function loadContractView() {
   vpContractLoaded = true;
   try {
     const snap = await getDoc(doc(db, 'contracts', 'current'));
-    const text = snap.exists() ? (snap.data().text || '') : '';
-    document.getElementById('vp-contract-text').textContent =
-      (text || 'No contract on file yet — check back soon.') +
-      (text ? '\n\n(Minor tweaks may have been made since this was last updated.)' : '');
+    const data = snap.exists() ? snap.data() : null;
+    const textEl = document.getElementById('vp-contract-text');
+    const frameWrap = document.getElementById('vp-contract-frame-wrap');
+    if (data && data.pdfData) {
+      textEl.innerHTML = 'Your contract is on file as a PDF'
+        + (data.fileName ? ' (' + escHtml(data.fileName) + ')' : '') + '. '
+        + '<a href="' + data.pdfData + '" download="' + escHtml(data.fileName || 'contract.pdf') + '" style="color:var(--gold-light);">Download it here</a>.'
+        + '<br><br>(Minor tweaks may have been made since this was last updated.)';
+      document.getElementById('vp-contract-frame').src = data.pdfData;
+      frameWrap.style.display = '';
+    } else if (data && data.text) {
+      // Legacy plain-text contract, kept so nothing already on file disappears.
+      textEl.textContent = data.text + '\n\n(Minor tweaks may have been made since this was last updated.)';
+      frameWrap.style.display = 'none';
+    } else {
+      textEl.textContent = 'No contract on file yet — check back soon.';
+      frameWrap.style.display = 'none';
+    }
   } catch (e) {
     document.getElementById('vp-contract-text').textContent = 'Could not load the contract right now.';
   }
