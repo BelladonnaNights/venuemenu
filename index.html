@@ -2037,6 +2037,10 @@ let liveCategoryNameSet = new Set();
 function normCatName(n) { return (n || '').toLowerCase().trim().replace(/\s+/g, ' '); }
 function isSupersededOldCategory(c) {
   if (c._migratedTo) return true;
+  // _plannerMirror is Planner's own Firestore shadow of a karaoke-tier
+  // theme it owns in trivia/categories — that live record is what shows
+  // here (via liveTriviaCats), so the mirror would otherwise double it up.
+  if (c._plannerMirror) return true;
   return liveCategoryNameSet.has(normCatName(c.name));
 }
 function mapLiveCategory(id, c, kind){
