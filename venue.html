@@ -321,6 +321,14 @@
   .detail-title { font-family: 'Cinzel', serif; font-size: 1.4rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text); margin-bottom: 0.5rem; }
   .detail-cats { font-size: 0.88rem; color: var(--text-muted); margin-bottom: 1rem; }
   .detail-tag { display: inline-block; border: 1px solid var(--border); padding: 0.15rem 0.55rem; border-radius: 3px; font-family: 'Cinzel', serif; font-size: 0.6rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); margin: 0.2rem; }
+  .detail-section-label { font-family: 'Cinzel', serif; font-size: 0.68rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--gold); margin: 1.4rem 0 0.75rem; }
+  .detail-cat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px,1fr)); gap: 0.6rem; margin-bottom: 0.5rem; }
+  .detail-cat-chip { display: flex; align-items: center; gap: 0.5rem; border: 1px solid var(--border); background: var(--surface2); border-radius: 5px; padding: 0.55rem 0.7rem; }
+  .detail-cat-chip-icon { font-size: 1.1rem; flex-shrink: 0; }
+  .detail-cat-chip-name { font-size: 0.8rem; color: var(--text); line-height: 1.25; }
+  .detail-cat-chip-type { display: block; font-family: 'Cinzel', serif; font-size: 0.56rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-dim); margin-top: 0.1rem; }
+  .detail-actions { display: flex; gap: 0.6rem; flex-wrap: wrap; margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px solid var(--border); }
+  .detail-actions .atc-btn { flex: 1; justify-content: center; min-width: 150px; }
 
   /* ── SCROLLBAR ── */
   ::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -762,6 +770,7 @@
       <button class="nav-tab venue-only-nav" style="display:none;" id="nav-concurrent" onclick="navigateTo('concurrent')">Concurrent Event</button>
       <button class="nav-tab venue-only-nav" style="display:none;" id="nav-collaborators" onclick="navigateTo('collaborators')">Collaborators</button>
     </nav>
+    <span id="preview-mode-toggle" style="display:none;align-items:center;white-space:nowrap;"></span>
     <span id="gateway-user-label" style="font-size:0.72rem;color:var(--text-dim);white-space:nowrap;"></span>
     <button class="sidebar-toggle-btn" onclick="gatewaySignOut()" style="white-space:nowrap;">Sign Out</button>
     <button class="cart-btn" id="cart-btn" onclick="openCart()">
@@ -1403,6 +1412,12 @@
       <div class="detail-title" id="detail-title"></div>
       <div class="detail-cats" id="detail-cats"></div>
       <div id="detail-tags"></div>
+      <div id="detail-desc" style="display:none;font-size:0.95rem;color:var(--text-muted);line-height:1.65;margin:0.9rem 0 1.25rem;"></div>
+      <div id="detail-cat-section" style="display:none;">
+        <div class="detail-section-label">What This Night Includes</div>
+        <div class="detail-cat-grid" id="detail-cat-grid"></div>
+      </div>
+      <div class="detail-actions" id="detail-actions"></div>
     </div>
   </div>
 </div>
@@ -1465,8 +1480,44 @@ window.gatewaySignOut = function(){
 // starredCategories) lives on that one doc. ──────────────────────────────
 let currentUid = null;
 let currentProfile = null; // raw users/{uid} doc
-let currentMode = null;    // 'host' | 'venue' | null (unresolved/legacy)
+let currentMode = null;    // 'host' | 'venue' | null (unresolved/legacy) — the account's REAL type
 let currentVenueRecord = null; // matched hq_data/venues-list entry, venue mode only
+
+// ── ADMIN PREVIEW — lets a Venue Menu admin (adminAccess.venueMenu) look at
+// this app as a Host or a Venue would see it, without changing their real
+// account. previewMode overrides currentMode for display only; star clicks
+// while previewing are local-only (never written to Firestore) so QA-ing the
+// Host view never pollutes a real profile's starredCategories. ────────────
+let previewMode = null;         // null | 'host' | 'venue' — overrides currentMode when set
+let previewStarredSet = new Set(); // local-only star picks while previewing as Host
+function effectiveMode() { return previewMode || currentMode; }
+function canPreview() { return !!(currentProfile && currentProfile.adminAccess && currentProfile.adminAccess.venueMenu); }
+function applyModeVisibility() {
+  const show = effectiveMode() === 'venue';
+  document.querySelectorAll('.venue-only-nav').forEach(el => el.style.display = show ? '' : 'none');
+}
+function renderPreviewToggle() {
+  const wrap = document.getElementById('preview-mode-toggle');
+  if (!wrap) return;
+  if (!canPreview()) { wrap.style.display = 'none'; return; }
+  wrap.style.display = 'inline-flex';
+  const mk = (mode, label) => `<button class="nav-tab${effectiveMode()===mode?' active':''}" style="font-size:0.68rem;" onclick="setPreviewMode('${mode}')">${label}</button>`;
+  wrap.innerHTML = '<span style="font-size:0.65rem;color:var(--text-dim);margin-right:0.35rem;">Preview as:</span>' + mk('venue','Venue') + mk('host','Host');
+}
+window.setPreviewMode = function(mode) {
+  previewMode = (mode === currentMode) ? null : mode; // previewing your own real mode is just... your real mode
+  if (effectiveMode() === 'host' && !previewStarredSet.size) {
+    previewStarredSet = new Set(currentMode === 'host' ? (currentProfile.starredCategories || []) : []);
+  }
+  applyModeVisibility();
+  renderPreviewToggle();
+  const nameLabel = document.getElementById('gateway-user-label');
+  if (nameLabel) nameLabel.textContent = (currentProfile.name || (currentProfile.email) || 'account') + ' · ' + (currentMode === 'venue' ? 'Venue' : currentMode === 'host' ? 'Host' : 'Account') + (previewMode ? ' (previewing ' + (previewMode === 'venue' ? 'Venue' : 'Host') + ')' : '');
+  // Re-render whatever's on screen so star buttons / venue-only tabs reflect the preview
+  if (currentView === 'themed') renderThemedNights();
+  if (currentView === 'singalongs') renderSingAlongs();
+  if (['contract','feedback','concurrent','collaborators'].includes(currentView) && effectiveMode() !== 'venue') navigateTo('menu');
+};
 
 async function resolveVenueRecord(profile){
   try{
@@ -1495,14 +1546,11 @@ async function initIdentity(user){
 
   if(currentMode === 'venue'){
     currentVenueRecord = await resolveVenueRecord(currentProfile);
-    document.querySelectorAll('.venue-only-nav').forEach(el => el.style.display = '');
-  } else if(currentMode === 'host'){
-    document.querySelectorAll('.venue-only-nav').forEach(el => el.style.display = 'none');
-  } else {
-    // Unresolved — no accountType set on this profile yet. Don't block
-    // browsing, just hide the mode-specific tabs until Ahnna sets it.
-    document.querySelectorAll('.venue-only-nav').forEach(el => el.style.display = 'none');
   }
+  // Unresolved (no accountType set yet) doesn't block browsing — it just
+  // means no mode-specific tabs show until Ahnna sets it, same as 'host'.
+  applyModeVisibility();
+  renderPreviewToggle();
 }
 
 onAuthStateChanged(auth, user => {
@@ -1872,7 +1920,8 @@ async function load() {
       getDocs(collection(db, 'venueMenuCategories'))
     ]);
     publishedNights = nightsSnap.docs.map(d => ({_id:d.id,...d.data()}))
-      .filter(n => n.published).sort((a,b) => (a.position||999)-(b.position||999));
+      .filter(n => n.published || n.publishedHost) // published to Venue and/or Host — audience-specific filtering happens at render time
+      .sort((a,b) => (a.position||999)-(b.position||999));
     publishedCategories = catsSnap.docs.map(d => ({_id:d.id,...d.data()}));
     await loadLiveCategories();
     await loadFilterDims();
@@ -2141,12 +2190,20 @@ function renderAllFilterPills() {
 }
 
 // ── RENDER FUNCTIONS ──
+// A night can now be published to the Venue menu, the Host menu, or both
+// (set in venue-menu-index.html). Legacy nights with no publishedHost field
+// yet fall back to their published (Venue) value, so nothing already live
+// disappears for hosts until Ahnna reviews it.
+function nightVisibleNow(n) {
+  if (effectiveMode() === 'host') return (n.publishedHost !== undefined) ? !!n.publishedHost : !!n.published;
+  return !!n.published;
+}
 function renderThemedNights() {
   const grid = document.getElementById('themed-grid');
   const empty = document.getElementById('themed-empty');
   if (!grid) return;
   const q = (document.getElementById('themed-search')?.value||'').toLowerCase().trim();
-  let filtered = publishedNights;
+  let filtered = publishedNights.filter(nightVisibleNow);
   if (q) filtered = filtered.filter(n => n.name.toLowerCase().includes(q)||(n.description||'').toLowerCase().includes(q));
   if (hasSidebarFilters()) filtered = filtered.filter(n => nightMatchesFilters(n));
   if (!filtered.length) { empty.style.display='block'; grid.innerHTML=''; return; }
@@ -2276,18 +2333,79 @@ function renderBattles() {
 }
 
 // ── NIGHT DETAIL ──
+// Icon per category type — matches the icons already used on the Main Menu
+// (Karaoke 🎤, Trivia 🧠, Bingo 🎵, Sing-Alongs 🎶). A category can carry more
+// than one type (e.g. "Trivia, Karaoke"), so this reads just the first.
+function catTypeIcon(type) {
+  const t = (type || '').toLowerCase();
+  if (t.includes('trivia'))  return '🧠';
+  if (t.includes('bingo'))   return '🎵';
+  if (t.includes('karaoke')) return '🎤';
+  if (t.includes('sing'))    return '🎶';
+  if (t.includes('mini'))    return '🎲';
+  if (t.includes('battle'))  return '⚔️';
+  return '✦';
+}
+let detailNightIdx = null;
 function openNightDetail(i) {
   const n = publishedNights[i];
   if (!n) return;
+  detailNightIdx = i;
   document.getElementById('detail-title').textContent = n.name;
-  document.getElementById('detail-cats').textContent = n.categoryIds?.length ? n.categoryIds.length + ' categories' : '';
+  document.getElementById('detail-cats').textContent = n.categoryIds?.length ? n.categoryIds.length + (n.categoryIds.length === 1 ? ' category' : ' categories') : '';
   const banner = document.getElementById('detail-banner');
   if (n.bannerData) { banner.src = n.bannerData; banner.style.display='block'; } else { banner.style.display='none'; }
   document.getElementById('detail-tags').innerHTML = (n.filterTags||[]).map(t=>`<span class="detail-tag">${esc(t)}</span>`).join('');
+
+  const descEl = document.getElementById('detail-desc');
+  if (n.description) { descEl.textContent = n.description; descEl.style.display='block'; }
+  else { descEl.style.display='none'; }
+
+  // Resolve this night's linked categories (stored as category names) against
+  // the full published list, so the venue can see exactly what the night is
+  // built from — whether that's a fixed lineup (e.g. Buffy Trivia + Buffy
+  // Bingo + Buffy Karaoke) or a menu of options to choose from.
+  const nightCats = (n.categoryIds || [])
+    .map(name => publishedCategories.find(c => c.name === name))
+    .filter(Boolean);
+  const catSection = document.getElementById('detail-cat-section');
+  if (nightCats.length) {
+    catSection.style.display = 'block';
+    document.getElementById('detail-cat-grid').innerHTML = nightCats.map(c => {
+      const firstType = (c.type || '').split(',')[0].trim();
+      return '<div class="detail-cat-chip">'
+        + '<span class="detail-cat-chip-icon">' + catTypeIcon(c.type) + '</span>'
+        + '<span><span class="detail-cat-chip-name">' + esc(c.name) + '</span>'
+        + (firstType ? '<span class="detail-cat-chip-type">' + esc(firstType) + '</span>' : '')
+        + '</span></div>';
+    }).join('');
+  } else {
+    catSection.style.display = 'none';
+  }
+
+  const inCart = cartHas(n._id);
+  document.getElementById('detail-actions').innerHTML = inCart
+    ? '<button class="atc-btn in-cart" onclick="openCart()">✓ In Your Cart — Edit</button>'
+    : '<button class="atc-btn" onclick="nightAddToCart(' + i + ',\'later\')">✦ Add to Wish List</button>'
+      + '<button class="atc-btn" onclick="nightAddToCart(' + i + ',\'queue\')">🗓 Add to Queue</button>'
+      + '<button class="atc-btn" onclick="nightAddToCart(' + i + ',\'date\')">📅 Add to Date</button>';
+
   document.getElementById('detail-overlay').classList.add('open');
 }
-function closeDetail() { document.getElementById('detail-overlay').classList.remove('open'); }
+function closeDetail() { document.getElementById('detail-overlay').classList.remove('open'); detailNightIdx = null; }
 function handleOverlayClick(e) { if (e.target === document.getElementById('detail-overlay')) closeDetail(); }
+
+// Adds a Themed Night to the cart with a specific scheduling intent, then
+// hands off to the existing cart drawer (where the date picker / weekday
+// picker already live) so nothing's duplicated.
+function nightAddToCart(i, bookingType) {
+  const n = publishedNights[i];
+  if (!n) return;
+  if (!cartHas(n._id)) addToCart(n._id, n.name); else openCart();
+  const idx = cartItemIdx(n._id);
+  if (idx >= 0) setBookingType(idx, bookingType);
+  closeDetail();
+}
 
 function esc(str) { return (str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
@@ -2421,6 +2539,12 @@ function renderCartItems() {
         + '</div>'
       : '<button class="save-later-btn" onclick="setBookingType(' + i + ',\'later\')">✦ Save for Later with Belladonna</button>';
 
+    const queueNote = item.bookingType === 'queue'
+      ? '<div style="margin-top:0.5rem;padding:0.6rem 0.75rem;background:rgba(201,168,76,0.06);border:1px solid rgba(201,168,76,0.18);border-radius:4px;font-size:0.8rem;color:var(--text-muted);line-height:1.5;">'
+        + '🗓 You are on our scheduling queue for this one — no date picked yet. We will reach out to find the next open slot that works for you.'
+        + '</div>'
+      : '';
+
     return '<div class="cart-item">'
       + '<div class="cart-item-header">'
       + '<span class="cart-item-name">' + esc(item.name) + '</span>'
@@ -2430,9 +2554,11 @@ function renderCartItems() {
       + '<div class="booking-type-toggle">'
       + '<button class="booking-type-btn' + (item.bookingType==='date'?' active':'') + '" onclick="setBookingType(' + i + ',\'date\')">📅 Single Date</button>'
       + '<button class="booking-type-btn' + (item.bookingType==='weekly'?' active':'') + '" onclick="setBookingType(' + i + ',\'weekly\')">🔁 Weekly Gig</button>'
+      + '<button class="booking-type-btn' + (item.bookingType==='queue'?' active':'') + '" onclick="setBookingType(' + i + ',\'queue\')">🗓 Queue</button>'
       + '</div>'
       + (item.bookingType === 'date' ? dateSel : '')
       + (item.bookingType === 'weekly' ? weekSel : '')
+      + queueNote
       + saveLaterSel
       + '</div></div>';
   }).join('');
@@ -2440,7 +2566,7 @@ function renderCartItems() {
 
 function setBookingType(idx, type) {
   cart[idx].bookingType = type;
-  if (type === 'later') { cart[idx].selectedDate = null; cart[idx].weekdays = []; }
+  if (type === 'later' || type === 'queue') { cart[idx].selectedDate = null; cart[idx].weekdays = []; }
   cartSave();
   renderCartItems();
 }
@@ -2559,6 +2685,7 @@ async function submitCart() {
     if (item.bookingType === 'date')   scheduling = 'Single Date: ' + (item.selectedDate || 'TBD');
     if (item.bookingType === 'weekly') scheduling = 'Weekly Gig — ' + (item.weekdays.length ? 'Every ' + item.weekdays.map(i=>WEEKDAYS[i]).join(' & ') : 'Days TBD');
     if (item.bookingType === 'later')  scheduling = 'Save for Later';
+    if (item.bookingType === 'queue')  scheduling = 'Scheduling Queue (no date picked yet — find us an opening)';
     return { name: item.name, scheduling };
   });
 
@@ -2690,7 +2817,7 @@ Object.assign(window, {
   showCheckoutForm, hideCheckoutForm, submitCart,
   openSeasonalPopup, closeSeasonalPopup, closeSeasonalPopupDirect, addSeasonalToCart,
   toggleSidebarFilter, toggleAccordion, clearAllFilters, removeFilter,
-  openNightDetail, closeDetail, handleOverlayClick,
+  openNightDetail, closeDetail, handleOverlayClick, nightAddToCart,
   renderThemedNights, renderTrivia, renderBingo, renderSingAlongs, renderMiniGames, renderBattles,
   renderWayToPlay, renderQuickies, renderAlsoSee, loadBattlesPageContent
 });
@@ -2803,16 +2930,26 @@ async function loadCollaboratorsView() {
 // (users/{uid}.starredCategories) as "night:<id>" / "singa:<id>" strings.
 // ═══════════════════════════════════════════════
 function isStarred(kind, id) {
+  if (previewMode === 'host' && currentMode !== 'host') return previewStarredSet.has(kind + ':' + id);
   return !!(currentProfile.starredCategories || []).includes(kind + ':' + id);
 }
 function starBtnHtml(kind, id) {
-  if (currentMode !== 'host') return '';
+  if (effectiveMode() !== 'host') return '';
   const on = isStarred(kind, id);
   return `<button class="star-toggle-btn${on?' on':''}" onclick="event.stopPropagation();toggleStar('${kind}','${id}')" title="${on?'Remove from your picks':'Mark as a category you would love to host'}">${on?'★':'☆'}</button>`;
 }
 window.toggleStar = async function(kind, id) {
-  if (currentMode !== 'host' || !currentUid) return;
+  if (effectiveMode() !== 'host' || !currentUid) return;
   const key = kind + ':' + id;
+  // Previewing Host mode on a non-host account: toggle a local-only set so
+  // the UI can be clicked through for QA, without writing test data onto a
+  // real account's Gateway profile.
+  if (previewMode === 'host' && currentMode !== 'host') {
+    if (previewStarredSet.has(key)) previewStarredSet.delete(key); else previewStarredSet.add(key);
+    if (currentView === 'themed') renderThemedNights();
+    if (currentView === 'singalongs') renderSingAlongs();
+    return;
+  }
   const set = new Set(currentProfile.starredCategories || []);
   if (set.has(key)) set.delete(key); else set.add(key);
   currentProfile.starredCategories = [...set];
