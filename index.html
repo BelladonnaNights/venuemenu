@@ -1976,8 +1976,24 @@ window.gatewaySignOut = function(){
   try{ Object.keys(localStorage).filter(k=>k.startsWith('gatewaySession_')).forEach(k=>localStorage.removeItem(k)); }catch(e){}
   signOut(auth).then(()=>{ window.location.href = 'https://belladonnanights.github.io/belladonna-gateway/accounts.html?return='+encodeURIComponent(window.location.href)+'&app='+GATEWAY_APP_KEY; });
 };
-onAuthStateChanged(auth, user=>{
+onAuthStateChanged(auth, async user=>{
   if(!user){
+    window.location.href = 'https://belladonnanights.github.io/belladonna-gateway/accounts.html?return='+encodeURIComponent(window.location.href)+'&app='+GATEWAY_APP_KEY;
+    return;
+  }
+  // Hard admin check, independent of the Gateway front door — being signed in,
+  // or even having the "Can Use: Venue Menu" entitlement (that's for the public
+  // venue.html app), is not enough to reach this admin builder tool. Only
+  // adminAccess.venueMenu, set explicitly in HQ's Accounts tab, gets in.
+  let isAdmin = false;
+  try{
+    const snap = await getDoc(doc(db, 'users', user.uid));
+    const profile = snap.exists() ? snap.data() : {};
+    isAdmin = !!(profile.adminAccess && profile.adminAccess.venueMenu);
+  }catch(e){ isAdmin = false; }
+  if(!isAdmin){
+    try{ localStorage.removeItem('gatewaySession_'+GATEWAY_APP_KEY); }catch(e){}
+    await signOut(auth).catch(()=>{});
     window.location.href = 'https://belladonnanights.github.io/belladonna-gateway/accounts.html?return='+encodeURIComponent(window.location.href)+'&app='+GATEWAY_APP_KEY;
     return;
   }
