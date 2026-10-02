@@ -580,6 +580,9 @@
     border-color: var(--gold-dim); color: var(--gold);
     background: rgba(201,168,76,0.08);
   }
+  .weekday-btn:disabled {
+    opacity: 0.35; cursor: not-allowed;
+  }
 
   /* Cart footer */
   .cart-footer {
@@ -765,6 +768,7 @@
       <button class="nav-tab active" id="nav-menu" onclick="navigateTo('menu')">Main Menu</button>
       <button class="nav-tab" id="nav-themed" onclick="navigateTo('themed')">Themed Nights</button>
       <button class="nav-tab" id="nav-singalongs" onclick="navigateTo('singalongs')">Sing-Alongs</button>
+      <button class="nav-tab venue-only-nav" style="display:none;" id="nav-queue" onclick="navigateTo('queue')">Coming Up</button>
       <button class="nav-tab venue-only-nav" style="display:none;" id="nav-contract" onclick="navigateTo('contract')">Contract</button>
       <button class="nav-tab venue-only-nav" style="display:none;" id="nav-feedback" onclick="navigateTo('feedback')">Feedback</button>
       <button class="nav-tab venue-only-nav" style="display:none;" id="nav-concurrent" onclick="navigateTo('concurrent')">Concurrent Event</button>
@@ -1264,6 +1268,29 @@
       <button class="desc-contact" onclick="window.open('https://www.belladonnanights.com/buytickets', '_blank')" style="margin-top:0.75rem;">✦ View Our Current Ticketed Events</button>
     
       <button class="atc-btn" id="atc-ticketed" onclick="addToCart('ticketed', 'Ticketed Events')" style="margin-top:0.75rem;">＋ Add to Cart</button></div>
+  </div>
+
+  <!-- ═══ VENUE MODE: COMING UP — confirmed Trivia/Bingo gigs at this venue
+       (read-only, pulled live from the Planner/Bingo schedules) plus the
+       venue's own pending cart requests (editable, via the existing cart). ═══ -->
+  <div class="view" id="view-queue">
+    <div class="desc-view">
+      <div class="desc-title">Coming Up At Your Venue</div>
+      <div class="vp-card">
+        <div id="queue-confirmed-list"><div class="vp-empty">Loading…</div></div>
+        <p style="font-size:0.78rem;color:var(--text-dim);margin-top:0.75rem;">Shows confirmed Trivia, Bingo, Karaoke, and other gigs scheduled at your venue for the next 8 weeks.</p>
+      </div>
+      <div class="desc-title" style="margin-top:2rem;">Your Pending Requests</div>
+      <div class="vp-card">
+        <div id="queue-pending-list"><div class="vp-empty">Nothing in your queue yet — add a Themed Night from the menu to get started.</div></div>
+        <button class="atc-btn" style="margin-top:0.5rem;" onclick="openCart()">Manage in Cart</button>
+      </div>
+      <div class="desc-title" style="margin-top:2rem;">Your Category Queue</div>
+      <div class="vp-card">
+        <div id="queue-category-list"><div class="vp-empty">Loading…</div></div>
+        <p style="font-size:0.78rem;color:var(--text-dim);margin-top:0.75rem;">Reorder your upcoming Trivia, Bingo, and Mini Game rotation freely — whatever's at the front locks in as your category for the week every Sunday at midnight.</p>
+      </div>
+    </div>
   </div>
 
   <!-- ═══ VENUE MODE: CONTRACT (ported from venue-portal.html) ═══ -->
@@ -2042,7 +2069,7 @@ function navigateTo(view, typeFilter) {
   window.scrollTo(0, 0);
   // Update nav tab active state
   document.querySelectorAll('#main-nav .nav-tab').forEach(t => t.classList.remove('active'));
-  const navMap = { menu:'nav-menu', themed:'nav-themed', singalongs:'nav-singalongs', contract:'nav-contract', feedback:'nav-feedback', concurrent:'nav-concurrent', collaborators:'nav-collaborators' };
+  const navMap = { menu:'nav-menu', themed:'nav-themed', singalongs:'nav-singalongs', queue:'nav-queue', contract:'nav-contract', feedback:'nav-feedback', concurrent:'nav-concurrent', collaborators:'nav-collaborators' };
   const activeNav = navMap[view];
   if (activeNav) document.getElementById(activeNav)?.classList.add('active');
   // Render the appropriate browse view
@@ -2055,6 +2082,7 @@ function navigateTo(view, typeFilter) {
   if (view === 'waytoplay')  renderWayToPlay();
   if (view === 'quickies')   renderQuickies();
   if (view === 'karaoke')    renderAlsoSee('karaoke');
+  if (view === 'queue')         loadQueueView();
   if (view === 'contract')      loadContractView();
   if (view === 'feedback')      loadFeedbackView();
   if (view === 'concurrent')    loadConcurrentView();
@@ -2221,7 +2249,7 @@ function isMiniGame(c)  { return (c.type||'').toLowerCase().split(',').map(t=>t.
 function isSingAlong(c) { return (c.type||'').toLowerCase().split(',').map(t=>t.trim()).some(t=>t.includes('sing')); }
 function isBattles(c)   { return (c.publishedTabs||[]).includes('battles'); }
 
-function renderCategoryGrid(gridId, emptyId, filterFn, starKind) {
+function renderCategoryGrid(gridId, emptyId, filterFn, starKind, clickable) {
   const grid = document.getElementById(gridId);
   const empty = document.getElementById(emptyId);
   if (!grid) return;
@@ -2238,7 +2266,8 @@ function renderCategoryGrid(gridId, emptyId, filterFn, starKind) {
     const img = c.miniGameImage||c.bannerData;
     const imgEl = img ? '<img class="night-card-img" src="' + img + '" alt="' + esc(c.name) + '" loading="lazy" style="aspect-ratio:4/5;">' : '<div class="night-card-img" style="aspect-ratio:4/5;display:flex;align-items:center;justify-content:center;background:var(--surface2);color:var(--text-dim);font-size:2rem;">\uD83C\uDFB5</div>';
     const star = starKind ? starBtnHtml(starKind, c._id) : '';
-    return '<div class="night-card">' + imgEl + star + '<div class="night-card-body"><div class="night-name">' + esc(c.name) + '</div>' + '</div></div>';
+    const click = clickable ? ' onclick="openCategoryDetail(\'' + c._id + '\')"' : '';
+    return '<div class="night-card"' + click + '>' + imgEl + star + '<div class="night-card-body"><div class="night-name">' + esc(c.name) + '</div>' + '</div></div>';
   }).join('');
 }
 
@@ -2287,16 +2316,16 @@ function renderTrivia() {
     const imgEl = img
       ? '<img class="night-card-img" src="' + img + '" alt="' + esc(c.name) + '" loading="lazy" style="aspect-ratio:4/5;">'
       : '<div class="night-card-img" style="aspect-ratio:4/5;display:flex;align-items:center;justify-content:center;background:var(--surface2);color:var(--text-dim);font-size:2rem;">🧠</div>';
-    return '<div class="night-card">' + imgEl + '<div class="night-card-body"><div class="night-name">' + esc(c.name) + '</div>' + '</div></div>';
+    return '<div class="night-card" onclick="openCategoryDetail(\'' + c._id + '\')">' + imgEl + '<div class="night-card-body"><div class="night-name">' + esc(c.name) + '</div>' + '</div></div>';
   }).join('');
 }
 
 
 function renderBingo() {
-  renderCategoryGrid('bingo-grid','bingo-empty', c => isBingo(c) && c.published);
+  renderCategoryGrid('bingo-grid','bingo-empty', c => isBingo(c) && c.published, null, true);
 }
 function renderSingAlongs() {
-  renderCategoryGrid('singa-grid','singa-empty', c => isSingAlong(c) && ((c.publishedTabs||[]).includes('singa') || c.published), 'singa');
+  renderCategoryGrid('singa-grid','singa-empty', c => isSingAlong(c) && ((c.publishedTabs||[]).includes('singa') || c.published), 'singa', true);
 }
 function renderMiniGames() {
   const q = (document.getElementById('mini-search')?.value || '').toLowerCase().trim();
@@ -2312,7 +2341,7 @@ function renderMiniGames() {
     const imgHtml = src
       ? '<div style="aspect-ratio:4/5;width:100%;overflow:hidden;border-radius:6px 6px 0 0;position:relative;background:var(--surface2);"><img src="' + esc(src) + '" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;" alt="" onerror="this.style.opacity=0"></div>'
       : '<div style="aspect-ratio:4/5;width:100%;background:var(--surface2);border-radius:6px 6px 0 0;display:flex;align-items:center;justify-content:center;"><span style="font-size:2.5rem;opacity:0.3;">&#127922;</span></div>';
-    return '<div class="night-card" style="padding:0;overflow:hidden;">'
+    return '<div class="night-card" style="padding:0;overflow:hidden;" onclick="openCategoryDetail(\'' + c._id + '\')">'
       + imgHtml
       + '<div class="night-card-body"><div class="night-name">' + esc(c.name) + '</div></div></div>';
   }
@@ -2383,12 +2412,22 @@ function openNightDetail(i) {
     catSection.style.display = 'none';
   }
 
-  const inCart = cartHas(n._id);
-  document.getElementById('detail-actions').innerHTML = inCart
-    ? '<button class="atc-btn in-cart" onclick="openCart()">✓ In Your Cart — Edit</button>'
-    : '<button class="atc-btn" onclick="nightAddToCart(' + i + ',\'later\')">✦ Add to Wish List</button>'
-      + '<button class="atc-btn" onclick="nightAddToCart(' + i + ',\'queue\')">🗓 Add to Queue</button>'
-      + '<button class="atc-btn" onclick="nightAddToCart(' + i + ',\'date\')">📅 Add to Date</button>';
+  // Scheduling/booking is a Venue concern (the cart/checkout flow asks for
+  // venue contact info) — hosts get the star button above instead, not these.
+  // Themed Nights always need their own specific date (separate setup, special
+  // hosting) rather than sharing a date with the venue's regular category
+  // queue, so there's no "Add to Queue" option here — just Wish List or Date.
+  const actionsEl = document.getElementById('detail-actions');
+  if (effectiveMode() !== 'venue') {
+    actionsEl.innerHTML = '';
+  } else {
+    const priceTag = (n.addonPrice || n.addonPrice === 0) ? ' <span style="color:var(--gold);">(+$' + n.addonPrice.toFixed(2) + ')</span>' : '';
+    const inCart = cartHas(n._id);
+    actionsEl.innerHTML = inCart
+      ? '<button class="atc-btn in-cart" onclick="openCart()">✓ In Your Cart — Edit</button>'
+      : '<button class="atc-btn" onclick="nightAddToCart(' + i + ',\'later\')">✦ Add to Wish List' + priceTag + '</button>'
+        + '<button class="atc-btn" onclick="nightAddToCart(' + i + ',\'date\')">📅 Add to Date' + priceTag + '</button>';
+  }
 
   document.getElementById('detail-overlay').classList.add('open');
 }
@@ -2401,10 +2440,165 @@ function handleOverlayClick(e) { if (e.target === document.getElementById('detai
 function nightAddToCart(i, bookingType) {
   const n = publishedNights[i];
   if (!n) return;
-  if (!cartHas(n._id)) addToCart(n._id, n.name); else openCart();
+  if (!cartHas(n._id)) addToCart(n._id, n.name, n.addonPrice || 0); else openCart();
   const idx = cartItemIdx(n._id);
   if (idx >= 0) setBookingType(idx, bookingType);
   closeDetail();
+}
+
+// ── SING-ALONG DETAIL ── (reuses the same detail overlay as Themed Nights)
+// Sing-Alongs need their own dedicated date too (separate setup, special
+// hosting), so same as Themed Nights: Wish List or Add to Date, no Queue.
+// Trivia/Bingo/Mini Game categories are different — they're the regular
+// rotating picks for the venue's normal recurring gig, so those go in the
+// weekly category queue instead (see CATEGORY QUEUE below).
+function openCategoryDetail(id) {
+  const c = publishedCategories.find(x => x._id === id);
+  if (!c) return;
+  detailNightIdx = null;
+  document.getElementById('detail-title').textContent = c.name;
+  document.getElementById('detail-cats').textContent = '';
+  const banner = document.getElementById('detail-banner');
+  const img = c.miniGameImage || c.bannerData;
+  if (img) { banner.src = img; banner.style.display = 'block'; } else { banner.style.display = 'none'; }
+  document.getElementById('detail-tags').innerHTML = '';
+  const descEl = document.getElementById('detail-desc');
+  if (c.theme) { descEl.textContent = c.theme; descEl.style.display = 'block'; } else { descEl.style.display = 'none'; }
+  document.getElementById('detail-cat-section').style.display = 'none';
+
+  const actionsEl = document.getElementById('detail-actions');
+  if (effectiveMode() !== 'venue') {
+    actionsEl.innerHTML = '';
+  } else if (isSingAlong(c)) {
+    const priceTag = (c.addonPrice || c.addonPrice === 0) ? ' <span style="color:var(--gold);">(+$' + c.addonPrice.toFixed(2) + ')</span>' : '';
+    const inCart = cartHas(c._id);
+    actionsEl.innerHTML = inCart
+      ? '<button class="atc-btn in-cart" onclick="openCart()">✓ In Your Cart — Edit</button>'
+      : '<button class="atc-btn" onclick="categoryAddToCart(\'' + c._id + '\',\'later\')">✦ Add to Wish List' + priceTag + '</button>'
+        + '<button class="atc-btn" onclick="categoryAddToCart(\'' + c._id + '\',\'date\')">📅 Add to Date' + priceTag + '</button>';
+  } else {
+    actionsEl.innerHTML = isInCategoryQueue(c._id)
+      ? '<button class="atc-btn in-cart" onclick="closeDetail();navigateTo(\'queue\')">✓ In Your Queue — View</button>'
+      : '<button class="atc-btn" onclick="addCategoryToQueue(\'' + c._id + '\')">🗓 Add to Queue</button>';
+  }
+  document.getElementById('detail-overlay').classList.add('open');
+}
+function categoryAddToCart(id, bookingType) {
+  const c = publishedCategories.find(x => x._id === id);
+  if (!c) return;
+  if (!cartHas(c._id)) addToCart(c._id, c.name, c.addonPrice || 0); else openCart();
+  const idx = cartItemIdx(c._id);
+  if (idx >= 0) setBookingType(idx, bookingType);
+  closeDetail();
+}
+
+// ═══════════════════════════════════════════════
+// CATEGORY QUEUE — the venue's own rotating request list for their regular
+// Trivia/Bingo/Mini Game gig (Themed Nights and Sing-Alongs are excluded —
+// those always get their own dedicated date instead). Stored one doc per
+// venue at venueCategoryQueues/{venueId}. Venues can freely reorder the
+// queue; whatever's at the front gets locked in as soon as anyone loads this
+// page on or after the first Sunday that's passed since the last lock (there's
+// no server here to run this exactly at midnight, so it catches up on the
+// next visit instead) — matching hq.html's own venue display of the lock.
+// ═══════════════════════════════════════════════
+let categoryQueueDoc = null;
+let categoryQueueLoaded = false;
+
+function qThisWeekSundayKey(d) {
+  const x = new Date(d);
+  x.setHours(0, 0, 0, 0);
+  x.setDate(x.getDate() - x.getDay());
+  return qDateToKey(x);
+}
+
+async function loadCategoryQueue() {
+  if (categoryQueueLoaded) return categoryQueueDoc;
+  categoryQueueLoaded = true;
+  if (!currentProfile || !currentProfile.venueId) { categoryQueueDoc = { queue: [], currentLock: null, lastLockedWeekOf: null }; return categoryQueueDoc; }
+  try {
+    const snap = await getDoc(doc(db, 'venueCategoryQueues', currentProfile.venueId));
+    categoryQueueDoc = snap.exists() ? snap.data() : { queue: [], currentLock: null, lastLockedWeekOf: null };
+  } catch (e) {
+    categoryQueueDoc = { queue: [], currentLock: null, lastLockedWeekOf: null };
+  }
+  categoryQueueDoc.queue = categoryQueueDoc.queue || [];
+  await applyWeeklyLockIfDue();
+  return categoryQueueDoc;
+}
+
+async function applyWeeklyLockIfDue() {
+  const thisWeek = qThisWeekSundayKey(new Date());
+  if (categoryQueueDoc.lastLockedWeekOf === thisWeek) return;
+  const popped = categoryQueueDoc.queue.shift() || null;
+  categoryQueueDoc.currentLock = popped ? Object.assign({}, popped, { weekOf: thisWeek }) : (categoryQueueDoc.currentLock || null);
+  categoryQueueDoc.lastLockedWeekOf = thisWeek;
+  await saveCategoryQueue();
+}
+
+async function saveCategoryQueue() {
+  if (!currentProfile || !currentProfile.venueId || !categoryQueueDoc) return;
+  try {
+    await setDoc(doc(db, 'venueCategoryQueues', currentProfile.venueId), {
+      venueId: currentProfile.venueId,
+      venueName: (currentVenueRecord && currentVenueRecord.name) || currentProfile.name || '',
+      queue: categoryQueueDoc.queue || [],
+      currentLock: categoryQueueDoc.currentLock || null,
+      lastLockedWeekOf: categoryQueueDoc.lastLockedWeekOf || null
+    });
+  } catch (e) { console.error('Could not save category queue:', e); }
+}
+
+function isInCategoryQueue(id) {
+  if (!categoryQueueDoc) return false;
+  if (categoryQueueDoc.currentLock && categoryQueueDoc.currentLock.categoryId === id) return true;
+  return categoryQueueDoc.queue.some(q => q.categoryId === id);
+}
+
+async function addCategoryToQueue(id) {
+  const c = publishedCategories.find(x => x._id === id);
+  if (!c) return;
+  await loadCategoryQueue();
+  if (!isInCategoryQueue(id)) {
+    categoryQueueDoc.queue.push({ categoryId: c._id, categoryName: c.name, type: (c.type || '').split(',')[0].trim() });
+    await saveCategoryQueue();
+  }
+  closeDetail();
+  renderCategoryQueueSection();
+  navigateTo('queue');
+}
+async function moveCategoryQueueItem(idx, dir) {
+  const q = categoryQueueDoc.queue;
+  const ni = idx + dir;
+  if (ni < 0 || ni >= q.length) return;
+  const tmp = q[idx]; q[idx] = q[ni]; q[ni] = tmp;
+  await saveCategoryQueue();
+  renderCategoryQueueSection();
+}
+async function removeCategoryQueueItem(idx) {
+  categoryQueueDoc.queue.splice(idx, 1);
+  await saveCategoryQueue();
+  renderCategoryQueueSection();
+}
+function renderCategoryQueueSection() {
+  const el = document.getElementById('queue-category-list');
+  if (!el || !categoryQueueDoc) return;
+  const lock = categoryQueueDoc.currentLock;
+  const lockHtml = lock
+    ? '<div class="vp-row" style="border-color:var(--gold-dim);"><div class="vp-row-name">🔒 ' + esc(lock.categoryName) + '</div><div class="vp-row-meta">Locked in for the week of ' + esc(qFmtDate(lock.weekOf)) + (lock.type ? ' — ' + esc(lock.type) : '') + '</div></div>'
+    : '<div class="vp-empty">Nothing locked in yet.</div>';
+  const q = categoryQueueDoc.queue || [];
+  const queueHtml = q.length
+    ? q.map((item, i) => '<div class="vp-row" style="display:flex;align-items:center;justify-content:space-between;gap:0.75rem;">'
+        + '<div><div class="vp-row-name">' + (i + 1) + '. ' + esc(item.categoryName) + '</div><div class="vp-row-meta">' + esc(item.type || '') + '</div></div>'
+        + '<div style="display:flex;gap:0.3rem;flex-shrink:0;">'
+        + '<button class="weekday-btn" onclick="moveCategoryQueueItem(' + i + ',-1)"' + (i === 0 ? ' disabled' : '') + '>▲</button>'
+        + '<button class="weekday-btn" onclick="moveCategoryQueueItem(' + i + ',1)"' + (i === q.length - 1 ? ' disabled' : '') + '>▼</button>'
+        + '<button class="weekday-btn" style="color:#C0654F;" onclick="removeCategoryQueueItem(' + i + ')">✕</button>'
+        + '</div></div>').join('')
+    : '<div class="vp-empty">Nothing queued yet — browse Trivia, Bingo, or Mini Games and tap "Add to Queue."</div>';
+  el.innerHTML = '<div class="desc-title" style="font-size:0.9rem;margin-bottom:0.5rem;">This Week\'s Lock</div>' + lockHtml
+    + '<div class="desc-title" style="font-size:0.9rem;margin:1.25rem 0 0.5rem;">Up Next — reorder freely until Sunday midnight</div>' + queueHtml;
 }
 
 function esc(str) { return (str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
@@ -2433,14 +2627,16 @@ function cartLoad() {
 }
 function cartSave() {
   localStorage.setItem('belladonna_cart', JSON.stringify(cart));
+  const pendingEl = document.getElementById('queue-pending-list');
+  if (pendingEl) renderQueuePending();
 }
 function cartItemIdx(id) { return cart.findIndex(c => c.id === id); }
 function cartHas(id) { return cartItemIdx(id) >= 0; }
 
-function addToCart(id, name) {
+function addToCart(id, name, price) {
   if (cartHas(id)) { openCart(); return; }
   const now = new Date();
-  cart.push({ id, name, bookingType: 'date', selectedDate: null, weekdays: [],
+  cart.push({ id, name, price: price || 0, bookingType: 'date', selectedDate: null, weekdays: [],
                calMonth: now.getMonth(), calYear: now.getFullYear() });
   cartSave();
   updateCartCount();
@@ -2547,7 +2743,7 @@ function renderCartItems() {
 
     return '<div class="cart-item">'
       + '<div class="cart-item-header">'
-      + '<span class="cart-item-name">' + esc(item.name) + '</span>'
+      + '<span class="cart-item-name">' + esc(item.name) + (item.price ? ' <span style="color:var(--gold);font-size:0.72rem;">+$' + item.price.toFixed(2) + '</span>' : '') + '</span>'
       + '<button class="cart-item-remove" onclick="removeFromCart(\'' + item.id + '\')" title="Remove">✕</button>'
       + '</div>'
       + '<div class="cart-item-body">'
@@ -2686,7 +2882,7 @@ async function submitCart() {
     if (item.bookingType === 'weekly') scheduling = 'Weekly Gig — ' + (item.weekdays.length ? 'Every ' + item.weekdays.map(i=>WEEKDAYS[i]).join(' & ') : 'Days TBD');
     if (item.bookingType === 'later')  scheduling = 'Save for Later';
     if (item.bookingType === 'queue')  scheduling = 'Scheduling Queue (no date picked yet — find us an opening)';
-    return { name: item.name, scheduling };
+    return { name: item.name + (item.price ? ' (+$' + item.price.toFixed(2) + ' add-on)' : ''), scheduling };
   });
 
   const payload = { venue, contactName: name, email, phone, notes, items, submittedAt: serverTimestamp(), status: 'new' };
@@ -2817,7 +3013,8 @@ Object.assign(window, {
   showCheckoutForm, hideCheckoutForm, submitCart,
   openSeasonalPopup, closeSeasonalPopup, closeSeasonalPopupDirect, addSeasonalToCart,
   toggleSidebarFilter, toggleAccordion, clearAllFilters, removeFilter,
-  openNightDetail, closeDetail, handleOverlayClick, nightAddToCart,
+  openNightDetail, closeDetail, handleOverlayClick, nightAddToCart, openCategoryDetail, categoryAddToCart,
+  addCategoryToQueue, moveCategoryQueueItem, removeCategoryQueueItem,
   renderThemedNights, renderTrivia, renderBingo, renderSingAlongs, renderMiniGames, renderBattles,
   renderWayToPlay, renderQuickies, renderAlsoSee, loadBattlesPageContent
 });
@@ -2922,6 +3119,131 @@ async function loadCollaboratorsView() {
   } catch (e) {
     list.innerHTML = '<div class="vp-empty">Could not load collaborators.</div>';
   }
+}
+
+// ═══════════════════════════════════════════════
+// VENUE MODE — "Coming Up": confirmed Trivia/Bingo gigs at this venue, read
+// live from the Trivia Planner and Bingo apps' own Realtime Database trees
+// (the same data hq.html's own Dashboard reads). Venue Menu accounts and the
+// Planner/Bingo apps don't share a venue ID — Ahnna's own tools bridge them
+// by matching the venue's NAME, so this does the same. HQ's own gig schedule
+// (Karaoke, Private Events, etc.) lives only in Ahnna's browser's
+// localStorage, not Firebase, so it can't be read from here — flagged in the
+// view's own copy rather than silently missing.
+// ═══════════════════════════════════════════════
+const Q_PLANNER_DAY_MAP = { Sun:0, Mon:1, Tue:2, Wed:3, Thu:4, Fri:5, Sat:6 };
+function qNormVenueName(v) { return (v||'').toString().toLowerCase().trim(); }
+function qDateToKey(d) { return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function qFmtDate(dk) {
+  const d = new Date(dk + 'T12:00:00');
+  if (isNaN(d)) return dk;
+  return d.toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' });
+}
+
+let queueUpcomingLoaded = false;
+let queueUpcomingItems = [];
+async function loadVenueUpcoming() {
+  if (queueUpcomingLoaded) return queueUpcomingItems;
+  queueUpcomingLoaded = true;
+  if (!currentVenueRecord || !currentVenueRecord.name) return queueUpcomingItems;
+  const vName = qNormVenueName(currentVenueRecord.name);
+  try {
+    const [pvSnap, pgSnap, bvSnap, bsSnap, bcSnap, gigSnap] = await Promise.all([
+      get(ref(rtdb, 'trivia/planner/venues')),
+      get(ref(rtdb, 'trivia/planner/gigs')),
+      get(ref(rtdb, 'bingo/landing/venues')),
+      get(ref(rtdb, 'bingo/landing/schedule')),
+      get(ref(rtdb, 'bingo/landing/categories')),
+      getDocs(collection(db, 'gig_schedule'))
+    ]);
+    const plannerVenues = pvSnap.exists() ? (pvSnap.val() || {}) : {};
+    const plannerGigs   = pgSnap.exists() ? (pgSnap.val() || {}) : {};
+    const bingoVenues   = bvSnap.exists() ? (bvSnap.val() || {}) : {};
+    const bingoSchedule = bsSnap.exists() ? Object.values(bsSnap.val() || {}) : [];
+    const bingoCats     = bcSnap.exists() ? (bcSnap.val() || {}) : {};
+    const hqGigs        = gigSnap.docs.map(d => d.data());
+
+    const items = [];
+    const today = new Date(); today.setHours(0,0,0,0);
+
+    // Trivia is a recurring weekly slot at this venue — project it 8 weeks out.
+    const triviaMatch = Object.entries(plannerVenues).find(([id,v]) => qNormVenueName(v.name) === vName);
+    if (triviaMatch) {
+      const [pid, pv] = triviaMatch;
+      if (pv.status === 'active' || pv.status === 'seasonal') {
+        const targetDow = Q_PLANNER_DAY_MAP[pv.day];
+        if (targetDow !== undefined) {
+          for (let i = 0; i < 56; i++) {
+            const d = new Date(today); d.setDate(d.getDate() + i);
+            if (d.getDay() !== targetDow) continue;
+            const dk = qDateToKey(d);
+            const override = (plannerGigs[pid] || {})[dk];
+            const cancelled = !!(override && override.status === 'cancelled');
+            items.push({ date: dk, kind: 'Trivia', cancelled, notes: (override && (override.themeName || override.note)) || '' });
+          }
+        }
+      }
+    }
+
+    // Bingo gigs are individually dated schedule entries.
+    const bingoMatch = Object.entries(bingoVenues).find(([id,v]) => qNormVenueName(v.name) === vName);
+    if (bingoMatch) {
+      const [bid] = bingoMatch;
+      const todayKey = qDateToKey(today);
+      bingoSchedule.filter(e => e.venueId === bid && e.date >= todayKey).forEach(e => {
+        const roundNames = (e.rounds || e.categoryIds || []).map(cid => bingoCats[cid] ? bingoCats[cid].title : null).filter(Boolean);
+        items.push({ date: e.date, kind: 'Bingo', cancelled: false, notes: (roundNames.length ? 'Rounds: ' + roundNames.join(', ') : '') + (e.notes ? (roundNames.length ? ' — ' : '') + e.notes : '') });
+      });
+    }
+
+    // HQ's own gig schedule (Karaoke, Private Events, etc.) — Trivia and Bingo
+    // are excluded here since those two are already covered above from their
+    // own live Planner/Bingo data (HQ's copy of those can lag behind what's
+    // actually set in those apps, so the apps' own data wins for those kinds).
+    const todayKeyHq = qDateToKey(today);
+    hqGigs.filter(g => g.venue && qNormVenueName(g.venue) === vName && g.date >= todayKeyHq
+      && !['trivia','bingo'].includes((g.kind||'').toLowerCase())
+    ).forEach(g => {
+      items.push({ date: g.date, kind: g.kind || 'Event', cancelled: g.status === 'cancelled', notes: g.notes || '' });
+    });
+
+    items.sort((a,b) => a.date.localeCompare(b.date));
+    queueUpcomingItems = items;
+  } catch (e) {
+    console.error('Could not load upcoming schedule:', e);
+  }
+  return queueUpcomingItems;
+}
+
+async function loadQueueView() {
+  const confirmedEl = document.getElementById('queue-confirmed-list');
+  confirmedEl.innerHTML = '<div class="vp-empty">Loading…</div>';
+
+  const items = await loadVenueUpcoming();
+  if (!items.length) {
+    confirmedEl.innerHTML = '<div class="vp-empty">' + (currentVenueRecord ? 'Nothing confirmed yet for the next 8 weeks.' : 'Could not match your account to a venue record yet — contact Belladonna to get linked up.') + '</div>';
+  } else {
+    confirmedEl.innerHTML = items.map(it => '<div class="vp-row">'
+      + '<div class="vp-row-name">' + esc(qFmtDate(it.date)) + ' — ' + esc(it.kind) + (it.cancelled ? ' <span style="color:#C0654F;">(Cancelled)</span>' : '') + '</div>'
+      + (it.notes ? '<div class="vp-row-meta">' + esc(it.notes) + '</div>' : '')
+      + '</div>').join('');
+  }
+
+  renderQueuePending();
+
+  await loadCategoryQueue();
+  renderCategoryQueueSection();
+}
+
+function renderQueuePending() {
+  const pendingEl = document.getElementById('queue-pending-list');
+  if (!pendingEl) return;
+  if (!cart.length) { pendingEl.innerHTML = '<div class="vp-empty">Nothing in your queue yet — add a Themed Night from the menu to get started.</div>'; return; }
+  const BOOKING_LABELS = { date:'Single Date', weekly:'Weekly Gig', queue:'Scheduling Queue', later:'Save for Later' };
+  pendingEl.innerHTML = cart.map(item => '<div class="vp-row">'
+    + '<div class="vp-row-name">' + esc(item.name) + (item.price ? ' <span style="color:var(--gold);font-size:0.78rem;">+$' + item.price.toFixed(2) + '</span>' : '') + '</div>'
+    + '<div class="vp-row-meta">' + esc(BOOKING_LABELS[item.bookingType] || item.bookingType) + (item.selectedDate ? ' — ' + esc(item.selectedDate) : '') + '</div>'
+    + '</div>').join('');
 }
 
 // ═══════════════════════════════════════════════
