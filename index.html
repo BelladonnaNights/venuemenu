@@ -2422,11 +2422,13 @@ const activeLibTypeFilters = new Set(); // empty = show all
 function renderLibTypePills() {
   const bar = document.getElementById('lib-type-pills');
   if (!bar) return;
-  // Collect all unique types from the full category list
+  // Collect all unique types from the full library: Firestore categories
+  // plus the live Trivia / Bingo records, so every type is filterable.
   const typeSet = new Set();
-  categories.forEach(c => {
+  categories.filter(c => !isSupersededOldCategory(c)).forEach(c => {
     (c.type||'').split(',').map(t => t.trim()).filter(Boolean).forEach(t => typeSet.add(t));
   });
+  [...liveTriviaCats, ...liveBingoCats].forEach(c => { if (c.type) typeSet.add(c.type); });
   const types = [...typeSet].sort((a,b) => a.toLowerCase().localeCompare(b.toLowerCase()));
   if (!types.length) { bar.innerHTML = ''; return; }
   const hasActive = activeLibTypeFilters.size > 0;
@@ -2456,6 +2458,9 @@ function clearLibTypeFilters() {
 
 function renderLibrary() {
   renderLibTypePills();
+  // The Library is the complete set: Firestore categories (minus superseded
+  // docs) + every live Trivia and Bingo record, each once, by its own id.
+  // Same suppression + same sources as the Planner's Theme Library.
   let filtered = categories.filter(c => {
     if (isSupersededOldCategory(c)) return false;
     if (activeLibTypeFilters.size > 0) {
@@ -2465,17 +2470,19 @@ function renderLibrary() {
     if (!catMatchesSidebarFilters(c)) return false;
     return true;
   });
-  filtered = maybeSortAZ(filtered, 'library', 'name');
+  // Live cats carry no sidebar-filter dimensions, so they hide while one is active.
+  const liveAll = [...liveTriviaCats, ...liveBingoCats];
+  const liveFiltered = hasSidebarFilters() ? [] : liveAll.filter(c =>
+    activeLibTypeFilters.size === 0 || activeLibTypeFilters.has(c.type));
 
-  const liveShown = activeLibTypeFilters.size === 0; // live cats don't carry a `type` pill to filter by yet
-  const liveCards = liveShown ? [...liveTriviaCats, ...liveBingoCats].map(liveCategoryCardHTML).join('') : '';
+  const items = filtered.map(c => ({ html: () => categoryCardHTML(c, categories.indexOf(c), ''), name: c.name || '' }))
+    .concat(liveFiltered.map(c => ({ html: () => liveCategoryCardHTML(c), name: c.name || '' })));
+  if (sortAZState['library']) items.sort((a,b) => a.name.localeCompare(b.name));
 
-  const nonSupersededTotal = categories.filter(c => !isSupersededOldCategory(c)).length;
-  document.getElementById('lib-results-meta').textContent =
-    filtered.length + ' of ' + nonSupersededTotal + ' categories' + (liveShown && (liveTriviaCats.length||liveBingoCats.length) ? ' + ' + (liveTriviaCats.length+liveBingoCats.length) + ' live' : '');
-
-  document.getElementById('lib-empty').style.display = (nonSupersededTotal === 0 && !liveTriviaCats.length && !liveBingoCats.length) ? 'block' : 'none';
-  document.getElementById('category-grid').innerHTML = filtered.map(c => categoryCardHTML(c, categories.indexOf(c), '')).join('') + liveCards;
+  const nonSupersededTotal = categories.filter(c => !isSupersededOldCategory(c)).length + liveAll.length;
+  document.getElementById('lib-results-meta').textContent = items.length + ' of ' + nonSupersededTotal + ' categories';
+  document.getElementById('lib-empty').style.display = nonSupersededTotal === 0 ? 'block' : 'none';
+  document.getElementById('category-grid').innerHTML = items.map(i => i.html()).join('');
 }
 
 function categoryCardHTML(cat, idx, highlight) {
