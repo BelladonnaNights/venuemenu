@@ -1365,13 +1365,14 @@
     <div class="section-title">Portal Content</div>
     <p style="color:var(--text-muted);font-size:0.9rem;margin-bottom:1.25rem;max-width:720px;">The contract text and collaborators directory shown to venues in the Venue Portal.</p>
 
-    <div class="section-title" style="font-size:0.68rem;">Contract Text</div>
+    <div class="section-title" style="font-size:0.68rem;">Contract PDF</div>
     <div class="card" style="margin-bottom:2rem;">
       <div class="form-group" style="margin-bottom:1rem;">
-        <label style="font-family:'Cinzel',serif;font-size:0.62rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);">Text shown to venues <span style="color:var(--text-dim);font-weight:400;text-transform:none;letter-spacing:0;">— the "minor tweaks may have been made" caveat is added automatically, don't repeat it here</span></label>
-        <textarea id="pc-contract-text" style="min-height:220px;" placeholder="Paste the current contract text here…"></textarea>
+        <label style="font-family:'Cinzel',serif;font-size:0.62rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);">PDF shown to venues</label>
+        <div id="pc-contract-current" style="font-size:0.82rem;color:var(--text-dim);margin-bottom:0.6rem;">No contract on file yet.</div>
+        <input type="file" id="pc-contract-pdf-input" accept="application/pdf" onchange="handleContractPdfUpload(event)">
       </div>
-      <button class="btn" onclick="savePortalContract()">Save Contract</button>
+      <button class="btn" id="pc-contract-save-btn" onclick="savePortalContract()" disabled>Save Contract</button>
     </div>
 
     <div class="section-title" style="font-size:0.68rem;">Collaborators</div>
@@ -2052,6 +2053,7 @@ function mapLiveCategory(id, c, kind){
     venueMenuShow: !!vm.show,
     shows: Array.isArray(vm.shows) ? vm.shows : [],
     plannerTier: c.plannerTier || null,
+    karaokeSongs: Array.isArray(c.karaokeSongs) ? c.karaokeSongs : [],
     bannerData: vm.bannerUrl || c.bgImage || c.squareImage || c.image || null
   };
 }
@@ -3140,8 +3142,17 @@ function nightCatSelectorPool() {
 }
 
 function nightCatGroupLabel(c) {
-  if (c._liveKind === 'trivia' || isTrivia(c)) return 'Trivia';
+  // A live RTDB trivia/categories record is tagged type:'trivia' no matter
+  // what Planner tier it's classified under (Karaoke, Sing-Along, Mini
+  // Games, Music Bingo all live there too — see planner.html's Theme
+  // Library) — so plannerTier has to be checked FIRST, before the
+  // _liveKind/isTrivia() fallback would otherwise swallow every one of
+  // them into "Trivia".
+  if (c.plannerTier === 'karaoke') return 'Karaoke';
+  if (c.plannerTier === 'sing-along') return 'Sing-Along';
+  if (c.plannerTier === 'mini-games') return 'Mini Games';
   if (c._liveKind === 'bingo' || isBingo(c)) return 'Bingo';
+  if (c._liveKind === 'trivia' || isTrivia(c)) return 'Trivia';
   if (isKaraoke(c)) return 'Karaoke';
   if (isSingAlong(c)) return 'Sing-Along';
   if (isMiniGame(c)) return 'Mini Games';
@@ -5822,22 +5833,50 @@ window.setFiStatus = async function(source, id, status) {
 // PORTAL CONTENT (folded in from admin-portal-content.html)
 // ═══════════════════════════════════════════════
 let pcLoaded = false;
+let pcContractPdfData = null; // pending base64 data URI for the contract PDF, set via handleContractPdfUpload
 async function loadPortalContent() {
   if (pcLoaded) return;
   pcLoaded = true;
   try {
     const snap = await getDoc(doc(db, 'contracts', 'current'));
-    if (snap.exists()) document.getElementById('pc-contract-text').value = snap.data().text || '';
+    const data = snap.exists() ? snap.data() : null;
+    const curEl = document.getElementById('pc-contract-current');
+    if (data && data.pdfData) {
+      curEl.innerHTML = 'Current file: ' + esc(data.fileName || 'contract.pdf')
+        + ' — <a href="' + data.pdfData + '" target="_blank" rel="noopener">view</a>';
+    } else {
+      curEl.textContent = 'No contract on file yet.';
+    }
   } catch (e) { toast('Could not load contract: ' + e.message, 'error'); }
   loadPortalCollaborators();
 }
+window.handleContractPdfUpload = function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  if (file.type !== 'application/pdf') { toast('Please choose a PDF file.', 'error'); e.target.value = ''; return; }
+  const reader = new FileReader();
+  reader.onload = ev => {
+    pcContractPdfData = ev.target.result;
+    pcContractPdfName = file.name;
+    document.getElementById('pc-contract-save-btn').disabled = false;
+  };
+  reader.readAsDataURL(file);
+};
+let pcContractPdfName = '';
 window.savePortalContract = async function() {
+  if (!pcContractPdfData) { toast('Choose a PDF first.', 'error'); return; }
   try {
     await setDoc(doc(db, 'contracts', 'current'), {
-      text: document.getElementById('pc-contract-text').value,
+      pdfData: pcContractPdfData,
+      fileName: pcContractPdfName,
       updatedAt: serverTimestamp()
     }, { merge: true });
     toast('Contract saved', 'success');
+    document.getElementById('pc-contract-save-btn').disabled = true;
+    document.getElementById('pc-contract-pdf-input').value = '';
+    pcContractPdfData = null;
+    document.getElementById('pc-contract-current').innerHTML =
+      'Current file: ' + esc(pcContractPdfName) + ' — just saved';
   } catch (e) {
     toast('Save failed: ' + e.message, 'error');
   }
