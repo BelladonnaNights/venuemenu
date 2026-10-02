@@ -771,6 +771,15 @@
   .cat-select-item.selected { border-color: var(--gold-dim); background: rgba(201,168,76,0.08); }
   .cat-select-item input[type="checkbox"] { accent-color: var(--gold); width: 16px; height: 16px; flex-shrink: 0; cursor: pointer; }
   .cat-select-name { font-size: 0.9rem; color: var(--text); flex: 1; line-height: 1.3; }
+  .cat-select-group { display: grid; gap: 6px; }
+  .cat-select-group + .cat-select-group { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+  .cat-select-group-label {
+    font-family: 'Cinzel', serif;
+    font-size: 0.68rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--gold-dim);
+  }
 
   /* NIGHT DETAIL VIEW */
   .night-detail-banner {
@@ -1410,7 +1419,7 @@
           </div>
           <div class="form-group">
             <label class="form-label">Type</label>
-            <input type="text" id="cat-type" placeholder="e.g. Trivia, Sing-Along, Book Trivia…" list="type-datalist">
+            <input type="text" id="cat-type" placeholder="e.g. Trivia, Sing-Along, Book Trivia…" list="type-datalist" oninput="updateCatKaraokeVisibility()">
             <datalist id="type-datalist"></datalist>
           </div>
         </div>
@@ -1427,6 +1436,10 @@
         <div class="form-group">
           <label class="form-label">Notes <span style="color:var(--text-dim);font-size:0.72rem;font-style:italic;font-family:'Crimson Text',serif;text-transform:none;letter-spacing:0;">— for trivia/bingo: shows & titles. For mini games: shown on the card face.</span></label>
           <textarea id="cat-shows" rows="4" placeholder="Trivia/Bingo: Vampire Diaries, Charmed, Sabrina…&#10;Mini Game: Rules, description, how to play, etc."></textarea>
+        </div>
+        <div class="form-group" id="cat-karaoke-wrap" style="display:none;">
+          <label class="form-label">Themed Karaoke Song List <span style="color:var(--text-dim);font-size:0.72rem;font-style:italic;font-family:'Crimson Text',serif;text-transform:none;letter-spacing:0;">— optional. Leave blank for plain regular karaoke. One song per line — this becomes a distinct themed set (like "Buffy Karaoke") in the venue's popup.</span></label>
+          <textarea id="cat-karaoke-songs" rows="4" placeholder="e.g.&#10;Buffy Theme Song&#10;I'll Never Tell (Once More, With Feeling)&#10;Goodbye to You"></textarea>
         </div>
         <div class="form-group">
           <label class="form-label">Admin Notes <span style="font-size:0.65rem;color:#C0654F;background:rgba(139,58,42,0.15);border:1px solid rgba(139,58,42,0.3);padding:1px 7px;border-radius:3px;font-family:'Crimson Text',serif;text-transform:uppercase;font-style:normal;letter-spacing:0.08em;">Private</span></label>
@@ -2307,6 +2320,16 @@ function isTrivia(cat) {
   // Matches all trivia types: Trivia, Full Trivia, Book Trivia, Mini Trivia, etc.
   return getTypes(cat).some(t => t.includes('trivia'));
 }
+function isKaraoke(cat) {
+  return getTypes(cat).some(t => t.includes('karaoke'));
+}
+// isSingAlong already exists (SING-ALONG RENDER + FILTER TAGS section) — reused
+// here via hoisting, not redefined, to avoid clashing with its more precise
+// exact-match version.
+function updateCatKaraokeVisibility() {
+  const typeVal = (document.getElementById('cat-type').value || '').toLowerCase();
+  document.getElementById('cat-karaoke-wrap').style.display = typeVal.includes('karaoke') ? '' : 'none';
+}
 // -- Shared A–Z sort toggle, usable on every tab's grid --
 let sortAZState = {};
 function toggleSortAZ(tabKey){
@@ -2632,6 +2655,8 @@ function openAddCategoryModal() {
   document.getElementById('cat-shows').value = '';
   document.getElementById('cat-notes').value = '';
   document.getElementById('cat-tags').value = '';
+  document.getElementById('cat-karaoke-songs').value = '';
+  updateCatKaraokeVisibility();
   clearCatDimFields();
   document.getElementById('cat-banner-url').value = '';
   document.getElementById('cat-minigame-url').value = '';
@@ -2664,6 +2689,8 @@ function editCategory(idx) {
   document.getElementById('cat-shows').value = (c.shows || []).join('\n');
   document.getElementById('cat-notes').value = c.notes || '';
   document.getElementById('cat-tags').value = c.tags || '';
+  document.getElementById('cat-karaoke-songs').value = (c.karaokeSongs || []).join('\n');
+  updateCatKaraokeVisibility();
   loadCatDimFields(c);
   const pts = c.publishedTabs || (c.published ? ['trivia','mini','singa'] : []);
   document.getElementById('cat-pub-karaoke').checked   = pts.includes('karaoke');
@@ -2782,6 +2809,8 @@ async function saveCategoryFromModal() {
 
   const showsRaw = document.getElementById('cat-shows').value;
   const shows = showsRaw.split(/[\n|]/).map(s => s.trim()).filter(Boolean);
+  const karaokeSongsRaw = document.getElementById('cat-karaoke-songs').value;
+  const karaokeSongs = karaokeSongsRaw.split(/[\n|]/).map(s => s.trim()).filter(Boolean);
   const typeVal = document.getElementById('cat-type').value.trim();
 
   const isEdit = editingCatIndex >= 0;
@@ -2807,6 +2836,7 @@ async function saveCategoryFromModal() {
     type: document.getElementById('cat-type').value.trim(),
     theme: document.getElementById('cat-theme').value.trim(),
     shows,
+    karaokeSongs: typeVal.toLowerCase().includes('karaoke') ? karaokeSongs : [],
     notes: document.getElementById('cat-notes').value.trim(),
     tags: document.getElementById('cat-tags').value.trim(),
     ...getCatDimValues(),
@@ -3094,15 +3124,58 @@ document.addEventListener('input', e => {
   }
 });
 
+// The Night category picker needs every category a venue could actually be
+// offered for a themed night — which, since the Trivia/Bingo unification,
+// means merging the Firestore-native library (Karaoke, Sing-Along, Mini
+// Games, plus any not-yet-migrated Trivia/Bingo docs) with the LIVE
+// Trivia/Bingo libraries in RTDB (liveTriviaCats/liveBingoCats). Those live
+// categories never used to show up here at all, which meant most real
+// Trivia/Bingo content couldn't be linked to a Night. Grouping by round-type
+// also makes it obvious at a glance when a theme has more than one Trivia or
+// Bingo OPTION linked (exactly what "Blockbuster Night: on-screen trivia OR
+// blockbuster trivia" needs to look like while building it).
+function nightCatSelectorPool() {
+  const firestoreCats = categories.filter(c => !isSupersededOldCategory(c));
+  return [...firestoreCats, ...liveTriviaCats, ...liveBingoCats];
+}
+
+function nightCatGroupLabel(c) {
+  if (c._liveKind === 'trivia' || isTrivia(c)) return 'Trivia';
+  if (c._liveKind === 'bingo' || isBingo(c)) return 'Bingo';
+  if (isKaraoke(c)) return 'Karaoke';
+  if (isSingAlong(c)) return 'Sing-Along';
+  if (isMiniGame(c)) return 'Mini Games';
+  return 'Other';
+}
+const NIGHT_CAT_GROUP_ORDER = ['Trivia', 'Bingo', 'Karaoke', 'Sing-Along', 'Mini Games', 'Other'];
+const NIGHT_CAT_GROUP_ICON = { Trivia: '🧠', Bingo: '🎵', Karaoke: '🎤', 'Sing-Along': '🎶', 'Mini Games': '🎲', Other: '✦' };
+
+function nightCatItemHTML(c, selectedIds) {
+  const checked = selectedIds.includes(c.name);
+  const hasKaraokeList = Array.isArray(c.karaokeSongs) && c.karaokeSongs.length > 0;
+  return `<label class="cat-select-item${checked ? ' selected' : ''}">
+      <input type="checkbox" value="${esc(c.name)}" ${checked ? 'checked' : ''} onchange="this.closest('label').classList.toggle('selected',this.checked)">
+      ${c.bannerData ? `<img src="${c.bannerData}" style="width:48px; height:32px; object-fit:cover; border-radius:3px; flex-shrink:0;" alt="">` : ''}
+      <span class="cat-select-name">${esc(c.name)}${c._rawType ? ` <span class="badge badge-type" style="font-size:0.65rem;">${esc(c._rawType)}</span>` : (c.type ? ` <span class="badge badge-type" style="font-size:0.65rem;">${esc(c.type)}</span>` : '')}
+      ${hasKaraokeList ? ` <span class="badge badge-type" style="font-size:0.65rem;color:#C9A84C;border-color:rgba(201,168,76,0.4);">🎤 Themed list (${c.karaokeSongs.length})</span>` : ''}</span>
+    </label>`;
+}
+
 function populateNightCatSelector(selectedIds) {
   const sel = document.getElementById('night-cat-selector');
-  sel.innerHTML = categories.map(c =>
-    `<label class="cat-select-item${selectedIds.includes(c.name) ? ' selected' : ''}">
-      <input type="checkbox" value="${esc(c.name)}" ${selectedIds.includes(c.name) ? 'checked' : ''} onchange="this.closest('label').classList.toggle('selected',this.checked)">
-      ${c.bannerData ? `<img src="${c.bannerData}" style="width:48px; height:32px; object-fit:cover; border-radius:3px; flex-shrink:0;" alt="">` : ''}
-      <span class="cat-select-name">${esc(c.name)}${c.type ? ` <span class="badge badge-type" style="font-size:0.65rem;">${esc(c.type)}</span>` : ''}</span>
-    </label>`
-  ).join('');
+  const pool = nightCatSelectorPool();
+  const groups = {};
+  pool.forEach(c => {
+    const g = nightCatGroupLabel(c);
+    (groups[g] = groups[g] || []).push(c);
+  });
+  sel.innerHTML = NIGHT_CAT_GROUP_ORDER.filter(g => groups[g] && groups[g].length).map(g => {
+    const items = [...groups[g]].sort((a,b) => a.name.localeCompare(b.name));
+    return `<div class="cat-select-group" data-group="${esc(g)}">
+      <div class="cat-select-group-label">${NIGHT_CAT_GROUP_ICON[g] || ''} ${esc(g)}${items.length > 1 ? ` <span style="color:var(--text-dim);font-weight:normal;">— ${items.length} options available</span>` : ''}</div>
+      ${items.map(c => nightCatItemHTML(c, selectedIds)).join('')}
+    </div>`;
+  }).join('') || `<p style="color:var(--text-dim);font-size:0.85rem;padding:0.5rem;">No categories yet — add some in the Library, Trivia, or Bingo tabs first.</p>`;
 }
 
 // ═══════════════════════════════════════════════
@@ -3138,8 +3211,14 @@ function removeEnhancement(idx) {
 
 function filterNightCatSelector() {
   const q = document.getElementById('night-cat-search').value.toLowerCase();
-  document.querySelectorAll('#night-cat-selector .cat-select-item').forEach(el => {
-    el.style.display = el.textContent.toLowerCase().includes(q) ? '' : 'none';
+  document.querySelectorAll('#night-cat-selector .cat-select-group').forEach(group => {
+    let anyVisible = false;
+    group.querySelectorAll('.cat-select-item').forEach(el => {
+      const match = el.textContent.toLowerCase().includes(q);
+      el.style.display = match ? '' : 'none';
+      if (match) anyVisible = true;
+    });
+    group.style.display = anyVisible ? '' : 'none';
   });
 }
 
@@ -5821,7 +5900,7 @@ Object.assign(window, {
   toggleLibTypeFilter, clearLibTypeFilters,
   openSeasonalModal, closeSeasonalModal, saveSeasonalEvent, deleteSeasonalEvent, setSeasonalDateType, renderSeasonalAdmin, seToggleAlwaysOn,
   switchBookingsTab, adminCalNav, adminCalToggle, setCalMode, saveAvailability, setRequestFilter, updateRequestStatus, deleteRequest, initBookingsTab,
-  closeCatModal, saveCategoryFromModal,
+  closeCatModal, saveCategoryFromModal, updateCatKaraokeVisibility,
   handleCatBannerUpload, clearCatBanner, handleCatBannerUrl, handleCatMiniUrl,
   openNightDetail, closeNightDetail, openNewNightModal,
   editNight, deleteNight, deleteNightFromModal, closeNightModal, saveNight,
