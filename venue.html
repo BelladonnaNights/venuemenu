@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Belladonna Audio Alchemies — Venue Menu</title>
-<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Cinzel:wght@400;600;700&family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=DM+Sans:wght@300;400;500;600&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
   :root {
     --gold: #C9A84C; --gold-light: #E8C97A; --gold-dim: #8B6B2A;
@@ -782,6 +782,29 @@
     .desc-view { padding: 1rem; }
     .desc-title { font-size: 1.3rem; }
   }
+
+  /* ═══ BELLADONNA SHARED THEME — same palette, fonts, header, tabs and buttons as Trivia Admin / Planner / HQ ═══ */
+  :root {
+    --gold: #c9a84c; --gold-light: #e8c96a; --gold-dim: rgba(201,168,76,.10); --gold-glow: rgba(201,168,76,.28);
+    --gold-shine: linear-gradient(135deg,#c9a84c 0%,#f5df90 45%,#c9a84c 70%,#e2b84a 100%);
+    --ink: #080808; --surface: #111111; --surface2: #181818; --surface3: #222222;
+    --border: rgba(255,255,255,.07); --border2: rgba(255,255,255,.13); --border-strong: rgba(255,255,255,.22);
+    --text: #f0ede8; --text-muted: #b0a898; --text-dim: #5a5248;
+    --display: 'Bebas Neue', sans-serif; --cinzel: 'Cinzel', serif; --serif: 'EB Garamond', serif; --font: 'DM Sans', sans-serif;
+  }
+  body { font-family: var(--font); font-size: 15px; background-image: none; background: var(--ink); color: var(--text); }
+  ::-webkit-scrollbar-thumb { background: rgba(201,168,76,.2); border-radius: 3px; }
+  .site-header { padding: 0 2rem; min-height: 64px; background: rgba(8,8,8,.95); backdrop-filter: blur(16px); border-bottom: 1px solid var(--border); }
+  .wordmark { font-family: var(--display); font-weight: 400; letter-spacing: .06em; text-transform: none; flex-direction: row; align-items: baseline; gap: .4em; }
+  .wordmark-one { font-size: 24px; color: #fff; }
+  .wordmark-two { font-size: 24px; background: var(--gold-shine); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  .nav-tab { font-family: var(--cinzel); font-size: 10.5px; letter-spacing: .12em; border: none; border-bottom: 2px solid transparent; border-radius: 0; padding: 22px 14px 20px; color: var(--text-dim); }
+  .nav-tab:hover { color: var(--gold-light); }
+  .nav-tab.active { color: var(--gold); border: none; border-bottom: 2px solid var(--gold); }
+  .back-btn, .sidebar-toggle-btn { font-family: var(--cinzel); font-size: 10px; border-radius: var(--radius, 8px); border-color: var(--border2); }
+  input[type="text"], input[type="search"], input[type="email"], input[type="tel"], input[type="number"], input[type="date"], input[type="url"], textarea, select { font-family: var(--font); font-size: 14px; border-radius: 8px; background: var(--surface2); border-color: var(--border2); }
+  .btn, .btn-primary, .primary-btn { font-family: var(--cinzel); letter-spacing: .12em; border-radius: 8px; }
+  .filter-chip, .pill { border-radius: 99px; font-family: var(--cinzel); }
 </style>
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 </head>
