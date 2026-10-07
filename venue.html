@@ -825,6 +825,7 @@
       <button class="nav-tab active" id="nav-menu" onclick="navigateTo('menu')">Main Menu</button>
       <button class="nav-tab" id="nav-themed" onclick="navigateTo('themed')">Themed Nights</button>
       <button class="nav-tab" id="nav-singalongs" onclick="navigateTo('singalongs')">Sing-Alongs</button>
+      <button class="nav-tab" id="nav-movies" onclick="navigateTo('movies')">Movies</button>
       <button class="nav-tab venue-only-nav" style="display:none;" id="nav-queue" onclick="navigateTo('queue')">Coming Up</button>
       <button class="nav-tab venue-only-nav" style="display:none;" id="nav-contract" onclick="navigateTo('contract')">Contract</button>
       <button class="nav-tab venue-only-nav" style="display:none;" id="nav-feedback" onclick="navigateTo('feedback')">Feedback</button>
@@ -951,6 +952,15 @@
             <div class="menu-card-body">
               <div class="menu-card-title">Sing-Alongs</div>
               <div class="menu-card-desc">Hosted sing-along events built around iconic artists, eras, and moments.</div>
+              <div class="menu-card-arrow">→</div>
+            </div>
+          </div>
+
+          <div class="menu-card" onclick="navigateTo('movies')">
+            <div class="menu-card-img-placeholder"></div>
+            <div class="menu-card-body">
+              <div class="menu-card-title">Movie Nights</div>
+              <div class="menu-card-desc">Classic public-domain films we can screen at your venue — no license fees.</div>
               <div class="menu-card-arrow">→</div>
             </div>
           </div>
@@ -1128,6 +1138,24 @@
         <div id="active-filters-bar-singa" class="active-filters-bar"></div>
         <div id="singa-grid" class="minigames-grid"></div>
         <div id="singa-empty" class="empty-state" style="display:none;"><h2>No Sing-Alongs Published Yet</h2></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MOVIES browse (public-domain films) -->
+  <div class="view" id="view-movies">
+    <div class="app-layout">
+      <div class="browse-main">
+        <button class="back-btn" onclick="navigateTo('menu')">← Back to Menu</button>
+        <div class="browse-toolbar">
+          <div class="search-wrap">
+            <span>🔍</span>
+            <input type="search" autocomplete="off" class="search-input" id="movies-search" placeholder="Search movies…" oninput="renderMovies()">
+          </div>
+        </div>
+        <div style="font-size:0.95rem;color:var(--text-muted);margin:0.25rem 0 1rem;">Public-domain classics — free to screen, no licensing needed. Add a movie to your Wish List or request a date.</div>
+        <div id="movies-grid" class="minigames-grid"></div>
+        <div id="movies-empty" class="empty-state" style="display:none;"><h2>No Movies Published Yet</h2></div>
       </div>
     </div>
   </div>
@@ -1603,6 +1631,7 @@ window.setPreviewMode = function(mode) {
   // Re-render whatever's on screen so star buttons / venue-only tabs reflect the preview
   if (currentView === 'themed') renderThemedNights();
   if (currentView === 'singalongs') renderSingAlongs();
+  if (currentView === 'movies') renderMovies();
   if (['contract','feedback','concurrent','collaborators'].includes(currentView) && effectiveMode() !== 'venue') navigateTo('menu');
 };
 
@@ -2015,6 +2044,7 @@ async function load() {
       .sort((a,b) => (a.position||999)-(b.position||999));
     publishedCategories = catsSnap.docs.map(d => ({_id:d.id,...d.data()}));
     await loadLiveCategories();
+    await loadMovies();
     await loadFilterDims();
   await loadMenuConfig();
   } catch(e) {
@@ -2133,7 +2163,7 @@ function navigateTo(view, typeFilter) {
   window.scrollTo(0, 0);
   // Update nav tab active state
   document.querySelectorAll('#main-nav .nav-tab').forEach(t => t.classList.remove('active'));
-  const navMap = { menu:'nav-menu', themed:'nav-themed', singalongs:'nav-singalongs', queue:'nav-queue', contract:'nav-contract', feedback:'nav-feedback', concurrent:'nav-concurrent', collaborators:'nav-collaborators' };
+  const navMap = { menu:'nav-menu', themed:'nav-themed', singalongs:'nav-singalongs', movies:'nav-movies', queue:'nav-queue', contract:'nav-contract', feedback:'nav-feedback', concurrent:'nav-concurrent', collaborators:'nav-collaborators' };
   const activeNav = navMap[view];
   if (activeNav) document.getElementById(activeNav)?.classList.add('active');
   // Render the appropriate browse view
@@ -2141,6 +2171,7 @@ function navigateTo(view, typeFilter) {
   if (view === 'trivia')     { renderTrivia();     renderAlsoSee('trivia'); }
   if (view === 'bingo')      { renderBingo();      renderAlsoSee('bingo'); }
   if (view === 'singalongs') renderSingAlongs();
+  if (view === 'movies')     renderMovies();
   if (view === 'minigames')  renderMiniGames();
   if (view === 'battles')    { renderBattles(); loadBattlesPageContent(); }
   if (view === 'waytoplay')  renderWayToPlay();
@@ -2598,6 +2629,66 @@ function openCategoryDetail(id) {
   }
   document.getElementById('detail-overlay').classList.add('open');
 }
+// ── PUBLIC-DOMAIN MOVIES ── venueMenuConfig/movies { items:{id:{title,year,runtime,genre,desc,poster,published}} }.
+// Venues get the same Wish List / Add to Date buttons as Themed Nights and Sing-Alongs.
+let publishedMovies = [];
+async function loadMovies() {
+  try {
+    const sn = await getDoc(doc(db, 'venueMenuConfig', 'movies'));
+    const items = sn.exists() ? (sn.data().items || {}) : {};
+    publishedMovies = Object.entries(items).map(([id, m]) => ({ _id: id, ...m })).filter(m => m.published !== false && m.title)
+      .sort((a, b) => a.title.localeCompare(b.title));
+  } catch (e) { publishedMovies = []; console.warn('movies load failed', e); }
+}
+function renderMovies() {
+  const grid = document.getElementById('movies-grid'), empty = document.getElementById('movies-empty');
+  if (!grid) return;
+  const q = (document.getElementById('movies-search')?.value || '').toLowerCase().trim();
+  let list = publishedMovies;
+  if (q) list = list.filter(m => m.title.toLowerCase().includes(q) || (m.genre || '').toLowerCase().includes(q) || String(m.year || '').includes(q));
+  if (!list.length) { empty.style.display = 'block'; grid.innerHTML = ''; return; }
+  empty.style.display = 'none';
+  grid.innerHTML = list.map(m => {
+    const imgEl = m.poster
+      ? '<img class="night-card-img" src="' + esc(m.poster) + '" alt="' + esc(m.title) + '" loading="lazy" style="aspect-ratio:2/3;">'
+      : '<div class="night-card-img" style="aspect-ratio:2/3;display:flex;align-items:center;justify-content:center;background:var(--surface2);color:var(--text-dim);font-size:2rem;">🎬</div>';
+    const meta = [m.year, m.runtime ? m.runtime + ' min' : ''].filter(Boolean).join(' · ');
+    return '<div class="night-card" onclick="openMovieDetail(\'' + m._id + '\')">' + imgEl + '<div class="night-card-body"><div class="night-name">' + esc(m.title) + '</div>'
+      + (meta ? '<div style="font-size:0.8rem;color:var(--text-muted);margin-top:2px;">' + esc(meta) + '</div>' : '') + '</div></div>';
+  }).join('');
+}
+function movieCartId(id) { return 'movie_' + id; }
+function openMovieDetail(id) {
+  const m = publishedMovies.find(x => x._id === id); if (!m) return;
+  detailNightIdx = null;
+  document.getElementById('detail-title').textContent = m.title;
+  document.getElementById('detail-cats').textContent = [m.year, m.runtime ? m.runtime + ' min' : '', m.genre].filter(Boolean).join(' · ');
+  const banner = document.getElementById('detail-banner');
+  if (m.poster) { banner.src = m.poster; banner.style.display = 'block'; } else { banner.style.display = 'none'; }
+  document.getElementById('detail-tags').innerHTML = '';
+  const descEl = document.getElementById('detail-desc');
+  if (m.desc) { descEl.textContent = m.desc; descEl.style.display = 'block'; } else { descEl.style.display = 'none'; }
+  document.getElementById('detail-cat-section').style.display = 'none';
+  const actionsEl = document.getElementById('detail-actions');
+  if (effectiveMode() !== 'venue') { actionsEl.innerHTML = ''; }
+  else {
+    const cid = movieCartId(m._id);
+    actionsEl.innerHTML = cartHas(cid)
+      ? '<button class="atc-btn in-cart" onclick="openCart()">✓ In Your Cart — Edit</button>'
+      : '<button class="atc-btn" onclick="movieAddToCart(\'' + m._id + '\',\'later\')">✦ Add to Wish List</button>'
+        + '<button class="atc-btn" onclick="movieAddToCart(\'' + m._id + '\',\'date\')">📅 Add to Date</button>';
+  }
+  document.getElementById('detail-overlay').classList.add('open');
+}
+function movieAddToCart(id, bookingType) {
+  const m = publishedMovies.find(x => x._id === id); if (!m) return;
+  const cid = movieCartId(id);
+  if (!cartHas(cid)) addToCart(cid, 'Movie: ' + m.title + (m.year ? ' (' + m.year + ')' : ''), 0); else openCart();
+  const idx = cartItemIdx(cid);
+  if (idx >= 0) setBookingType(idx, bookingType);
+  closeDetail();
+}
+
 function categoryAddToCart(id, bookingType) {
   const c = publishedCategories.find(x => x._id === id);
   if (!c) return;
@@ -3123,6 +3214,7 @@ async function loadBattlesPageContent() {
 }
 
 Object.assign(window, {
+  renderMovies, openMovieDetail, movieAddToCart,
   navigateTo, renderComingUp, toggleFilterSidebar, closeFilterSidebar,
   openCart, closeCart, addToCart, removeFromCart, setBookingType, selectDate, calNav, toggleWeekday,
   showCheckoutForm, hideCheckoutForm, submitCart,
