@@ -2650,8 +2650,8 @@ function renderMovies() {
   empty.style.display = 'none';
   grid.innerHTML = list.map(m => {
     const imgEl = m.poster
-      ? '<img class="night-card-img" src="' + esc(m.poster) + '" alt="' + esc(m.title) + '" loading="lazy" style="aspect-ratio:2/3;">'
-      : '<div class="night-card-img" style="aspect-ratio:2/3;display:flex;align-items:center;justify-content:center;background:var(--surface2);color:var(--text-dim);font-size:2rem;">🎬</div>';
+      ? '<img class="night-card-img" src="' + esc(m.poster) + '" alt="' + esc(m.title) + '" loading="lazy" style="aspect-ratio:4/5;">'
+      : '<div class="night-card-img" style="aspect-ratio:4/5;display:flex;align-items:center;justify-content:center;background:var(--surface2);color:var(--text-dim);font-size:2rem;">🎬</div>';
     const meta = [m.year, m.runtime ? m.runtime + ' min' : ''].filter(Boolean).join(' · ');
     return '<div class="night-card" onclick="openMovieDetail(\'' + m._id + '\')">' + imgEl + '<div class="night-card-body"><div class="night-name">' + esc(m.title) + '</div>'
       + (meta ? '<div style="font-size:0.8rem;color:var(--text-muted);margin-top:2px;">' + esc(meta) + '</div>' : '') + '</div></div>';
