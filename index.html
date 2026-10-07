@@ -984,6 +984,7 @@
     <button class="nav-tab" onclick="switchView('trivia')">Trivia</button>
     <button class="nav-tab" onclick="switchView('bingo')">Bingo</button>
     <button class="nav-tab" onclick="switchView('singalongs')">Sing-Alongs</button>
+    <button class="nav-tab" onclick="switchView('movies')">Movies</button>
     <button class="nav-tab" onclick="switchView('minigames')">Mini Games</button>
     <button class="nav-tab" onclick="switchView('waytoplay')">Ways to Play</button>
     <button class="nav-tab" onclick="switchView('battles')">Belladonna Battles</button>
@@ -1124,6 +1125,25 @@
       <div class="empty-state-icon">🎲</div>
       <h3>No Mini Games Yet</h3>
       <p>Add categories with Type "Mini Game" to see them here.</p>
+    </div>
+  </div>
+
+  <!-- ═══ PUBLIC-DOMAIN MOVIES VIEW ═══ -->
+  <div class="view" id="view-movies">
+    <div style="display:flex; align-items:center; gap:8px; margin-bottom:0.75rem; flex-wrap:wrap;">
+      <div style="flex:1; position:relative; min-width:200px;">
+        <span style="position:absolute;left:0.75rem;top:50%;transform:translateY(-50%);color:var(--text-dim);pointer-events:none;">🔍</span>
+        <input type="search" autocomplete="off" id="movies-search-input" placeholder="Search movies…" oninput="renderMovies()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:4px;padding:0.6rem 0.9rem 0.6rem 2.4rem;font-family:'Crimson Text',serif;font-size:16px;width:100%;">
+      </div>
+      <button class="btn btn-sm btn-ghost" onclick="openMovieBulk()">Bulk Add</button>
+      <button class="btn btn-sm" onclick="openMovieModal()">+ Add Movie</button>
+    </div>
+    <div style="font-size:0.85rem;color:var(--text-muted);margin-bottom:1rem;">Public-domain films we can show without paying for a license. Movies marked <b>Show on Venue Menu</b> appear on the customer menu, where venues can add them to their Wish List or pick a date. The same list is in the Planner, where you schedule them to venues.</div>
+    <div id="movies-grid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(190px, 1fr)); gap:1.25rem;"></div>
+    <div id="movies-empty" class="empty-state" style="display:none;">
+      <div class="empty-state-icon">🎬</div>
+      <h3>No Movies Yet</h3>
+      <p>Add one, or use Bulk Add to paste your whole list.</p>
     </div>
   </div>
 
@@ -1841,6 +1861,50 @@
   </div>
 </div>
 
+<!-- ═══ MOVIE MODALS ═══ -->
+<div class="modal-backdrop" id="movie-modal">
+  <div class="modal" style="max-width:560px;">
+    <div class="modal-header">
+      <span class="modal-title" id="movie-modal-title">Add Movie</span>
+      <button class="modal-close" onclick="closeMovieModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group"><label class="form-label">Title</label><input type="text" id="mv-title" placeholder="e.g. Night of the Living Dead"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div class="form-group"><label class="form-label">Year</label><input type="text" id="mv-year" placeholder="1968"></div>
+        <div class="form-group"><label class="form-label">Runtime (minutes)</label><input type="text" id="mv-runtime" placeholder="96"></div>
+      </div>
+      <div class="form-group"><label class="form-label">Genre / tags <span style="font-style:italic;text-transform:none;letter-spacing:0;color:var(--text-dim)">— comma separated</span></label><input type="text" id="mv-genre" placeholder="Horror, Classic, B-Movie"></div>
+      <div class="form-group"><label class="form-label">Description <span style="font-style:italic;text-transform:none;letter-spacing:0;color:var(--text-dim)">— what venues see</span></label><textarea id="mv-desc" rows="3" placeholder="A short pitch for the movie…"></textarea></div>
+      <div class="form-group"><label class="form-label">Poster image URL</label><input type="text" id="mv-poster" placeholder="https://…"></div>
+      <div class="form-group"><label class="form-label">Where to get it <span style="font-style:italic;text-transform:none;letter-spacing:0;color:var(--text-dim)">— Internet Archive / file link (internal)</span></label><input type="text" id="mv-url" placeholder="https://archive.org/details/…"></div>
+      <div class="form-group"><label class="form-label">Internal notes</label><textarea id="mv-notes" rows="2" placeholder="Best print, content warnings, public-domain proof…"></textarea></div>
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-top:0.5rem;"><input type="checkbox" id="mv-published" style="accent-color:var(--gold);width:15px;height:15px;" checked> Show on Venue Menu</label>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-danger" id="mv-delete-btn" onclick="deleteMovie()" style="margin-right:auto;display:none;">Delete</button>
+      <button class="btn btn-ghost" onclick="closeMovieModal()">Cancel</button>
+      <button class="btn" onclick="saveMovie()">Save</button>
+    </div>
+  </div>
+</div>
+<div class="modal-backdrop" id="movie-bulk-modal">
+  <div class="modal" style="max-width:600px;">
+    <div class="modal-header">
+      <span class="modal-title">Bulk Add Movies</span>
+      <button class="modal-close" onclick="closeMovieBulk()">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="color:var(--text-muted);font-size:0.9rem;margin-bottom:0.75rem;">One movie per line: <b>Title | Year | Runtime | Link</b> — everything after the title is optional. Titles already in the list are skipped.</p>
+      <textarea id="mv-bulk-text" rows="10" placeholder="Night of the Living Dead | 1968 | 96 | https://archive.org/…&#10;Nosferatu | 1922&#10;Plan 9 from Outer Space"></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeMovieBulk()">Cancel</button>
+      <button class="btn" onclick="saveMovieBulk()">Add Movies</button>
+    </div>
+  </div>
+</div>
+
 <!-- ═══ SING-ALONG TAGS MODAL ═══ -->
 <div class="modal-backdrop" id="singa-tags-modal">
   <div class="modal" style="max-width:480px;">
@@ -2004,7 +2068,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/fireba
 import {
   getFirestore, collection, doc,
   getDocs, getDoc, setDoc, updateDoc, deleteDoc, writeBatch,
-  query, orderBy, onSnapshot, addDoc, serverTimestamp
+  query, orderBy, onSnapshot, addDoc, serverTimestamp, deleteField
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { getDatabase, ref, get, push, set, update } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
@@ -2319,6 +2383,96 @@ async function batchSaveCats(cats) {
 }
 
 // ═══════════════════════════════════════════════
+// PUBLIC-DOMAIN MOVIES — one config doc, venueMenuConfig/movies, shaped { items: { <id>: {...} } }.
+// The Planner reads and writes the same doc; the customer menu (venue.html) shows the published ones.
+// ═══════════════════════════════════════════════
+const moviesDoc = doc(db, 'venueMenuConfig', 'movies');
+let movies = {};
+let editingMovieId = null;
+async function loadMovies() {
+  try { const sn = await getDoc(moviesDoc); movies = sn.exists() ? (sn.data().items || {}) : {}; }
+  catch (e) { movies = {}; console.warn('movies load failed', e); }
+}
+function movieList() { return Object.entries(movies).map(([id, m]) => ({ id, ...m })).sort((a, b) => (a.title || '').localeCompare(b.title || '')); }
+async function renderMovies() {
+  if (!Object.keys(movies).length) await loadMovies();
+  const q = (document.getElementById('movies-search-input')?.value || '').toLowerCase().trim();
+  let list = movieList();
+  if (q) list = list.filter(m => (m.title || '').toLowerCase().includes(q) || (m.genre || '').toLowerCase().includes(q) || String(m.year || '').includes(q));
+  const grid = document.getElementById('movies-grid'), empty = document.getElementById('movies-empty');
+  empty.style.display = list.length ? 'none' : 'block';
+  grid.innerHTML = list.map(m => {
+    const img = m.poster
+      ? `<div style="aspect-ratio:2/3;width:100%;overflow:hidden;position:relative;background:var(--surface2);"><img src="${esc(m.poster)}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;" alt=""></div>`
+      : `<div style="aspect-ratio:2/3;width:100%;background:var(--surface2);display:flex;align-items:center;justify-content:center;"><span style="font-size:2.5rem;opacity:0.3;">🎬</span></div>`;
+    const meta = [m.year, m.runtime ? m.runtime + ' min' : ''].filter(Boolean).join(' · ');
+    return `<div class="category-card" style="padding:0;overflow:hidden;cursor:pointer;" onclick="openMovieModal('${m.id}')">${img}
+      <div style="padding:0.8rem 1rem 1rem;">
+        <div class="category-card-name" style="margin-bottom:0.3rem;">${esc(m.title || '(untitled)')}</div>
+        ${meta ? `<div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:0.4rem;">${esc(meta)}</div>` : ''}
+        ${m.published === false ? `<span class="badge" style="background:rgba(120,120,120,0.15);color:var(--text-dim);">Hidden from menu</span>` : `<span class="badge badge-type">On menu</span>`}
+      </div></div>`;
+  }).join('');
+}
+function openMovieModal(id) {
+  editingMovieId = id || null;
+  const m = id ? (movies[id] || {}) : {};
+  document.getElementById('movie-modal-title').textContent = id ? 'Edit Movie' : 'Add Movie';
+  document.getElementById('mv-title').value = m.title || '';
+  document.getElementById('mv-year').value = m.year || '';
+  document.getElementById('mv-runtime').value = m.runtime || '';
+  document.getElementById('mv-genre').value = m.genre || '';
+  document.getElementById('mv-desc').value = m.desc || '';
+  document.getElementById('mv-poster').value = m.poster || '';
+  document.getElementById('mv-url').value = m.watchUrl || '';
+  document.getElementById('mv-notes').value = m.notes || '';
+  document.getElementById('mv-published').checked = m.published !== false;
+  document.getElementById('mv-delete-btn').style.display = id ? '' : 'none';
+  document.getElementById('movie-modal').classList.add('open');
+}
+function closeMovieModal() { document.getElementById('movie-modal').classList.remove('open'); editingMovieId = null; }
+async function saveMovie() {
+  const title = document.getElementById('mv-title').value.trim();
+  if (!title) { toast('Give the movie a title.', 'error'); return; }
+  const id = editingMovieId || ('mv_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5));
+  const prev = movies[id] || {};
+  const obj = { ...prev, id, title, year: document.getElementById('mv-year').value.trim(), runtime: document.getElementById('mv-runtime').value.trim(),
+    genre: document.getElementById('mv-genre').value.trim(), desc: document.getElementById('mv-desc').value.trim(), poster: document.getElementById('mv-poster').value.trim(),
+    watchUrl: document.getElementById('mv-url').value.trim(), notes: document.getElementById('mv-notes').value.trim(),
+    published: document.getElementById('mv-published').checked, updatedAt: Date.now() };
+  if (!prev.addedAt) obj.addedAt = Date.now();
+  try { await setDoc(moviesDoc, { items: { [id]: obj } }, { merge: true }); movies[id] = obj; toast('Movie saved.'); }
+  catch (e) { toast('Save failed: ' + (e.code || e.message), 'error'); return; }
+  closeMovieModal(); renderMovies();
+}
+async function deleteMovie() {
+  if (!editingMovieId) return;
+  const m = movies[editingMovieId] || {};
+  if (!confirm(`Delete "${m.title}" from the movie list? Showings already scheduled in the Planner stay on the calendar.`)) return;
+  try { await updateDoc(moviesDoc, { ['items.' + editingMovieId]: deleteField() }); delete movies[editingMovieId]; toast('Movie deleted.'); }
+  catch (e) { toast('Delete failed: ' + (e.code || e.message), 'error'); return; }
+  closeMovieModal(); renderMovies();
+}
+function openMovieBulk() { document.getElementById('mv-bulk-text').value = ''; document.getElementById('movie-bulk-modal').classList.add('open'); }
+function closeMovieBulk() { document.getElementById('movie-bulk-modal').classList.remove('open'); }
+async function saveMovieBulk() {
+  const have = new Set(Object.values(movies).map(m => (m.title || '').trim().toLowerCase()));
+  const items = {}; let n = 0, skipped = 0;
+  document.getElementById('mv-bulk-text').value.split('\n').forEach((line, i) => {
+    const p = line.split('|').map(x => x.trim()); if (!p[0]) return;
+    if (have.has(p[0].toLowerCase())) { skipped++; return; }
+    have.add(p[0].toLowerCase());
+    const id = 'mv_' + Date.now().toString(36) + i + Math.random().toString(36).slice(2, 4);
+    items[id] = { id, title: p[0], year: p[1] || '', runtime: p[2] || '', watchUrl: p[3] || '', genre: '', desc: '', poster: '', notes: '', published: true, addedAt: Date.now(), updatedAt: Date.now() };
+    n++;
+  });
+  if (!n) { toast(skipped ? 'Those titles are already in the list.' : 'Nothing to add.', 'error'); return; }
+  try { await setDoc(moviesDoc, { items }, { merge: true }); Object.assign(movies, items); toast(`Added ${n} movie${n === 1 ? '' : 's'}` + (skipped ? ` (${skipped} already there)` : '') + '.'); }
+  catch (e) { toast('Save failed: ' + (e.code || e.message), 'error'); return; }
+  closeMovieBulk(); renderMovies();
+}
+
+// ═══════════════════════════════════════════════
 // VIEW SWITCHING
 // ═══════════════════════════════════════════════
 function switchView(name) {
@@ -2332,7 +2486,7 @@ function switchView(name) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
   document.getElementById('view-' + name).classList.add('active');
-  const labelMap = { library: 'librar', nights: 'night', trivia: 'trivia', bingo: 'bingo', minigames: 'mini', singalongs: 'sing', import: 'import', feedback: 'feedback', portal: 'portal' };
+  const labelMap = { library: 'librar', nights: 'night', trivia: 'trivia', bingo: 'bingo', minigames: 'mini', singalongs: 'sing', movies: 'movie', import: 'import', feedback: 'feedback', portal: 'portal' };
   document.querySelectorAll('.nav-tab').forEach(t => {
     const key = labelMap[name] || name;
     if (t.textContent.toLowerCase().includes(key)) t.classList.add('active');
@@ -2343,6 +2497,7 @@ function switchView(name) {
   if (name === 'bingo') renderBingo();
   if (name === 'minigames') renderMiniGames();
   if (name === 'singalongs') renderSingAlongs();
+  if (name === 'movies') renderMovies();
 }
 
 // ═══════════════════════════════════════════════
@@ -5997,6 +6152,7 @@ window.deletePortalCollaborator = async function(id) {
 };
 
 Object.assign(window, {
+  renderMovies, openMovieModal, closeMovieModal, saveMovie, deleteMovie, openMovieBulk, closeMovieBulk, saveMovieBulk,
   switchView, renderLibrary, runSearch, renderMiniGames, renderWayToPlay,
   toggleSortAZ, setTriviaTierFilter, renderBingo, renderNights,
   initBattlesPage, saveBattlesPage, battlesHeroPreview, battlesAddParagraph, battlesUpdateParagraph, battlesRemoveParagraph, battlesMoveParaUp, battlesMoveParaDown,
