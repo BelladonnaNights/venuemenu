@@ -1877,7 +1877,10 @@
       <div class="form-group"><label class="form-label">Genre / tags <span style="font-style:italic;text-transform:none;letter-spacing:0;color:var(--text-dim)">— comma separated</span></label><input type="text" id="mv-genre" placeholder="Horror, Classic, B-Movie"></div>
       <div class="form-group"><label class="form-label">Description <span style="font-style:italic;text-transform:none;letter-spacing:0;color:var(--text-dim)">— what venues see</span></label><textarea id="mv-desc" rows="3" placeholder="A short pitch for the movie…"></textarea></div>
       <div class="form-group"><label class="form-label">Poster image URL <span style="font-style:italic;text-transform:none;letter-spacing:0;color:var(--text-dim)">— 4:5 portrait (e.g. 800×1000)</span></label><input type="text" id="mv-poster" placeholder="https://…"></div>
-      <div class="form-group"><label class="form-label">Where to get it <span style="font-style:italic;text-transform:none;letter-spacing:0;color:var(--text-dim)">— Internet Archive / file link (internal)</span></label><input type="text" id="mv-url" placeholder="https://archive.org/details/…"></div>
+      <div class="form-group"><label class="form-label">Where to find it <span style="font-style:italic;text-transform:none;letter-spacing:0;color:var(--text-dim)">— links to the movie; add backups and label each (Black &amp; white, Colorized, Backup…)</span></label>
+        <div id="mv-links"></div>
+        <button type="button" class="btn btn-sm btn-ghost" onclick="addMovieLinkRow()" style="margin-top:6px">+ Add another link</button>
+        <datalist id="mv-link-labels"><option value="Black &amp; white"><option value="Colorized"><option value="Backup"><option value="Best quality"><option value="With subtitles"></datalist></div>
       <div class="form-group"><label class="form-label">Notes <span style="font-style:italic;text-transform:none;letter-spacing:0;color:var(--text-dim)">— internal: well-known actors, silent film, best print…</span></label><textarea id="mv-notes" rows="2" placeholder="e.g. SILENT FILM · stars Bela Lugosi"></textarea></div>
       <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-top:0.5rem;"><input type="checkbox" id="mv-published" style="accent-color:var(--gold);width:15px;height:15px;"> Show on Venue Menu</label>
     </div>
@@ -2389,16 +2392,22 @@ async function batchSaveCats(cats) {
 const moviesDoc = doc(db, 'venueMenuConfig', 'movies');
 let movies = {};
 let editingMovieId = null;
+let moviesLoaded = false, moviesListening = false;
 async function loadMovies() {
-  try { const sn = await getDoc(moviesDoc); movies = sn.exists() ? (sn.data().items || {}) : {}; }
+  try { const sn = await getDoc(moviesDoc); movies = sn.exists() ? (sn.data().items || {}) : {}; moviesLoaded = true; }
   catch (e) { movies = {}; console.warn('movies load failed', e); }
+  if (!moviesListening) {
+    moviesListening = true;
+    // live: anything saved in the Planner shows up here without a refresh
+    onSnapshot(moviesDoc, sn => { movies = sn.exists() ? (sn.data().items || {}) : {}; if (document.getElementById('view-movies')?.classList.contains('active')) renderMovies(); }, e => console.warn('movies listener', e));
+  }
 }
 function movieList() { return Object.entries(movies).map(([id, m]) => ({ id, ...m })).sort((a, b) => (a.title || '').localeCompare(b.title || '')); }
 async function renderMovies() {
-  if (!Object.keys(movies).length) await loadMovies();
+  if (!moviesLoaded) await loadMovies();
   const q = (document.getElementById('movies-search-input')?.value || '').toLowerCase().trim();
   let list = movieList();
-  if (q) list = list.filter(m => [m.title, m.genre, m.notes, m.desc, m.year, m.runtime, (m.pairs || []).map(p => p.name).join(' ')].some(f => String(f || '').toLowerCase().includes(q)));
+  if (q) list = list.filter(m => [m.title, m.genre, m.notes, m.desc, m.year, m.runtime, (m.pairs || []).map(p => p.name).join(' '), movieLinksOf(m).map(l => l.label).join(' ')].some(f => String(f || '').toLowerCase().includes(q)));
   const grid = document.getElementById('movies-grid'), empty = document.getElementById('movies-empty');
   empty.style.display = list.length ? 'none' : 'block';
   grid.innerHTML = list.map(m => {
@@ -2411,10 +2420,25 @@ async function renderMovies() {
         <div class="category-card-name" style="margin-bottom:0.3rem;">${esc(m.title || '(untitled)')}</div>
         ${meta ? `<div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:0.4rem;">${esc(meta)}</div>` : ''}
         ${m.notes ? `<div style="font-size:0.78rem;color:var(--text-dim);font-style:italic;margin-bottom:0.4rem;">${esc(m.notes)}</div>` : ''}
+        ${movieLinksOf(m).length ? `<div style="font-size:0.75rem;margin-bottom:0.4rem;">${movieLinksOf(m).map((l, i) => `<a href="${esc(l.url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="color:var(--gold);margin-right:8px;">${esc(l.label || ('Link ' + (i + 1)))} ↗</a>`).join('')}</div>` : ''}
         ${(m.pairs || []).length ? `<div style="font-size:0.75rem;color:var(--gold);margin-bottom:0.4rem;">Pairs with: ${(m.pairs || []).map(p => esc(p.name)).join(', ')}</div>` : ''}
         ${m.published === true ? `<span class="badge badge-type">On menu</span>` : `<span class="badge" style="background:rgba(120,120,120,0.15);color:var(--text-dim);">Hidden from menu</span>`}
       </div></div>`;
   }).join('');
+}
+function movieLinksOf(m) {
+  const l = (m.links || []).filter(x => x && x.url);
+  return l.length ? l : (m.watchUrl ? [{ label: '', url: m.watchUrl }] : []);
+}
+function addMovieLinkRow(label, url) {
+  const d = document.createElement('div'); d.className = 'mv-link-row'; d.style.cssText = 'display:flex;gap:6px;margin-bottom:6px';
+  d.innerHTML = '<input type="text" class="mv-link-label" list="mv-link-labels" placeholder="Label (e.g. Colorized)" style="flex:0 0 38%" value="' + esc(label || '') + '">'
+    + '<input type="text" class="mv-link-url" placeholder="https://…" style="flex:1" value="' + esc(url || '') + '">'
+    + '<button type="button" class="btn btn-sm btn-ghost" onclick="this.parentNode.remove()" title="Remove">✕</button>';
+  document.getElementById('mv-links').appendChild(d);
+}
+function collectMovieLinks() {
+  return [...document.querySelectorAll('#mv-links .mv-link-row')].map(r => ({ label: r.querySelector('.mv-link-label').value.trim(), url: r.querySelector('.mv-link-url').value.trim() })).filter(l => l.url);
 }
 function openMovieModal(id) {
   editingMovieId = id || null;
@@ -2426,7 +2450,8 @@ function openMovieModal(id) {
   document.getElementById('mv-genre').value = m.genre || '';
   document.getElementById('mv-desc').value = m.desc || '';
   document.getElementById('mv-poster').value = m.poster || '';
-  document.getElementById('mv-url').value = m.watchUrl || '';
+  document.getElementById('mv-links').innerHTML = '';
+  { const ls = movieLinksOf(m); ls.forEach(l => addMovieLinkRow(l.label, l.url)); if (!ls.length) addMovieLinkRow(); }
   document.getElementById('mv-notes').value = m.notes || '';
   document.getElementById('mv-published').checked = m.published === true;
   document.getElementById('mv-delete-btn').style.display = id ? '' : 'none';
@@ -2440,7 +2465,7 @@ async function saveMovie() {
   const prev = movies[id] || {};
   const obj = { ...prev, id, title, year: document.getElementById('mv-year').value.trim(), runtime: document.getElementById('mv-runtime').value.trim(),
     genre: document.getElementById('mv-genre').value.trim(), desc: document.getElementById('mv-desc').value.trim(), poster: document.getElementById('mv-poster').value.trim(),
-    watchUrl: document.getElementById('mv-url').value.trim(), notes: document.getElementById('mv-notes').value.trim(),
+    links: collectMovieLinks(), watchUrl: (collectMovieLinks()[0] || {}).url || '', notes: document.getElementById('mv-notes').value.trim(),
     published: document.getElementById('mv-published').checked, updatedAt: Date.now() };
   if (!prev.addedAt) obj.addedAt = Date.now();
   try { await setDoc(moviesDoc, { items: { [id]: obj } }, { merge: true }); movies[id] = obj; toast('Movie saved.'); }
@@ -2465,7 +2490,7 @@ async function saveMovieBulk() {
     if (have.has(p[0].toLowerCase())) { skipped++; return; }
     have.add(p[0].toLowerCase());
     const id = 'mv_' + Date.now().toString(36) + i + Math.random().toString(36).slice(2, 4);
-    items[id] = { id, title: p[0], year: p[1] || '', runtime: p[2] || '', watchUrl: p[3] || '', genre: '', desc: '', poster: '', notes: p[4] || '', published: false, addedAt: Date.now(), updatedAt: Date.now() };
+    items[id] = { id, title: p[0], year: p[1] || '', runtime: p[2] || '', watchUrl: p[3] || '', links: p[3] ? [{ label: '', url: p[3] }] : [], genre: '', desc: '', poster: '', notes: p[4] || '', published: false, addedAt: Date.now(), updatedAt: Date.now() };
     n++;
   });
   if (!n) { toast(skipped ? 'Those titles are already in the list.' : 'Nothing to add.', 'error'); return; }
@@ -6154,7 +6179,7 @@ window.deletePortalCollaborator = async function(id) {
 };
 
 Object.assign(window, {
-  renderMovies, openMovieModal, closeMovieModal, saveMovie, deleteMovie, openMovieBulk, closeMovieBulk, saveMovieBulk,
+  renderMovies, openMovieModal, addMovieLinkRow, closeMovieModal, saveMovie, deleteMovie, openMovieBulk, closeMovieBulk, saveMovieBulk,
   switchView, renderLibrary, runSearch, renderMiniGames, renderWayToPlay,
   toggleSortAZ, setTriviaTierFilter, renderBingo, renderNights,
   initBattlesPage, saveBattlesPage, battlesHeroPreview, battlesAddParagraph, battlesUpdateParagraph, battlesRemoveParagraph, battlesMoveParaUp, battlesMoveParaDown,
