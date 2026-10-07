@@ -2665,7 +2665,12 @@ function openMovieDetail(id) {
   document.getElementById('detail-cats').textContent = [m.year, m.runtime ? m.runtime + ' min' : '', m.genre].filter(Boolean).join(' · ');
   const banner = document.getElementById('detail-banner');
   if (m.poster) { banner.src = m.poster; banner.style.display = 'block'; } else { banner.style.display = 'none'; }
-  document.getElementById('detail-tags').innerHTML = '';
+  document.getElementById('detail-tags').innerHTML = (m.pairs || []).map(p => {
+    const ni = p.nightId ? publishedNights.findIndex(n => n._id === p.nightId) : -1;
+    return ni >= 0
+      ? '<span class="detail-tag" style="cursor:pointer;" onclick="closeDetail();openNightDetail(' + ni + ')">Pairs with: ' + esc(p.name) + ' →</span>'
+      : '<span class="detail-tag">Pairs with: ' + esc(p.name) + '</span>';
+  }).join('');
   const descEl = document.getElementById('detail-desc');
   if (m.desc) { descEl.textContent = m.desc; descEl.style.display = 'block'; } else { descEl.style.display = 'none'; }
   document.getElementById('detail-cat-section').style.display = 'none';
