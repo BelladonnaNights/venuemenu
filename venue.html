@@ -2636,7 +2636,7 @@ async function loadMovies() {
   try {
     const sn = await getDoc(doc(db, 'venueMenuConfig', 'movies'));
     const items = sn.exists() ? (sn.data().items || {}) : {};
-    publishedMovies = Object.entries(items).map(([id, m]) => ({ _id: id, ...m })).filter(m => m.published !== false && m.title)
+    publishedMovies = Object.entries(items).map(([id, m]) => ({ _id: id, ...m })).filter(m => m.published === true && m.title)
       .sort((a, b) => a.title.localeCompare(b.title));
   } catch (e) { publishedMovies = []; console.warn('movies load failed', e); }
 }
