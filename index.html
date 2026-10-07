@@ -1878,8 +1878,8 @@
       <div class="form-group"><label class="form-label">Description <span style="font-style:italic;text-transform:none;letter-spacing:0;color:var(--text-dim)">— what venues see</span></label><textarea id="mv-desc" rows="3" placeholder="A short pitch for the movie…"></textarea></div>
       <div class="form-group"><label class="form-label">Poster image URL</label><input type="text" id="mv-poster" placeholder="https://…"></div>
       <div class="form-group"><label class="form-label">Where to get it <span style="font-style:italic;text-transform:none;letter-spacing:0;color:var(--text-dim)">— Internet Archive / file link (internal)</span></label><input type="text" id="mv-url" placeholder="https://archive.org/details/…"></div>
-      <div class="form-group"><label class="form-label">Internal notes</label><textarea id="mv-notes" rows="2" placeholder="Best print, content warnings, public-domain proof…"></textarea></div>
-      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-top:0.5rem;"><input type="checkbox" id="mv-published" style="accent-color:var(--gold);width:15px;height:15px;" checked> Show on Venue Menu</label>
+      <div class="form-group"><label class="form-label">Notes <span style="font-style:italic;text-transform:none;letter-spacing:0;color:var(--text-dim)">— internal: well-known actors, silent film, best print…</span></label><textarea id="mv-notes" rows="2" placeholder="e.g. SILENT FILM · stars Bela Lugosi"></textarea></div>
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-top:0.5rem;"><input type="checkbox" id="mv-published" style="accent-color:var(--gold);width:15px;height:15px;"> Show on Venue Menu</label>
     </div>
     <div class="modal-footer">
       <button class="btn btn-danger" id="mv-delete-btn" onclick="deleteMovie()" style="margin-right:auto;display:none;">Delete</button>
@@ -1895,7 +1895,7 @@
       <button class="modal-close" onclick="closeMovieBulk()">✕</button>
     </div>
     <div class="modal-body">
-      <p style="color:var(--text-muted);font-size:0.9rem;margin-bottom:0.75rem;">One movie per line: <b>Title | Year | Runtime | Link</b> — everything after the title is optional. Titles already in the list are skipped.</p>
+      <p style="color:var(--text-muted);font-size:0.9rem;margin-bottom:0.75rem;">One movie per line: <b>Title | Year | Runtime | Link | Notes</b> — everything after the title is optional. Titles already in the list are skipped.</p>
       <textarea id="mv-bulk-text" rows="10" placeholder="Night of the Living Dead | 1968 | 96 | https://archive.org/…&#10;Nosferatu | 1922&#10;Plan 9 from Outer Space"></textarea>
     </div>
     <div class="modal-footer">
@@ -2410,7 +2410,8 @@ async function renderMovies() {
       <div style="padding:0.8rem 1rem 1rem;">
         <div class="category-card-name" style="margin-bottom:0.3rem;">${esc(m.title || '(untitled)')}</div>
         ${meta ? `<div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:0.4rem;">${esc(meta)}</div>` : ''}
-        ${m.published === false ? `<span class="badge" style="background:rgba(120,120,120,0.15);color:var(--text-dim);">Hidden from menu</span>` : `<span class="badge badge-type">On menu</span>`}
+        ${m.notes ? `<div style="font-size:0.78rem;color:var(--text-dim);font-style:italic;margin-bottom:0.4rem;">${esc(m.notes)}</div>` : ''}
+        ${m.published === true ? `<span class="badge badge-type">On menu</span>` : `<span class="badge" style="background:rgba(120,120,120,0.15);color:var(--text-dim);">Hidden from menu</span>`}
       </div></div>`;
   }).join('');
 }
@@ -2426,7 +2427,7 @@ function openMovieModal(id) {
   document.getElementById('mv-poster').value = m.poster || '';
   document.getElementById('mv-url').value = m.watchUrl || '';
   document.getElementById('mv-notes').value = m.notes || '';
-  document.getElementById('mv-published').checked = m.published !== false;
+  document.getElementById('mv-published').checked = m.published === true;
   document.getElementById('mv-delete-btn').style.display = id ? '' : 'none';
   document.getElementById('movie-modal').classList.add('open');
 }
@@ -2463,7 +2464,7 @@ async function saveMovieBulk() {
     if (have.has(p[0].toLowerCase())) { skipped++; return; }
     have.add(p[0].toLowerCase());
     const id = 'mv_' + Date.now().toString(36) + i + Math.random().toString(36).slice(2, 4);
-    items[id] = { id, title: p[0], year: p[1] || '', runtime: p[2] || '', watchUrl: p[3] || '', genre: '', desc: '', poster: '', notes: '', published: true, addedAt: Date.now(), updatedAt: Date.now() };
+    items[id] = { id, title: p[0], year: p[1] || '', runtime: p[2] || '', watchUrl: p[3] || '', genre: '', desc: '', poster: '', notes: p[4] || '', published: false, addedAt: Date.now(), updatedAt: Date.now() };
     n++;
   });
   if (!n) { toast(skipped ? 'Those titles are already in the list.' : 'Nothing to add.', 'error'); return; }
