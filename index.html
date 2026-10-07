@@ -1876,7 +1876,7 @@
       </div>
       <div class="form-group"><label class="form-label">Genre / tags <span style="font-style:italic;text-transform:none;letter-spacing:0;color:var(--text-dim)">— comma separated</span></label><input type="text" id="mv-genre" placeholder="Horror, Classic, B-Movie"></div>
       <div class="form-group"><label class="form-label">Description <span style="font-style:italic;text-transform:none;letter-spacing:0;color:var(--text-dim)">— what venues see</span></label><textarea id="mv-desc" rows="3" placeholder="A short pitch for the movie…"></textarea></div>
-      <div class="form-group"><label class="form-label">Poster image URL</label><input type="text" id="mv-poster" placeholder="https://…"></div>
+      <div class="form-group"><label class="form-label">Poster image URL <span style="font-style:italic;text-transform:none;letter-spacing:0;color:var(--text-dim)">— 4:5 portrait (e.g. 800×1000)</span></label><input type="text" id="mv-poster" placeholder="https://…"></div>
       <div class="form-group"><label class="form-label">Where to get it <span style="font-style:italic;text-transform:none;letter-spacing:0;color:var(--text-dim)">— Internet Archive / file link (internal)</span></label><input type="text" id="mv-url" placeholder="https://archive.org/details/…"></div>
       <div class="form-group"><label class="form-label">Notes <span style="font-style:italic;text-transform:none;letter-spacing:0;color:var(--text-dim)">— internal: well-known actors, silent film, best print…</span></label><textarea id="mv-notes" rows="2" placeholder="e.g. SILENT FILM · stars Bela Lugosi"></textarea></div>
       <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-top:0.5rem;"><input type="checkbox" id="mv-published" style="accent-color:var(--gold);width:15px;height:15px;"> Show on Venue Menu</label>
@@ -2403,8 +2403,8 @@ async function renderMovies() {
   empty.style.display = list.length ? 'none' : 'block';
   grid.innerHTML = list.map(m => {
     const img = m.poster
-      ? `<div style="aspect-ratio:2/3;width:100%;overflow:hidden;position:relative;background:var(--surface2);"><img src="${esc(m.poster)}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;" alt=""></div>`
-      : `<div style="aspect-ratio:2/3;width:100%;background:var(--surface2);display:flex;align-items:center;justify-content:center;"><span style="font-size:2.5rem;opacity:0.3;">🎬</span></div>`;
+      ? `<div style="aspect-ratio:4/5;width:100%;overflow:hidden;position:relative;background:var(--surface2);"><img src="${esc(m.poster)}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;" alt=""></div>`
+      : `<div style="aspect-ratio:4/5;width:100%;background:var(--surface2);display:flex;align-items:center;justify-content:center;"><span style="font-size:2.5rem;opacity:0.3;">🎬</span></div>`;
     const meta = [m.year, m.runtime ? m.runtime + ' min' : ''].filter(Boolean).join(' · ');
     return `<div class="category-card" style="padding:0;overflow:hidden;cursor:pointer;" onclick="openMovieModal('${m.id}')">${img}
       <div style="padding:0.8rem 1rem 1rem;">
