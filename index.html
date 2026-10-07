@@ -1133,7 +1133,7 @@
     <div style="display:flex; align-items:center; gap:8px; margin-bottom:0.75rem; flex-wrap:wrap;">
       <div style="flex:1; position:relative; min-width:200px;">
         <span style="position:absolute;left:0.75rem;top:50%;transform:translateY(-50%);color:var(--text-dim);pointer-events:none;">🔍</span>
-        <input type="search" autocomplete="off" id="movies-search-input" placeholder="Search movies…" oninput="renderMovies()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:4px;padding:0.6rem 0.9rem 0.6rem 2.4rem;font-family:'Crimson Text',serif;font-size:16px;width:100%;">
+        <input type="search" autocomplete="off" id="movies-search-input" placeholder="Search title, notes, tags, year…" oninput="renderMovies()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:4px;padding:0.6rem 0.9rem 0.6rem 2.4rem;font-family:'Crimson Text',serif;font-size:16px;width:100%;">
       </div>
       <button class="btn btn-sm btn-ghost" onclick="openMovieBulk()">Bulk Add</button>
       <button class="btn btn-sm" onclick="openMovieModal()">+ Add Movie</button>
@@ -2398,7 +2398,7 @@ async function renderMovies() {
   if (!Object.keys(movies).length) await loadMovies();
   const q = (document.getElementById('movies-search-input')?.value || '').toLowerCase().trim();
   let list = movieList();
-  if (q) list = list.filter(m => (m.title || '').toLowerCase().includes(q) || (m.genre || '').toLowerCase().includes(q) || String(m.year || '').includes(q));
+  if (q) list = list.filter(m => [m.title, m.genre, m.notes, m.desc, m.year, m.runtime, (m.pairs || []).map(p => p.name).join(' ')].some(f => String(f || '').toLowerCase().includes(q)));
   const grid = document.getElementById('movies-grid'), empty = document.getElementById('movies-empty');
   empty.style.display = list.length ? 'none' : 'block';
   grid.innerHTML = list.map(m => {
@@ -2411,6 +2411,7 @@ async function renderMovies() {
         <div class="category-card-name" style="margin-bottom:0.3rem;">${esc(m.title || '(untitled)')}</div>
         ${meta ? `<div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:0.4rem;">${esc(meta)}</div>` : ''}
         ${m.notes ? `<div style="font-size:0.78rem;color:var(--text-dim);font-style:italic;margin-bottom:0.4rem;">${esc(m.notes)}</div>` : ''}
+        ${(m.pairs || []).length ? `<div style="font-size:0.75rem;color:var(--gold);margin-bottom:0.4rem;">Pairs with: ${(m.pairs || []).map(p => esc(p.name)).join(', ')}</div>` : ''}
         ${m.published === true ? `<span class="badge badge-type">On menu</span>` : `<span class="badge" style="background:rgba(120,120,120,0.15);color:var(--text-dim);">Hidden from menu</span>`}
       </div></div>`;
   }).join('');
