@@ -1544,7 +1544,7 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getFirestore, collection, doc, getDocs, getDoc, setDoc, updateDoc, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { getDatabase, ref, get, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
 const firebaseConfig = {
@@ -2168,7 +2168,7 @@ function navigateTo(view, typeFilter) {
   if (activeNav) document.getElementById(activeNav)?.classList.add('active');
   // Render the appropriate browse view
   if (view === 'themed')     renderThemedNights();
-  if (view === 'trivia')     { renderTrivia();     renderAlsoSee('trivia'); }
+  if (view === 'trivia')     { renderTrivia();     renderAlsoSee('trivia'); loadTriviaLikes(); }
   if (view === 'bingo')      { renderBingo();      renderAlsoSee('bingo'); }
   if (view === 'singalongs') renderSingAlongs();
   if (view === 'movies')     renderMovies();
@@ -2412,9 +2412,47 @@ function renderTrivia() {
     const imgEl = img
       ? '<img class="night-card-img" src="' + img + '" alt="' + esc(c.name) + '" loading="lazy" style="aspect-ratio:4/5;">'
       : '<div class="night-card-img" style="aspect-ratio:4/5;display:flex;align-items:center;justify-content:center;background:var(--surface2);color:var(--text-dim);font-size:2rem;">🧠</div>';
-    return '<div class="night-card" onclick="openCategoryDetail(\'' + c._id + '\')">' + imgEl + '<div class="night-card-body"><div class="night-name">' + esc(c.name) + '</div>' + '</div></div>';
+    const rid = String(c._id).replace(/^trivia:/,'');
+    const heart = tlHeartOn ? '<button type="button" title="Like this category for our venue" onclick="event.stopPropagation();toggleTriviaLike(\'' + rid + '\')" style="position:absolute;top:8px;right:8px;z-index:3;width:34px;height:34px;border-radius:50%;border:1px solid rgba(255,255,255,.25);background:rgba(0,0,0,.6);color:' + (tlLiked.has(rid) ? '#e8456b' : '#fff') + ';font-size:18px;line-height:1;cursor:pointer;">' + (tlLiked.has(rid) ? '\u2665' : '\u2661') + '</button>' : '';
+    return '<div class="night-card" style="position:relative;" onclick="openCategoryDetail(\'' + c._id + '\')">' + heart + imgEl + '<div class="night-card-body"><div class="night-name">' + esc(c.name) + '</div>' + '</div></div>';
   }).join('');
 }
+
+// ── Venue-facing liked trivia categories (same list the Planner's randomizer reads) ──
+let tlHeartOn = false, tlVenueId = null, tlLiked = new Set(), tlLoaded = false;
+async function loadTriviaLikes() {
+  if (tlLoaded) return; tlLoaded = true;
+  try {
+    if (!currentVenueRecord || !currentVenueRecord.name) return;
+    const snap = await get(ref(rtdb, 'trivia/planner/venues'));
+    const all = snap.exists() ? (snap.val() || {}) : {};
+    const nm = qNormVenueName(currentVenueRecord.name);
+    const hit = Object.entries(all).find(([id, v]) => v && qNormVenueName(v.name) === nm);
+    if (!hit) return;
+    tlVenueId = hit[0]; tlHeartOn = true;
+    tlLiked = new Set(hit[1].likedCategoryIds || []);
+    renderTrivia();
+  } catch (e) { console.warn('trivia likes unavailable', e); }
+}
+window.toggleTriviaLike = async function (cid) {
+  if (!tlVenueId) return;
+  const on = !tlLiked.has(cid);
+  if (on) tlLiked.add(cid); else tlLiked.delete(cid);
+  renderTrivia();
+  try {
+    await runTransaction(ref(rtdb, 'trivia/planner/venues/' + tlVenueId + '/likedCategoryIds'), cur => {
+      const a = Array.isArray(cur) ? cur.slice() : [];
+      const i = a.indexOf(cid);
+      if (on && i < 0) a.push(cid);
+      if (!on && i >= 0) a.splice(i, 1);
+      return a.length ? a : null;
+    });
+  } catch (e) {
+    if (on) tlLiked.delete(cid); else tlLiked.add(cid);
+    renderTrivia();
+    alert('Could not save that — please try again.');
+  }
+};
 
 
 function renderBingo() {
