@@ -2074,7 +2074,7 @@ import {
   query, orderBy, onSnapshot, addDoc, serverTimestamp, deleteField
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getDatabase, ref, get, push, set, update } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { getDatabase, ref, get, push, set, update, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
 // ═══════════════════════════════════════════════
 // FIREBASE INIT
@@ -2247,6 +2247,26 @@ async function loadLiveCategories() {
   liveCategoryNameSet = new Set([...liveTriviaCats, ...liveBingoCats].map(c => normCatName(c.name)));
 }
 
+// Keeps the Library live: a category added, edited or deleted in the Planner, Trivia admin or here shows up (or disappears)
+// within a moment, with no refresh.
+let _liveSyncOn = false, _liveSyncTimer = null;
+function refreshAllCategoryViews() {
+  try { renderLibrary(); } catch (e) {}
+  try { renderTrivia(); } catch (e) {}
+  try { renderBingo(); } catch (e) {}
+  try { if (document.getElementById('search-input')?.value.trim()) runSearch(); } catch (e) {}
+}
+function attachLiveCategorySync() {
+  if (_liveSyncOn) return; _liveSyncOn = true;
+  const later = () => { clearTimeout(_liveSyncTimer); _liveSyncTimer = setTimeout(async () => { await loadLiveCategories(); refreshAllCategoryViews(); }, 400); };
+  onValue(ref(rtdb, 'trivia/categories'), later, e => console.warn('trivia listener', e));
+  onValue(ref(rtdb, 'bingo/landing/categories'), later, e => console.warn('bingo listener', e));
+  onSnapshot(catsCol, snap => {
+    if (document.getElementById('cat-modal')?.classList.contains('open')) return;
+    categories = snap.docs.map(d => ({ _id: d.id, ...d.data() })).sort((a,b) => (a.position??9999) - (b.position??9999));
+    refreshAllCategoryViews();
+  }, e => console.warn('categories listener', e));
+}
 async function loadData() {
   const loadingEl = document.getElementById('loading-overlay');
   const loadingMsg = loadingEl.querySelector('p');
@@ -2269,6 +2289,7 @@ async function loadData() {
     singaTags = sSnap.exists() ? (sSnap.data().tags || []) : ['Pop','Rock/Emo','Holiday','Artist-Specific','Oldies','Latin'];
     triviaTags = rvSnap.exists() ? (rvSnap.data().tags || []) : ['Pop Culture','TV Shows','Movies','Music','Spooky','Books','Sports'];
     await loadLiveCategories();
+    attachLiveCategorySync();
   } catch(e) {
     console.error('Firebase load error:', e);
     const msg = e.message === 'timeout'
