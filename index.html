@@ -2180,6 +2180,7 @@ function mapLiveCategory(id, c, kind){
     _liveKind: kind, // 'trivia' | 'bingo'
     _rawType: c.type || null, // the actual Trivia Admin type field ('music'|'trivia'|…), for the subtype label — `type` below is just the generic Trivia/Bingo pill
     name: c.name || c.title || '(untitled)',
+    altName: c.altName || '',   // the planner's Secondary Name — searchable, never shown
     type: kind === 'bingo' ? 'Bingo' : 'Trivia',
     theme: '',
     tags: '',
@@ -2602,7 +2603,7 @@ function renderBingo() {
   if (q) items = items.filter(c => c.name.toLowerCase().includes(q) || (c.theme||'').toLowerCase().includes(q));
   items = maybeSortAZ(items, 'bingo', 'name');
   let liveItems = liveBingoCats;
-  if (q) liveItems = liveItems.filter(c => c.name.toLowerCase().includes(q));
+  if (q) liveItems = liveItems.filter(c => c.name.toLowerCase().includes(q) || (c.altName||'').toLowerCase().includes(q));
   empty.style.display = (items.length === 0 && liveItems.length === 0) ? 'block' : 'none';
   grid.innerHTML = items.map(c => {
     const miniSrc = c.bgImage || c.miniGameImage || c.bannerData || null;
@@ -2883,7 +2884,7 @@ function runSearch() {
     (c.tags && c.tags.toLowerCase().includes(ql)))
   );
   const liveMatches = [...liveTriviaCats, ...liveBingoCats].filter(c =>
-    c.name.toLowerCase().includes(ql) || (c.shows||[]).some(s => s.toLowerCase().includes(ql))
+    c.name.toLowerCase().includes(ql) || (c.altName||'').toLowerCase().includes(ql) || (c.shows||[]).some(s => s.toLowerCase().includes(ql))
   );
 
   const total = matches.length + liveMatches.length;
@@ -4340,7 +4341,7 @@ function renderTrivia() {
   if (hasSidebarFilters()) items = items.filter(catMatchesSidebarFilters);
   items = maybeSortAZ(items, 'trivia', 'name');
   let liveItems = liveTriviaCats;
-  if (triviaSearchQ) liveItems = liveItems.filter(c => c.name.toLowerCase().includes(triviaSearchQ) || (c.shows||[]).some(s=>s.toLowerCase().includes(triviaSearchQ)));
+  if (triviaSearchQ) liveItems = liveItems.filter(c => c.name.toLowerCase().includes(triviaSearchQ) || (c.altName||'').toLowerCase().includes(triviaSearchQ) || (c.shows||[]).some(s=>s.toLowerCase().includes(triviaSearchQ)));
   if (activeTriviaTierFilter) liveItems = liveItems.filter(c => c.plannerTier === activeTriviaTierFilter);
   empty.style.display = (items.length === 0 && liveItems.length === 0) ? 'block' : 'none';
   grid.innerHTML = items.map(c => {
