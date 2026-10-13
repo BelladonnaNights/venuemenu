@@ -2189,7 +2189,8 @@ function mapLiveCategory(id, c, kind){
     shows: Array.isArray(vm.shows) ? vm.shows : [],
     plannerTier: c.plannerTier || null,
     karaokeSongs: Array.isArray(c.karaokeSongs) ? c.karaokeSongs : [],
-    bannerData: vm.bannerUrl || c.bgImage || c.squareImage || c.image || null
+    bannerData: vm.bannerUrl || c.bgImage || c.squareImage || c.image || null,
+    miniGameImage: vm.miniGameImage || null
   };
 }
 let nights = [];
@@ -3101,11 +3102,21 @@ async function saveCategoryFromModal() {
     miniGameImage: document.getElementById('cat-minigame-url').value.trim() || null,
     miniSection: document.getElementById('cat-mini-section').value || null,
     addonPrice: document.getElementById('cat-addon-price').value.trim() ? parseFloat(document.getElementById('cat-addon-price').value) : null,
-    bannerData: catBannerData || null
+    bannerData: catBannerData || null,
+    // keep the links to the Trivia/Planner records so a save here never severs them
+    ...(existing.triviaCatId ? { triviaCatId: existing.triviaCatId } : {}),
+    ...(existing.vmCatId ? { vmCatId: existing.vmCatId } : {}),
+    ...(existing.linked ? { linked: existing.linked } : {}),
+    ...(existing.plannerTier ? { plannerTier: existing.plannerTier } : {})
   };
+  // A web-link banner is also stored as `image` so the Trivia app and Planner read the identical URL.
+  const bannerUrl = (typeof catBannerData === 'string' && /^https?:/i.test(catBannerData)) ? catBannerData : '';
+  if (bannerUrl) cat.image = bannerUrl; else if (existing.image && existing.image === existing.bannerData) cat.image = '';
+  else if (existing.image) cat.image = existing.image;
 
   try {
     await saveCat(cat);
+    await pushBannersToLiveApps(cat, existing, bannerUrl);
     if (isEdit) categories[editingCatIndex] = cat;
     else categories.push(cat);
     toast(isEdit ? 'Category updated' : 'Category added');
@@ -3114,6 +3125,31 @@ async function saveCategoryFromModal() {
   }
   closeCatModal();
   renderLibrary();
+}
+
+// Pushes this category's banner URL (and square/mini image) to the matching Trivia / Bingo record,
+// so the Trivia app and the Planner theme library show exactly what was typed here.
+async function pushBannersToLiveApps(cat, existing, bannerUrl) {
+  try {
+    const miniUrl = (typeof cat.miniGameImage === 'string' && /^https?:/i.test(cat.miniGameImage)) ? cat.miniGameImage : '';
+    const hadBanner = !!(existing && (existing.bannerData || existing.image));
+    const hadMini = !!(existing && existing.miniGameImage);
+    if (!bannerUrl && !miniUrl && !hadBanner && !hadMini) return;
+    const key = normCatName(cat.name);
+    const ups = {};
+    const apply = (base, id) => {
+      if (bannerUrl || hadBanner) {
+        ups[`${base}/${id}/venueMenu/bannerUrl`] = bannerUrl || null;
+        if (base.startsWith('trivia')) ups[`${base}/${id}/bgImage`] = bannerUrl || null;
+      }
+      if (miniUrl || hadMini) ups[`${base}/${id}/venueMenu/miniGameImage`] = miniUrl || null;
+    };
+    const t = (cat.triviaCatId && liveTriviaCats.find(c => c._liveId === cat.triviaCatId)) || liveTriviaCats.find(c => normCatName(c.name) === key);
+    if (t) apply('trivia/categories', t._liveId);
+    const b = liveBingoCats.find(c => normCatName(c.name) === key);
+    if (b) apply('bingo/landing/categories', b._liveId);
+    if (Object.keys(ups).length) await update(ref(rtdb), ups);
+  } catch (e) { console.warn('Could not push banner to Trivia/Bingo', e); }
 }
 
 async function deleteCategory(idx) {
