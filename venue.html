@@ -2006,6 +2006,7 @@ function mapLiveCategory(id, c, kind) {
   return {
     _id: (kind==='bingo'?'bingo:':'trivia:') + id,
     name: c.name || c.title || '(untitled)',
+    altName: c.altName || '',   // the planner's Secondary Name — searchable here, never shown
     type: kind === 'bingo' ? 'Bingo' : 'Trivia',
     theme: vm.description || '',
     published: true,
@@ -2353,7 +2354,7 @@ function renderCategoryGrid(gridId, emptyId, filterFn, starKind, clickable) {
   const q = (document.getElementById(searchId)?.value||'').toLowerCase().trim();
 
   let filtered = publishedCategories.filter(c => (c.publishedTabs||[]).length > 0 || c.published).filter(filterFn);
-  if (q) filtered = filtered.filter(c => c.name.toLowerCase().includes(q)||(c.theme||'').toLowerCase().includes(q));
+  if (q) filtered = filtered.filter(c => c.name.toLowerCase().includes(q)||(c.altName||'').toLowerCase().includes(q)||(c.theme||'').toLowerCase().includes(q));
   if (hasSidebarFilters()) filtered = filtered.filter(itemMatchesFilters);
 
   if (!filtered.length) { empty.style.display='block'; grid.innerHTML=''; return; }
@@ -2389,6 +2390,7 @@ function renderTrivia() {
   if (triviaSearchQ) {
     filtered = filtered.filter(c =>
       c.name.toLowerCase().includes(triviaSearchQ) ||
+      (c.altName||'').toLowerCase().includes(triviaSearchQ) ||
       (c.theme||'').toLowerCase().includes(triviaSearchQ) ||
       (c.shows||[]).some(s => s.toLowerCase().includes(triviaSearchQ))
     );
@@ -2464,7 +2466,7 @@ function renderSingAlongs() {
 function renderMiniGames() {
   const q = (document.getElementById('mini-search')?.value || '').toLowerCase().trim();
   let items = publishedCategories.filter(c => isMiniGame(c) && ((c.publishedTabs||[]).includes('mini') || c.published));
-  if (q) items = items.filter(c => c.name.toLowerCase().includes(q) || (c.theme||'').toLowerCase().includes(q));
+  if (q) items = items.filter(c => c.name.toLowerCase().includes(q) || (c.altName||'').toLowerCase().includes(q) || (c.theme||'').toLowerCase().includes(q));
 
   const knowledge   = items.filter(c => c.miniSection === 'knowledge');
   const interactive = items.filter(c => c.miniSection === 'interactive');
