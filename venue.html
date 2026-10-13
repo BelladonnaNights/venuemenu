@@ -2013,7 +2013,7 @@ function mapLiveCategory(id, c, kind) {
     publishedTabs: [],
     shows: Array.isArray(vm.shows) ? vm.shows : [],
     bannerData: vm.bannerUrl || c.bgImage || c.squareImage || c.image || null,
-    miniGameImage: null
+    miniGameImage: vm.miniGameImage || null
   };
 }
 async function loadLiveCategories() {
