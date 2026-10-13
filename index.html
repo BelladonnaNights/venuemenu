@@ -2720,7 +2720,8 @@ function renderLibrary() {
 
   const items = filtered.map(c => ({ html: () => categoryCardHTML(c, categories.indexOf(c), ''), name: c.name || '' }))
     .concat(liveFiltered.map(c => ({ html: () => liveCategoryCardHTML(c), name: c.name || '' })));
-  if (sortAZState['library']) items.sort((a,b) => a.name.localeCompare(b.name));
+  // One combined list, always A–Z (never grouped by type or by where the record lives).
+  items.sort((a,b) => a.name.localeCompare(b.name, undefined, {sensitivity:'base'}));
 
   const nonSupersededTotal = categories.filter(c => !isSupersededOldCategory(c)).length + liveAll.length;
   document.getElementById('lib-results-meta').textContent = items.length + ' of ' + nonSupersededTotal + ' categories';
@@ -2895,7 +2896,10 @@ function runSearch() {
     : `No categories found for "${q}"`;
 
   searchResults.style.display = total > 0 ? 'grid' : 'none';
-  searchResults.innerHTML = matches.map(c => categoryCardHTML(c, categories.indexOf(c), q)).join('') + liveMatches.map(liveCategoryCardHTML).join('');
+  const merged = matches.map(c => ({ name: c.name || '', html: categoryCardHTML(c, categories.indexOf(c), q) }))
+    .concat(liveMatches.map(c => ({ name: c.name || '', html: liveCategoryCardHTML(c) })))
+    .sort((a,b) => a.name.localeCompare(b.name, undefined, {sensitivity:'base'}));
+  searchResults.innerHTML = merged.map(i => i.html).join('');
 }
 
 // ═══════════════════════════════════════════════
