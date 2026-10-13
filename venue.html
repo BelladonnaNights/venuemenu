@@ -2322,6 +2322,13 @@ function nightVisibleNow(n) {
   if (effectiveMode() === 'host') return (n.publishedHost !== undefined) ? !!n.publishedHost : !!n.published;
   return !!n.published;
 }
+// Empty state that tells the truth: "No matches" while searching, the normal "none published" message otherwise.
+function showEmpty(empty, q) {
+  if (!empty) return;
+  const h = empty.querySelector('h2');
+  if (h) { if (!h.dataset.orig) h.dataset.orig = h.textContent; h.textContent = q ? 'No matches for "' + q + '"' : h.dataset.orig; }
+  empty.style.display = 'block';
+}
 function renderThemedNights() {
   const grid = document.getElementById('themed-grid');
   const empty = document.getElementById('themed-empty');
@@ -2330,7 +2337,7 @@ function renderThemedNights() {
   let filtered = publishedNights.filter(nightVisibleNow);
   if (q) filtered = filtered.filter(n => n.name.toLowerCase().includes(q)||(n.description||'').toLowerCase().includes(q));
   if (hasSidebarFilters()) filtered = filtered.filter(n => nightMatchesFilters(n));
-  if (!filtered.length) { empty.style.display='block'; grid.innerHTML=''; return; }
+  if (!filtered.length) { showEmpty(empty, q); grid.innerHTML=''; return; }
   empty.style.display = 'none';
   grid.innerHTML = filtered.map((n,i) => {
     const img = n.bannerData ? `<img class="night-card-img" src="${n.bannerData}" alt="${esc(n.name)}" loading="lazy">` : `<div class="night-card-img" style="display:flex;align-items:center;justify-content:center;background:var(--surface2);color:var(--text-dim);font-size:2rem;">🌙</div>`;
@@ -2350,14 +2357,14 @@ function renderCategoryGrid(gridId, emptyId, filterFn, starKind, clickable) {
   const grid = document.getElementById(gridId);
   const empty = document.getElementById(emptyId);
   if (!grid) return;
-  const searchId = { 'trivia-grid':'trivia-search','bingo-grid':'bingo-search','singa-grid':'singa-search','minigames-grid':'mini-search' }[gridId];
+  const searchId = { 'trivia-grid':'trivia-search','bingo-grid':'bingo-search','singa-grid':'singa-search','minigames-grid':'mini-search','battles-grid':'battles-search' }[gridId];
   const q = (document.getElementById(searchId)?.value||'').toLowerCase().trim();
 
   let filtered = publishedCategories.filter(c => (c.publishedTabs||[]).length > 0 || c.published).filter(filterFn);
   if (q) filtered = filtered.filter(c => c.name.toLowerCase().includes(q)||(c.altName||'').toLowerCase().includes(q)||(c.theme||'').toLowerCase().includes(q));
   if (hasSidebarFilters()) filtered = filtered.filter(itemMatchesFilters);
 
-  if (!filtered.length) { empty.style.display='block'; grid.innerHTML=''; return; }
+  if (!filtered.length) { showEmpty(empty, q); grid.innerHTML=''; return; }
   empty.style.display='none';
   grid.innerHTML = filtered.map(c => {
     const img = c.miniGameImage||c.bannerData;
@@ -2407,7 +2414,7 @@ function renderTrivia() {
     );
   }
 
-  if (!filtered.length) { empty.style.display = 'block'; grid.innerHTML = ''; return; }
+  if (!filtered.length) { showEmpty(empty, triviaSearchQ); grid.innerHTML = ''; return; }
   empty.style.display = 'none';
   grid.innerHTML = filtered.map(c => {
     const img = c.miniGameImage || c.bannerData;
@@ -2491,7 +2498,7 @@ function renderMiniGames() {
   if (uSec) document.getElementById('minigames-grid').innerHTML = unassigned.map(cardHtml).join('');
 
   const empty = document.getElementById('mini-empty');
-  if (empty) empty.style.display = items.length === 0 ? 'block' : 'none';
+  if (empty) { if (items.length === 0) showEmpty(empty, q); else empty.style.display = 'none'; }
 }
 function renderBattles() {
   renderCategoryGrid('battles-grid','battles-empty', c => isBattles(c));
@@ -2686,7 +2693,7 @@ function renderMovies() {
   const q = (document.getElementById('movies-search')?.value || '').toLowerCase().trim();
   let list = publishedMovies;
   if (q) list = list.filter(m => m.title.toLowerCase().includes(q) || (m.genre || '').toLowerCase().includes(q) || String(m.year || '').includes(q));
-  if (!list.length) { empty.style.display = 'block'; grid.innerHTML = ''; return; }
+  if (!list.length) { showEmpty(empty, q); grid.innerHTML = ''; return; }
   empty.style.display = 'none';
   grid.innerHTML = list.map(m => {
     const imgEl = m.poster
