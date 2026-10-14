@@ -2141,7 +2141,16 @@ async function loadLiveCategories() {
       ...Object.entries(tRaw).filter(([id,c]) => c && c.venueMenu && c.venueMenu.show).map(([id,c]) => mapLiveCategory(id, c, 'trivia')),
       ...Object.entries(bRaw).filter(([id,c]) => c && c.venueMenu && c.venueMenu.show).map(([id,c]) => mapLiveCategory(id, c, 'bingo'))
     ];
-    publishedCategories = publishedCategories.concat(live);
+    // Same category saved twice (two records, or the same one under both Trivia and Bingo
+    // libraries) shows once: same type + same name, keep the one with a banner/description.
+    const seen = new Map();
+    publishedCategories.concat(live).forEach(c => {
+      const key = (c.type || '') + '|' + (c.name || '').trim().toLowerCase();
+      const prev = seen.get(key);
+      const score = x => (x.bannerData ? 2 : 0) + (x.theme ? 1 : 0);
+      if (!prev || score(c) > score(prev)) seen.set(key, c);
+    });
+    publishedCategories = [...seen.values()];
   } catch(e) {
     console.error('Live category load failed (Trivia/Bingo tabs will show Firestore-native items only):', e);
   }
