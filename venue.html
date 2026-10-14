@@ -860,6 +860,32 @@
   .q-x { flex: none; background: none; border: none; color: #C0654F; font-size: 1.05rem; cursor: pointer; padding: 6px; opacity: .7; }
   .q-x:hover { opacity: 1; }
 
+
+  .qm-btn.q-cal { background: transparent; border: 1px solid var(--gold); color: var(--gold); letter-spacing: .08em; text-transform: uppercase; font-size: .75rem; font-family: var(--cinzel); }
+  .qm-btn.q-cal:hover { background: var(--gold-dim); }
+  .qrow.q-open { border-style: dashed; background: transparent; }
+  .qrow.q-open .q-name { font-size: 1.3rem; color: var(--text-dim); }
+  .q-daterow { display: flex; justify-content: space-between; width: 100%; gap: 10px; background: var(--surface3); border: 1px solid var(--border2); color: var(--text); padding: 11px 13px; border-radius: 8px; margin-bottom: 7px; cursor: pointer; font: inherit; text-align: left; }
+  .q-daterow:hover { border-color: var(--gold); }
+  .q-daterow em { color: var(--text-dim); font-size: .85rem; }
+  .br-intro { color: var(--text-muted); margin: -.2rem 0 1.4rem; }
+  .br-row { margin-bottom: 2.2rem; }
+  .br-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: .7rem; }
+  .br-head h3 { font-family: var(--cinzel); color: var(--gold); letter-spacing: .16em; text-transform: uppercase; font-size: .95rem; margin: 0; }
+  .br-arrows button { background: var(--surface3); border: 1px solid var(--border2); color: var(--gold); width: 34px; height: 34px; border-radius: 50%; cursor: pointer; font-size: 1.1rem; margin-left: 6px; }
+  .br-scroller { display: flex; gap: 14px; overflow-x: auto; scroll-snap-type: x proximity; padding-bottom: 10px; scrollbar-width: thin; }
+  .br-card { flex: 0 0 230px; scroll-snap-align: start; background: var(--surface2); border: 1px solid var(--border2); border-radius: 12px; overflow: hidden; cursor: pointer; display: flex; flex-direction: column; }
+  .br-card:hover { border-color: var(--gold); }
+  .br-img { aspect-ratio: 16/10; background: var(--surface3); display: flex; align-items: center; justify-content: center; overflow: hidden; }
+  .br-img img { width: 100%; height: 100%; object-fit: cover; }
+  .br-noimg { padding: 10px; text-align: center; font-family: var(--display); font-size: 1.3rem; color: var(--gold-light); }
+  .br-name { font-family: var(--display); font-size: 1.35rem; letter-spacing: .03em; color: #fff; padding: 10px 12px 4px; line-height: 1.1; }
+  .br-yr { font-size: .8rem; color: var(--text-dim); }
+  .br-btns { display: flex; flex-direction: column; gap: 6px; padding: 8px 12px 12px; margin-top: auto; }
+  .br-btn { background: transparent; border: 1px solid var(--border2); color: var(--text); padding: 8px; border-radius: 8px; cursor: pointer; font: inherit; font-size: .78rem; }
+  .br-btn.gold { background: var(--gold); border-color: var(--gold); color: #1a1408; font-weight: 700; }
+  .br-btn.done { border-color: var(--gold); color: var(--gold); }
+  @media (max-width: 768px) { .br-card { flex-basis: 190px; } }
   .q-toolbar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
   .q-main { flex: 1; min-width: 0; }
   .q-main .q-name { flex: none; }
@@ -927,7 +953,8 @@
     <div class="top-links" id="top-links">
       <button class="top-link active" id="top-menu" onclick="navigateTo('menu')">Main Menu</button>
       <button class="top-link venue-only-nav" style="display:none;" id="top-queue" onclick="navigateTo('queue')">My Queue</button>
-      <button class="top-link cart-btn" id="cart-btn" onclick="openCart()">🛒 Shop <span class="cart-count" id="cart-count">0</span></button>
+      <button class="top-link venue-only-nav" style="display:none;" id="top-browse" onclick="navigateTo('browse')">Browse</button>
+      <button class="top-link cart-btn" id="cart-btn" onclick="openCart()">Cart <span class="cart-count" id="cart-count">0</span></button>
     </div>
     <div class="nav-menu-wrap">
       <button class="burger-btn" id="burger-btn" onclick="toggleNavMenu(event)" aria-label="Menu" aria-expanded="false" title="Menu">
@@ -935,6 +962,7 @@
       </button>
       <nav class="nav-tabs" id="main-nav">
         <button class="nav-tab venue-only-nav" style="display:none;" id="nav-queue" onclick="navigateTo('queue')">My Queue</button>
+        <button class="nav-tab venue-only-nav" style="display:none;" id="nav-browse" onclick="navigateTo('browse')">Browse</button>
         <button class="nav-tab" id="nav-themed" onclick="navigateTo('themed')">Themed Nights</button>
         <button class="nav-tab" id="nav-singalongs" onclick="navigateTo('singalongs')">Sing-Alongs</button>
         <button class="nav-tab" id="nav-movies" onclick="navigateTo('movies')">Movies</button>
@@ -1466,26 +1494,31 @@
        venue's own pending cart requests (editable, via the existing cart). ═══ -->
   <div class="view" id="view-queue">
     <div class="desc-view">
-      <div class="desc-title">My Queue</div>
+      <div class="desc-title">Your Category Queue</div>
       <div class="vp-card">
-        <div id="queue-confirmed-list"><div class="vp-empty">Loading…</div></div>
-        <p style="font-size:0.78rem;color:var(--text-dim);margin-top:0.75rem;">Shows confirmed Trivia, Bingo, Karaoke, and other gigs scheduled at your venue for the next 8 weeks.</p>
+        <div class="q-toolbar">
+          <button class="qm-btn gold" onclick="qOpenAdd()">+ Add category</button>
+          <button class="qm-btn" onclick="navigateTo('browse')">Browse all</button>
+          <button class="qm-btn q-cal" onclick="qOpenCalendar(0)">Calendar view</button>
+          <button class="qm-btn" id="q-undo-btn" onclick="qUndo()" disabled style="opacity:.4;">Undo</button>
+        </div>
+        <div id="queue-category-list"><div class="vp-empty">Loading…</div></div>
+        <p style="font-size:0.78rem;color:var(--text-dim);margin-top:0.75rem;">Drag a category by its ⠿ handle to move it. Each date stays where it is — the category you drop there takes that date. Whatever's at the front locks in as your category for the week every Sunday at midnight.</p>
       </div>
       <div class="desc-title" style="margin-top:2rem;">Your Pending Requests</div>
       <div class="vp-card">
         <div id="queue-pending-list"><div class="vp-empty">Nothing in your queue yet — add a Themed Night from the menu to get started.</div></div>
         <button class="atc-btn" style="margin-top:0.5rem;" onclick="openCart()">Manage in Cart</button>
       </div>
-      <div class="desc-title" style="margin-top:2rem;">Your Category Queue</div>
-      <div class="vp-card">
-        <div class="q-toolbar">
-          <button class="qm-btn gold" onclick="qOpenAdd()">+ Add category</button>
-          <button class="qm-btn" onclick="qOpenCalendar(0)">📅 Calendar view</button>
-          <button class="qm-btn" id="q-undo-btn" onclick="qUndo()" disabled style="opacity:.4;">↶ Undo</button>
-        </div>
-        <div id="queue-category-list"><div class="vp-empty">Loading…</div></div>
-        <p style="font-size:0.78rem;color:var(--text-dim);margin-top:0.75rem;">Drag a category by its ⠿ handle to move it. Each date stays where it is — the category you drop there takes that date. Anything you queue is written straight into our Planner, and ✎ adds a note for the host (shown as a ★). Whatever's at the front locks in as your category for the week every Sunday at midnight.</p>
-      </div>
+    </div>
+  </div>
+
+  <!-- ═══ VENUE MODE: BROWSE ═══ -->
+  <div class="view" id="view-browse">
+    <div class="desc-view" style="max-width:1200px;">
+      <div class="desc-title">Browse</div>
+      <p class="br-intro">Everything we offer, in one place. Scroll each row sideways to see more.</p>
+      <div id="browse-rows"><div class="vp-empty">Loading…</div></div>
     </div>
   </div>
 
@@ -1745,7 +1778,7 @@ window.setPreviewMode = function(mode) {
   if (currentView === 'themed') renderThemedNights();
   if (currentView === 'singalongs') renderSingAlongs();
   if (currentView === 'movies') renderMovies();
-  if (['contract','feedback','concurrent','collaborators'].includes(currentView) && effectiveMode() !== 'venue') navigateTo('menu');
+  if (['contract','feedback','concurrent','collaborators','queue','browse'].includes(currentView) && effectiveMode() !== 'venue') navigateTo('menu');
 };
 
 async function resolveVenueRecord(profile){
@@ -2299,9 +2332,9 @@ function navigateTo(view, typeFilter) {
   window.scrollTo(0, 0);
   // Update nav tab active state
   document.querySelectorAll('#main-nav .nav-tab').forEach(t => t.classList.remove('active'));
-  const navMap = { menu:'nav-menu', themed:'nav-themed', singalongs:'nav-singalongs', movies:'nav-movies', queue:'nav-queue', contract:'nav-contract', feedback:'nav-feedback', concurrent:'nav-concurrent', collaborators:'nav-collaborators' };
+  const navMap = { menu:'nav-menu', themed:'nav-themed', singalongs:'nav-singalongs', movies:'nav-movies', queue:'nav-queue', browse:'nav-browse', contract:'nav-contract', feedback:'nav-feedback', concurrent:'nav-concurrent', collaborators:'nav-collaborators' };
   document.querySelectorAll('#top-links .top-link').forEach(b => b.classList.remove('active'));
-  const topMap = { menu:'top-menu', queue:'top-queue' };
+  const topMap = { menu:'top-menu', queue:'top-queue', browse:'top-browse' };
   if (topMap[view]) document.getElementById(topMap[view])?.classList.add('active');
   const activeNav = navMap[view];
   if (activeNav) document.getElementById(activeNav)?.classList.add('active');
@@ -2317,6 +2350,7 @@ function navigateTo(view, typeFilter) {
   if (view === 'quickies')   renderQuickies();
   if (view === 'karaoke')    renderAlsoSee('karaoke');
   if (view === 'queue')         loadQueueView();
+  if (view === 'browse')        renderBrowse();
   if (view === 'contract')      loadContractView();
   if (view === 'feedback')      loadFeedbackView();
   if (view === 'concurrent')    loadConcurrentView();
@@ -2928,7 +2962,8 @@ async function applyWeeklyLockIfDue() {
   const thisWeek = qThisWeekSundayKey(new Date());
   if (categoryQueueDoc.lastLockedWeekOf === thisWeek) return;
   categoryQueueDoc.history = categoryQueueDoc.history || [];
-  const popped = categoryQueueDoc.queue.shift() || null;
+  let popped = categoryQueueDoc.queue.shift() || null;
+  if (popped && popped.empty) popped = null;
   if (popped && categoryQueueDoc.currentLock) {
     const o = categoryQueueDoc.currentLock;
     categoryQueueDoc.history.push({ categoryId: o.categoryId, categoryName: o.categoryName, type: o.type || '', weekOf: o.weekOf });
@@ -2948,7 +2983,8 @@ async function saveCategoryQueue() {
       queue: categoryQueueDoc.queue || [],
       currentLock: categoryQueueDoc.currentLock || null,
       lastLockedWeekOf: categoryQueueDoc.lastLockedWeekOf || null,
-      history: categoryQueueDoc.history || []
+      history: categoryQueueDoc.history || [],
+      engaged: !!categoryQueueDoc.engaged
     });
   } catch (e) { console.error('Could not save category queue:', e); }
   qSyncPlanner().catch(e => console.error('Planner sync failed:', e));
@@ -2962,7 +2998,7 @@ function isInCategoryQueue(id) {
 
 // ── undo ──
 let qUndoStack = [];
-function qSnap() { qUndoStack.push(JSON.stringify(categoryQueueDoc.queue || [])); if (qUndoStack.length > 25) qUndoStack.shift(); qUpdateUndoBtn(); }
+function qSnap() { categoryQueueDoc.engaged = true; qUndoStack.push(JSON.stringify(categoryQueueDoc.queue || [])); if (qUndoStack.length > 25) qUndoStack.shift(); qUpdateUndoBtn(); }
 function qUpdateUndoBtn() { const b = document.getElementById('q-undo-btn'); if (b) { b.disabled = !qUndoStack.length; b.style.opacity = qUndoStack.length ? 1 : .4; } }
 async function qUndo() {
   if (!qUndoStack.length) return;
@@ -2977,8 +3013,9 @@ async function addCategoryToQueue(id) {
   await loadCategoryQueue();
   if (!isInCategoryQueue(id)) {
     qSnap();
-    categoryQueueDoc.queue.push({ categoryId: c._id, categoryName: c.name, type: (c.type || '').split(',')[0].trim() });
+    qInsertAt(c, 0);   // new picks go to the top of the list
     await saveCategoryQueue();
+    qToast('Added to the top of your queue.');
   }
   closeDetail();
   renderCategoryQueueSection();
@@ -2991,8 +3028,32 @@ async function removeCategoryQueueItem(idx) {
   await saveCategoryQueue();
 }
 
+// The Planner is where categories first get assigned (Randomize, hand picks). The venue's
+// queue starts from whatever is already planned for the next 10 weeks — every one of those can be
+// moved. Open dates show as "Open date" so they can be filled by dragging or adding.
+function qReconcileFromPlanner() {
+  if (!categoryQueueDoc) return;
+  const todayKey = qDateToKey(new Date()), floor = qFloorDate(), endKey = qWindowEnd();
+  ['Trivia', 'Bingo'].forEach(g => {
+    if (!queueTargets[g.toLowerCase()]) return;
+    const its = (queueUpcomingItems || []).filter(it => it.kind === g && !qBlockReason(it) && it.date >= todayKey && it.date <= endKey && (floor === todayKey || it.date > floor));
+    const slots = [...new Set(its.map(it => it.date))].sort();
+    const byDate = {}; its.forEach(it => { if (it.themeName) byDate[it.date] = it.themeName; });
+    if (!slots.some(d => byDate[d])) return;
+    const mk = name => { const c = publishedCategories.find(x => (x.type || '').split(',')[0].trim() === g && (x.name || '').trim().toLowerCase() === name.trim().toLowerCase()); return c ? { categoryId: c._id, categoryName: c.name, type: g } : { categoryId: null, categoryName: name, type: g }; };
+    const planned = slots.map(d => byDate[d] ? mk(byDate[d]) : { empty: true, type: g });
+    while (planned.length && planned[planned.length - 1].empty) planned.pop();
+    const q = categoryQueueDoc.queue, cur = q.filter(x => (x.type || 'Other') === g);
+    const same = planned.every((p, i) => cur[i] && !!cur[i].empty === !!p.empty && (p.empty || (cur[i].categoryName || '').toLowerCase() === p.categoryName.toLowerCase()));
+    if (same) return;
+    planned.forEach(p => { if (!p.empty) { const old = cur.find(x => !x.empty && (x.categoryName || '').toLowerCase() === p.categoryName.toLowerCase()); if (old && old.note) p.note = old.note; } });
+    const rest = cur.slice(planned.length).filter(x => !x.empty && !planned.some(p => !p.empty && p.categoryName.toLowerCase() === (x.categoryName || '').toLowerCase()));
+    categoryQueueDoc.queue = q.filter(x => (x.type || 'Other') !== g).concat(planned, rest);
+  });
+}
+
 // ── schedule model ──
-const Q_WINDOW_DAYS = 56;
+const Q_WINDOW_DAYS = 70;
 function qWindowEnd() { const d = new Date(); d.setHours(12, 0, 0, 0); d.setDate(d.getDate() + Q_WINDOW_DAYS); return qDateToKey(d); }
 function qFmtTime(t) {
   if (!t) return '';
@@ -3013,8 +3074,21 @@ function qBlockReason(it) {
   if (queueNoPlay.has(it.date)) return 'noplay';
   if (it.cancelled) return 'cancelled';
   const k = (it.kind || '').toLowerCase();
-  if ((k === 'trivia' || k === 'bingo') && it.planned && !it.fromQueue) return 'planned';
+  if (k === 'bingo' && it.planned) return 'planned';   // several rounds that night — left for us to arrange
   return '';
+}
+// Put a category into the queue at position `pos` of its game type (0 = the very next date).
+function qInsertAt(c, pos) {
+  const type = (c.type || '').split(',')[0].trim() || 'Other';
+  const q = categoryQueueDoc.queue;
+  const idxs = q.map((it, i) => ((it.type || 'Other') === type ? i : -1)).filter(i => i >= 0);
+  const entry = { categoryId: c._id, categoryName: c.name, type };
+  if (pos < idxs.length) {
+    if (q[idxs[pos]].empty) q[idxs[pos]] = entry; else q.splice(idxs[pos], 0, entry);
+  } else {
+    while (idxs.length < pos) { q.push({ empty: true, type }); idxs.push(q.length - 1); }
+    q.push(entry);
+  }
 }
 function qSlotsFor(group, count) {
   const g = (group || '').toLowerCase();
@@ -3070,6 +3144,7 @@ function qGroupNames() {
 function qRowHtml(r) {
   const it = r.it, name = it.type || 'Other';
   const t = qTimeFor(name, r.date);
+  if (it.empty) return '<div class="qrow q-open" data-group="' + esc(name) + '" data-pos="' + r.pos + '"><span class="q-handle" style="opacity:.25;cursor:default;">⠿</span><div class="q-main"><div class="q-name">Open date</div><div class="q-warn" style="color:var(--text-dim)">Drag a category here, or add one</div></div><div class="q-date">' + (r.date < '9999' ? esc(qFmtDate(r.date)) : 'Date TBD') + (t ? '<small>' + esc(t) + '</small>' : '') + '</div></div>';
   const warn = qHistWarn(it, r.date);
   return '<div class="qrow" data-group="' + esc(name) + '" data-pos="' + r.pos + '">'
     + '<span class="q-handle" title="Drag to reorder" onpointerdown="qStartDrag(event)">⠿</span>'
@@ -3084,7 +3159,7 @@ function qRowHtml(r) {
 }
 function qFixedHtml(r) {
   const it = r.item;
-  const label = r.reason === 'noplay' ? 'No Play — concurrent event' : r.reason === 'cancelled' ? 'Cancelled' : ('Already planned: ' + (it.themeName || it.notes || 'themed night'));
+  const label = r.reason === 'noplay' ? 'No Play — concurrent event' : r.reason === 'cancelled' ? 'Cancelled' : ('Several rounds planned: ' + (it.notes || it.themeName || ''));
   const cls = r.reason === 'planned' ? 'q-fixed' : 'q-fixed q-noplay';
   const t = qTimeFor(it.kind, r.date);
   return '<div class="qrow ' + cls + '"><span class="q-handle" style="cursor:default;">' + (r.reason === 'planned' ? '🔒' : '⛔') + '</span>'
@@ -3112,17 +3187,17 @@ function renderCategoryQueueSection() {
     const inWin = rows.filter(r => r.date <= endKey), out = rows.filter(r => r.date > endKey);
     out.forEach(r => beyond.push(Object.assign({ group: name }, r)));
     const h = r => r.kind === 'q' ? qRowHtml(r) : qFixedHtml(r);
-    html += '<div class="q-group-title">' + esc(name) + ' <button class="q-mini" onclick="qSurprise(\'' + esc(name).replace(/'/g, '') + '\')">🎲 Surprise me</button></div>';
-    if (!inWin.length) { html += '<div class="vp-empty">Nothing in the next 8 weeks.</div>'; return; }
+    html += '<div class="q-group-title">' + esc(name) + ' <button class="q-mini" onclick="qSurprise(\'' + esc(name).replace(/'/g, '') + '\')">Surprise me</button></div>';
+    if (!inWin.length) { html += '<div class="vp-empty">Nothing in the next 10 weeks.</div>'; return; }
     html += '<div class="q-first4"><div class="q-sub">Next 4</div>' + inWin.slice(0, 4).map(h).join('') + '</div>';
-    if (inWin.length > 4) html += '<div class="q-rest"><div class="q-sub">The rest of the next 8 weeks</div>' + inWin.slice(4).map(h).join('') + '</div>';
+    if (inWin.length > 4) html += '<div class="q-rest"><div class="q-sub">The rest of the next 10 weeks</div>' + inWin.slice(4).map(h).join('') + '</div>';
   });
   const others = qOtherFixedBeyond(endKey);
   if (beyond.length || others.length) {
     const all = beyond.map(r => ({ date: r.date, html: r.kind === 'q' ? qRowHtml(r) : qFixedHtml(r) }))
       .concat(others.map(it => ({ date: it.date, html: '<div class="qrow q-fixed"><span class="q-handle" style="cursor:default;">📅</span><div class="q-main"><div class="q-name">' + esc(it.kind + (it.notes ? ' — ' + it.notes : '')) + '</div></div><div class="q-date">' + esc(qFmtDate(it.date)) + '</div></div>' })));
     all.sort((a, b) => a.date.localeCompare(b.date));
-    html += '<div class="q-beyond"><div class="q-sub">Scheduled beyond 8 weeks</div>' + all.map(a => a.html).join('') + '</div>';
+    html += '<div class="q-beyond"><div class="q-sub">Scheduled beyond 10 weeks</div>' + all.map(a => a.html).join('') + '</div>';
   }
   const hist = (categoryQueueDoc.history || []).slice().reverse();
   if (hist.length) html += '<details class="q-hist"><summary>Past categories (' + hist.length + ')</summary>' + hist.map(h => '<div class="q-hrow"><span>' + esc(h.categoryName) + (h.type ? ' <em>· ' + esc(h.type) + '</em>' : '') + '</span><span>Week of ' + esc(qFmtDate(h.weekOf)) + '</span></div>').join('') + '</details>';
@@ -3148,12 +3223,14 @@ async function qSaveNote(gi) {
 }
 
 // add from library
-var qPickType = '';
+let qPickType = '';
+function qSetType(v) { qPickType = v; qRenderPick(); }
+window.qCurType = () => qPickType;
 function qAllTypes() { const s = []; publishedCategories.forEach(c => { const t = (c.type || '').split(',')[0].trim(); if (t && !s.includes(t)) s.push(t); }); return s.sort(); }
 function qOpenAdd() {
   const types = qAllTypes();
   if (!qPickType || !types.includes(qPickType)) qPickType = types.includes('Trivia') ? 'Trivia' : (types[0] || '');
-  qModalOpen('<h3>Add a category</h3><div class="qm-row"><select id="q-pick-type" onchange="qPickType=this.value;qRenderPick()">' + types.map(t => '<option' + (t === qPickType ? ' selected' : '') + '>' + esc(t) + '</option>').join('') + '</select><input id="q-pick-search" type="search" placeholder="Search the library…" oninput="qRenderPick()"></div><div class="qm-actions" style="justify-content:flex-start;margin:0 0 8px;"><button class="qm-btn" onclick="qSurprise(qPickType)">🎲 Surprise me — fill the next 8 weeks</button></div><div id="q-pick-list"></div><div class="qm-actions"><button class="qm-btn gold" onclick="qModalClose()">Done</button></div>');
+  qModalOpen('<h3>Add a category</h3><div class="qm-row"><select id="q-pick-type" onchange="qSetType(this.value)">' + types.map(t => '<option' + (t === qPickType ? ' selected' : '') + '>' + esc(t) + '</option>').join('') + '</select><input id="q-pick-search" type="search" placeholder="Search the library…" oninput="qRenderPick()"></div><div class="qm-actions" style="justify-content:flex-start;margin:0 0 8px;"><button class="qm-btn" onclick="qSurprise(window.qCurType())">Surprise me — fill the next 10 weeks</button></div><div id="q-pick-list"></div><div class="qm-actions"><button class="qm-btn gold" onclick="qModalClose()">Done</button></div>');
   qRenderPick();
 }
 function qRenderPick() {
@@ -3165,7 +3242,7 @@ function qRenderPick() {
 async function qPickAdd(id) {
   const c = publishedCategories.find(x => x._id === id); if (!c || isInCategoryQueue(id)) return;
   qSnap();
-  categoryQueueDoc.queue.push({ categoryId: c._id, categoryName: c.name, type: (c.type || '').split(',')[0].trim() });
+  qInsertAt(c, 0);
   qRenderPick(); renderCategoryQueueSection();
   await saveCategoryQueue();
 }
@@ -3173,17 +3250,23 @@ async function qSurprise(type) {
   if (!type) return;
   await loadCategoryQueue();
   const endKey = qWindowEnd();
-  const have = (categoryQueueDoc.queue || []).filter(it => (it.type || 'Other') === type).length;
+  const grp = (categoryQueueDoc.queue || []).filter(it => (it.type || 'Other') === type);
+  const have = grp.length, empties = grp.filter(it => it.empty).length;
   const openSlots = qSlotsFor(type, 60).filter(d => d <= endKey).length;
-  let need = Math.max(openSlots - have, 0); if (!need) need = have ? 0 : 4;
+  let need = empties + Math.max(openSlots - have, 0); if (!need) need = have ? 0 : 4;
   const recent = new Set(); const cutoff = Date.now() - 56 * 864e5;
   (categoryQueueDoc.history || []).concat(categoryQueueDoc.currentLock ? [categoryQueueDoc.currentLock] : []).forEach(h => { if (new Date(h.weekOf + 'T12:00:00').getTime() >= cutoff) recent.add(h.categoryId); });
   const pool = publishedCategories.filter(c => (c.type || '').split(',')[0].trim() === type && !isInCategoryQueue(c._id) && !recent.has(c._id));
   for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; }
   const pick = pool.slice(0, need);
-  if (!pick.length) { qToast(need ? 'No fresh ' + type + ' categories left to add.' : 'Your next 8 weeks are already full.'); return; }
+  if (!pick.length) { qToast(need ? 'No fresh ' + type + ' categories left to add.' : 'Your next 10 weeks are already full.'); return; }
   qSnap();
-  pick.forEach(c => categoryQueueDoc.queue.push({ categoryId: c._id, categoryName: c.name, type }));
+  pick.forEach(c => {
+    const q = categoryQueueDoc.queue;
+    const ei = q.findIndex(it => it.empty && (it.type || 'Other') === type);
+    const entry = { categoryId: c._id, categoryName: c.name, type };
+    if (ei >= 0) q[ei] = entry; else q.push(entry);
+  });
   renderCategoryQueueSection(); if (document.getElementById('q-pick-list')) qRenderPick();
   qToast('Added ' + pick.length + ' ' + type + ' categor' + (pick.length === 1 ? 'y' : 'ies') + ' — tap Undo to take them back.');
   await saveCategoryQueue();
@@ -3202,7 +3285,7 @@ function qOpenCalendar(delta) {
   const by = {};
   const add = (d, label, cls, star) => { (by[d] = by[d] || []).push({ label, cls, star }); };
   qGroupNames().forEach(name => qGroupRows(name).forEach(r => {
-    if (r.kind === 'q') add(r.date, r.it.categoryName, 'c-q', !!r.it.note);
+    if (r.kind === 'q') { if (!r.it.empty) add(r.date, r.it.categoryName, 'c-q', !!r.it.note); }
     else add(r.date, r.reason === 'planned' ? (r.item.themeName || r.item.notes || 'Planned') : (r.reason === 'noplay' ? 'No Play' : 'Cancelled'), r.reason === 'planned' ? 'c-p' : 'c-n', false);
   }));
   (queueUpcomingItems || []).filter(it => !['trivia', 'bingo'].includes((it.kind || '').toLowerCase())).forEach(it => add(it.date, it.kind + (it.notes ? ': ' + it.notes : ''), 'c-e', false));
@@ -3226,7 +3309,7 @@ async function qSyncPlanner() {
   // Trivia -> Planner gigs
   const tt = queueTargets.trivia;
   if (tt) {
-    const rows = qGroupRows('Trivia').filter(r => r.kind === 'q' && r.date <= endKey);
+    const rows = qGroupRows('Trivia').filter(r => r.kind === 'q' && r.date <= endKey && !r.it.empty);
     const assigned = {}; rows.forEach(r => { assigned[r.date] = r.it; });
     const base = 'trivia/planner/gigs/' + tt.pid + '/';
     let cats = {}; try { const s = await get(ref(rtdb, 'trivia/categories')); cats = s.exists() ? s.val() : {}; } catch (e) {}
@@ -3237,7 +3320,7 @@ async function qSyncPlanner() {
       if (a) {
         await updateRtdb(base + it.date, { themeId: idByName[(a.categoryName || '').trim().toLowerCase()] || null, themeName: a.categoryName, status: 'planned', locked: true, fromQueue: true, venueNote: a.note || null });
         it.themeName = a.categoryName; it.fromQueue = true; it.planned = true;
-      } else if (it.fromQueue && !queueNoPlay.has(it.date)) {
+      } else if ((it.fromQueue || (categoryQueueDoc.engaged && it.themeName)) && !queueNoPlay.has(it.date)) {
         await updateRtdb(base + it.date, { themeId: null, themeName: null, locked: false, fromQueue: null, venueNote: null });
         it.themeName = ''; it.fromQueue = false; it.planned = false;
       }
@@ -3246,7 +3329,7 @@ async function qSyncPlanner() {
   // Bingo -> dated schedule entries (rounds), only entries that already exist
   const bt = queueTargets.bingo;
   if (bt) {
-    const rows = qGroupRows('Bingo').filter(r => r.kind === 'q' && r.date <= endKey);
+    const rows = qGroupRows('Bingo').filter(r => r.kind === 'q' && r.date <= endKey && !r.it.empty);
     let cats = {}; try { const s = await get(ref(rtdb, 'bingo/landing/categories')); cats = s.exists() ? s.val() : {}; } catch (e) {}
     const idByTitle = {}; Object.entries(cats).forEach(([id, c]) => { if (c && c.title) idByTitle[c.title.trim().toLowerCase()] = id; });
     for (const r of rows) {
@@ -3260,6 +3343,84 @@ async function qSyncPlanner() {
 }
 async function updateRtdb(path, obj) {
   try { await rtdbUpdate(ref(rtdb, path), obj); } catch (e) { console.warn('Planner write blocked:', path, e && e.message); }
+}
+
+
+// ═══════════════════════════════════════════════
+// BROWSE — Netflix-style rows of everything on the menu
+// ═══════════════════════════════════════════════
+function venueHasGame(kind) {
+  return (queueUpcomingItems || []).some(it => (it.kind || '') === kind) || (categoryQueueDoc && (categoryQueueDoc.queue || []).some(it => (it.type || '') === kind));
+}
+function brCardImg(src, name) {
+  return src ? '<img src="' + src + '" alt="' + esc(name) + '" loading="lazy">' : '<div class="br-noimg">' + esc(name) + '</div>';
+}
+function brCatCard(c) {
+  const type = (c.type || '').split(',')[0].trim();
+  const canQueue = (isTrivia(c) || isBingo(c) || isMiniGame(c)) && (isMiniGame(c) || venueHasGame(isTrivia(c) ? 'Trivia' : 'Bingo'));
+  const id = c._id;
+  let btns;
+  if (canQueue) {
+    btns = isInCategoryQueue(id)
+      ? '<button class="br-btn done" onclick="event.stopPropagation();navigateTo(\'queue\')">In your queue</button>'
+      : '<button class="br-btn gold" onclick="event.stopPropagation();addCategoryToQueue(\'' + id + '\')">Add to Queue</button><button class="br-btn" onclick="event.stopPropagation();qOpenDatePick(\'' + id + '\')">Pick a date</button>';
+    btns += '<button class="br-btn" onclick="event.stopPropagation();brWish(\'cat\',\'' + id + '\')">Add to Wish List</button>';
+  } else {
+    btns = '<button class="br-btn" onclick="event.stopPropagation();brWish(\'cat\',\'' + id + '\')">Add to Wish List</button><button class="br-btn gold" onclick="event.stopPropagation();brRequest(\'cat\',\'' + id + '\')">Request This Night</button>';
+  }
+  return '<div class="br-card" onclick="openCategoryDetail(\'' + id + '\')"><div class="br-img">' + brCardImg(c.miniGameImage || c.bannerData, c.name) + '</div><div class="br-name">' + esc(c.name) + '</div><div class="br-btns">' + btns + '</div></div>';
+}
+function brNightCard(n) {
+  const i = publishedNights.indexOf(n);
+  return '<div class="br-card" onclick="openNightDetail(' + i + ')"><div class="br-img">' + brCardImg(n.bannerData, n.name) + '</div><div class="br-name">' + esc(n.name) + '</div><div class="br-btns"><button class="br-btn" onclick="event.stopPropagation();brWish(\'night\',' + i + ')">Add to Wish List</button><button class="br-btn gold" onclick="event.stopPropagation();brRequest(\'night\',' + i + ')">Request This Night</button></div></div>';
+}
+function brMovieCard(m) {
+  return '<div class="br-card"><div class="br-img">' + brCardImg(m.poster, m.title) + '</div><div class="br-name">' + esc(m.title) + (m.year ? ' <span class="br-yr">' + esc(String(m.year)) + '</span>' : '') + '</div><div class="br-btns"><button class="br-btn" onclick="brWish(\'movie\',\'' + m._id + '\')">Add to Wish List</button><button class="br-btn gold" onclick="brRequest(\'movie\',\'' + m._id + '\')">Request This Night</button></div></div>';
+}
+function brWish(kind, ref) { brAdd(kind, ref, 'later'); }
+function brRequest(kind, ref) { qToast('Pick your date in the cart, then send the request from there.'); brAdd(kind, ref, 'date'); }
+function brAdd(kind, ref, bookingType) {
+  if (kind === 'night') nightAddToCart(ref, bookingType);
+  else if (kind === 'movie') movieAddToCart(ref, bookingType);
+  else categoryAddToCart(ref, bookingType);
+}
+async function renderBrowse() {
+  const el = document.getElementById('browse-rows'); if (!el) return;
+  try { await loadVenueUpcoming(); await loadCategoryQueue(); } catch (e) {}
+  const rows = [
+    ['Trivia', publishedCategories.filter(isTrivia).map(brCatCard)],
+    ['Bingo', publishedCategories.filter(isBingo).map(brCatCard)],
+    ['Mini Games', publishedCategories.filter(isMiniGame).map(brCatCard)],
+    ['Themed Nights', publishedNights.filter(nightVisibleNow).map(brNightCard)],
+    ['Sing-Alongs', publishedCategories.filter(isSingAlong).map(brCatCard)],
+    ['Belladonna Battles', publishedCategories.filter(isBattles).map(brCatCard)],
+    ['Movies', publishedMovies.map(brMovieCard)]
+  ].filter(r => r[1].length);
+  el.innerHTML = rows.length ? rows.map(([title, cards], i) => '<section class="br-row"><div class="br-head"><h3>' + esc(title) + '</h3><div class="br-arrows"><button onclick="brScroll(' + i + ',-1)" aria-label="Scroll left">‹</button><button onclick="brScroll(' + i + ',1)" aria-label="Scroll right">›</button></div></div><div class="br-scroller" id="br-scroll-' + i + '">' + cards.join('') + '</div></section>').join('') : '<div class="vp-empty">Nothing to browse yet.</div>';
+}
+function brScroll(i, dir) { const s = document.getElementById('br-scroll-' + i); if (s) s.scrollBy({ left: dir * s.clientWidth * 0.85, behavior: 'smooth' }); }
+
+// "Pick a date": choose which of your upcoming dates this category takes
+function qOpenDatePick(id) {
+  const c = publishedCategories.find(x => x._id === id); if (!c) return;
+  const type = (c.type || '').split(',')[0].trim() || 'Other';
+  const items = (categoryQueueDoc.queue || []).filter(it => (it.type || 'Other') === type);
+  const slots = qSlotsFor(type, items.length + 12).filter(d => d <= qWindowEnd());
+  if (!slots.length) { qToast('No upcoming ' + type + ' dates found for your venue.'); return; }
+  const t = qTimeFor(type, slots[0]);
+  qModalOpen('<h3>Pick a date — ' + esc(c.name) + '</h3><p class="qm-help">Choose the night you want it. Whatever is on that date moves down one.</p><div id="q-date-list">'
+    + slots.map((d, i) => '<button class="q-daterow" onclick="qDatePicked(\'' + id + '\',' + i + ')"><span>' + esc(qFmtDate(d)) + (t ? ' · ' + esc(t) : '') + '</span><em>' + (items[i] && !items[i].empty ? esc(items[i].categoryName) : 'Open') + '</em></button>').join('')
+    + '</div><div class="qm-actions"><button class="qm-btn" onclick="qModalClose()">Cancel</button></div>');
+}
+async function qDatePicked(id, pos) {
+  const c = publishedCategories.find(x => x._id === id); if (!c) return;
+  await loadCategoryQueue();
+  if (isInCategoryQueue(id)) { qModalClose(); qToast('That one is already in your queue — drag it where you want it.'); return; }
+  qSnap(); qInsertAt(c, pos); qModalClose();
+  renderCategoryQueueSection(); closeDetail();
+  await saveCategoryQueue();
+  qToast('Added to your queue.');
+  if (currentView === 'browse') renderBrowse();
 }
 
 // ── drag & drop (pointer events: works with mouse and touch) ──
@@ -3727,7 +3888,7 @@ Object.assign(window, {
   openSeasonalPopup, closeSeasonalPopup, closeSeasonalPopupDirect, addSeasonalToCart,
   toggleSidebarFilter, toggleAccordion, clearAllFilters, removeFilter,
   openNightDetail, closeDetail, handleOverlayClick, nightAddToCart, openCategoryDetail, categoryAddToCart, toggleKaraokeSongs,
-  addCategoryToQueue, removeCategoryQueueItem, qStartDrag, qUndo, qEditNote, qSaveNote, qOpenAdd, qRenderPick, qPickAdd, qSurprise, qOpenCalendar, qModalClose,
+  addCategoryToQueue, qSetType, brWish, brRequest, brScroll, qOpenDatePick, qDatePicked, removeCategoryQueueItem, qStartDrag, qUndo, qEditNote, qSaveNote, qOpenAdd, qRenderPick, qPickAdd, qSurprise, qOpenCalendar, qModalClose,
   renderThemedNights, renderTrivia, renderBingo, renderSingAlongs, renderMiniGames, renderBattles,
   renderWayToPlay, renderQuickies, renderAlsoSee, loadBattlesPageContent
 });
@@ -3900,7 +4061,7 @@ async function loadVenueUpcoming() {
     const items = [];
     const today = new Date(); today.setHours(0,0,0,0);
 
-    // Trivia is a recurring weekly slot at this venue — project it 8 weeks out.
+    // Trivia is a recurring weekly slot at this venue — project it 10 weeks out.
     const triviaMatch = Object.entries(plannerVenues).find(([id,v]) => qNormVenueName(v.name) === vName);
     if (triviaMatch) {
       const [pid, pv] = triviaMatch;
@@ -3908,14 +4069,14 @@ async function loadVenueUpcoming() {
       if (pv.status === 'active' || pv.status === 'seasonal') {
         const targetDow = Q_PLANNER_DAY_MAP[pv.day];
         if (targetDow !== undefined) {
-          for (let i = 0; i < 56; i++) {
+          for (let i = 0; i < 70; i++) {
             const d = new Date(today); d.setDate(d.getDate() + i);
             if (d.getDay() !== targetDow) continue;
             const dk = qDateToKey(d);
             const override = (plannerGigs[pid] || {})[dk];
             const cancelled = !!(override && override.status === 'cancelled');
             const tn = (override && override.themeName) || '';
-            items.push({ date: dk, kind: 'Trivia', time: pv.time || '', cancelled, themeName: tn, planned: !!tn, fromQueue: !!(override && override.fromQueue), notes: tn || (override && override.note) || '' });
+            items.push({ date: dk, kind: 'Trivia', time: pv.time || '', cancelled, themeName: tn, planned: false, fromQueue: !!(override && override.fromQueue), notes: tn || (override && override.note) || '' });
           }
         }
       }
@@ -3930,7 +4091,7 @@ async function loadVenueUpcoming() {
       const bingoEntries = bsSnap.exists() ? Object.entries(bsSnap.val() || {}) : [];
       bingoEntries.filter(([k, e]) => e.venueId === bid && e.date >= todayKey).forEach(([k, e]) => {
         const roundNames = (e.rounds || e.categoryIds || []).map(cid => bingoCats[cid] ? bingoCats[cid].title : null).filter(Boolean);
-        items.push({ date: e.date, kind: 'Bingo', entryKey: k, time: e.time || (bv && (bv.time || bv.startTime)) || '', cancelled: !!(e.status === 'cancelled'), planned: roundNames.length > 0, fromQueue: !!e.fromQueue, themeName: roundNames.join(', '), notes: (roundNames.length ? 'Rounds: ' + roundNames.join(', ') : '') + (e.notes ? (roundNames.length ? ' — ' : '') + e.notes : '') });
+        items.push({ date: e.date, kind: 'Bingo', entryKey: k, time: e.time || (bv && (bv.time || bv.startTime)) || '', cancelled: !!(e.status === 'cancelled'), planned: roundNames.length > 1, fromQueue: !!e.fromQueue, themeName: roundNames[0] || '', notes: (roundNames.length ? 'Rounds: ' + roundNames.join(', ') : '') + (e.notes ? (roundNames.length ? ' — ' : '') + e.notes : '') });
       });
     }
 
@@ -3960,22 +4121,12 @@ async function loadVenueUpcoming() {
 }
 
 async function loadQueueView() {
-  const confirmedEl = document.getElementById('queue-confirmed-list');
-  confirmedEl.innerHTML = '<div class="vp-empty">Loading…</div>';
-
-  const items = await loadVenueUpcoming();
-  if (!items.length) {
-    confirmedEl.innerHTML = '<div class="vp-empty">' + (currentVenueRecord ? 'Nothing confirmed yet for the next 8 weeks.' : 'Could not match your account to a venue record yet — contact Belladonna to get linked up.') + '</div>';
-  } else {
-    confirmedEl.innerHTML = items.map(it => '<div class="vp-row">'
-      + '<div class="vp-row-name">' + esc(qFmtDate(it.date)) + ' — ' + esc(it.kind) + (it.cancelled ? ' <span style="color:#C0654F;">(Cancelled)</span>' : '') + '</div>'
-      + (it.notes ? '<div class="vp-row-meta">' + esc(it.notes) + '</div>' : '')
-      + '</div>').join('');
-  }
+  await loadVenueUpcoming();
 
   renderQueuePending();
 
   await loadCategoryQueue();
+  qReconcileFromPlanner();
   renderCategoryQueueSection();
 }
 
