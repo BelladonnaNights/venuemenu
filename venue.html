@@ -831,6 +831,80 @@
     .wordmark-one { font-size: 18px !important; } .wordmark-two { font-size: 13px !important; }
     #main-nav { right: 0; min-width: 210px; }
   }
+
+  /* top bar: Main Menu / My Queue / Shop always visible */
+  .top-links { display: flex; align-items: center; gap: 4px; }
+  .top-link { font-family: var(--cinzel); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--text-muted); background: none; border: 1px solid transparent;
+    border-radius: 99px; padding: 9px 16px; cursor: pointer; white-space: nowrap; transition: all .2s; }
+  .top-link:hover { color: var(--gold-light); border-color: var(--border2); }
+  .top-link.active { color: var(--gold); border-color: var(--gold); background: var(--gold-dim); }
+  .top-link.cart-btn { position: relative; width: auto; height: auto; display: inline-flex; align-items: center; gap: 6px; }
+  .top-link .cart-count { position: static; transform: none; }
+  @media (max-width: 768px) { .top-links { order: 3; width: 100%; justify-content: flex-start; padding: 4px 0 8px; flex-wrap: wrap; } .top-link { padding: 7px 12px; font-size: 10px; } }
+
+  /* My Queue: drag-and-drop list, dates stay put, categories move */
+  .q-group-title { font-family: var(--cinzel); font-size: .8rem; letter-spacing: .22em; text-transform: uppercase; color: var(--gold); margin: 1.6rem 0 .6rem; }
+  .q-sub { font-family: var(--cinzel); font-size: .68rem; letter-spacing: .18em; text-transform: uppercase; color: var(--text-dim); margin: .2rem 0 .5rem; }
+  .q-first4 { border: 1px solid var(--gold); border-radius: 14px; padding: 12px 12px 4px; background: linear-gradient(180deg, rgba(201,168,76,.09), rgba(201,168,76,.02)); margin-bottom: 1.4rem; }
+  .q-rest { opacity: .96; }
+  .qrow { display: flex; align-items: center; gap: 12px; background: var(--surface2); border: 1px solid var(--border2); border-radius: 10px; padding: 14px 14px; margin-bottom: 10px; position: relative; user-select: none; -webkit-user-select: none; }
+  .q-first4 .qrow { background: var(--surface3); }
+  .qrow.dragging { z-index: 20; box-shadow: 0 12px 34px rgba(0,0,0,.7); border-color: var(--gold); transition: none; opacity: .97; }
+  .qrow.drop-before::before { content: ''; position: absolute; left: 0; right: 0; top: -7px; height: 3px; border-radius: 2px; background: var(--gold); }
+  .qrow.drop-after::after { content: ''; position: absolute; left: 0; right: 0; bottom: -7px; height: 3px; border-radius: 2px; background: var(--gold); }
+  .q-handle { cursor: grab; touch-action: none; color: var(--gold); font-size: 1.3rem; line-height: 1; padding: 6px 4px; flex: none; }
+  .q-name { flex: 1; min-width: 0; font-family: var(--display); font-size: 1.9rem; letter-spacing: .04em; color: #fff; line-height: 1.05; overflow-wrap: anywhere; }
+  .q-type { display: block; font-family: var(--cinzel); font-size: .6rem; letter-spacing: .16em; text-transform: uppercase; color: var(--text-dim); margin-top: 4px; }
+  .q-date { flex: none; text-align: right; font-family: var(--cinzel); font-weight: 700; font-size: 1rem; letter-spacing: .06em; color: var(--gold-light); white-space: nowrap; }
+  .q-date small { display: block; font-size: .6rem; font-weight: 400; color: var(--text-dim); letter-spacing: .12em; text-transform: uppercase; }
+  .q-x { flex: none; background: none; border: none; color: #C0654F; font-size: 1.05rem; cursor: pointer; padding: 6px; opacity: .7; }
+  .q-x:hover { opacity: 1; }
+
+  .q-toolbar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+  .q-main { flex: 1; min-width: 0; }
+  .q-main .q-name { flex: none; }
+  .q-warn { font-size: .78rem; color: #E0A44F; margin-top: 4px; }
+  .q-note { font-size: .8rem; color: var(--gold-light); margin-top: 4px; font-style: italic; }
+  .q-ico { flex: none; background: none; border: none; color: var(--gold); font-size: 1.05rem; cursor: pointer; padding: 6px; opacity: .8; }
+  .q-mini { margin-left: 10px; background: none; border: 1px solid var(--border2); color: var(--text-muted); font-size: .62rem; padding: 3px 9px; border-radius: 12px; cursor: pointer; letter-spacing: .06em; }
+  .q-mini:hover { border-color: var(--gold); color: var(--gold); }
+  .qrow.q-fixed { opacity: .75; border-style: dashed; }
+  .qrow.q-fixed .q-name { font-size: 1.2rem; color: var(--text-muted); }
+  .qrow.q-noplay .q-name { color: #C0654F; }
+  .q-beyond { border: 1px solid var(--border2); border-radius: 14px; padding: 12px 12px 4px; margin-top: 1.8rem; background: rgba(255,255,255,.015); }
+  .q-hist { margin-top: 1.6rem; color: var(--text-muted); }
+  .q-hist summary { cursor: pointer; font-family: var(--cinzel); font-size: .72rem; letter-spacing: .16em; text-transform: uppercase; color: var(--gold); }
+  .q-hrow { display: flex; justify-content: space-between; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--border2); font-size: .9rem; }
+  .q-hrow em { color: var(--text-dim); }
+  .qm-overlay { display: none; position: fixed; inset: 0; z-index: 400; background: rgba(14,12,10,.88); align-items: flex-start; justify-content: center; padding: 4vh 12px; overflow-y: auto; }
+  .qm-overlay.open { display: flex; }
+  .qm-box { background: var(--surface2); border: 1px solid var(--gold-dim); border-radius: 14px; padding: 20px; width: 100%; max-width: 520px; }
+  .qm-box.wide { max-width: 860px; }
+  .qm-box h3 { font-family: var(--cinzel); color: var(--gold); letter-spacing: .1em; margin: 0 0 10px; font-size: 1rem; }
+  .qm-help { color: var(--text-dim); font-size: .82rem; margin: 0 0 10px; }
+  .qm-box textarea, .qm-box input[type=search], .qm-box select { width: 100%; background: var(--surface3); color: var(--text); border: 1px solid var(--border2); border-radius: 8px; padding: 10px; font: inherit; }
+  .qm-row { display: flex; gap: 8px; margin-bottom: 10px; } .qm-row select { width: 40%; }
+  .qm-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 14px; }
+  .qm-btn { background: var(--surface3); border: 1px solid var(--border2); color: var(--text); padding: 9px 14px; border-radius: 8px; cursor: pointer; font: inherit; font-size: .85rem; }
+  .qm-btn.gold { background: var(--gold); color: #1a1408; border-color: var(--gold); font-weight: 700; }
+  .q-pickrow { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border2); }
+  .q-pickrow em { color: var(--text-dim); font-size: .8rem; }
+  #q-pick-list { max-height: 46vh; overflow-y: auto; }
+  .qc-head { display: flex; align-items: center; justify-content: space-between; }
+  .qc-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+  .qc-dow { text-align: center; font-size: .65rem; color: var(--text-dim); letter-spacing: .1em; text-transform: uppercase; margin: 8px 0 4px; }
+  .qc-cell { min-height: 78px; border: 1px solid var(--border2); border-radius: 6px; padding: 3px; overflow: hidden; }
+  .qc-cell.empty { border: none; }
+  .qc-d { font-size: .7rem; color: var(--text-dim); }
+  .qc-chip { font-size: .62rem; line-height: 1.2; border-radius: 4px; padding: 2px 4px; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .qc-chip.c-q { background: rgba(201,168,76,.22); color: var(--gold-light); }
+  .qc-chip.c-p { background: rgba(120,160,220,.2); color: #A9C4EE; }
+  .qc-chip.c-e { background: rgba(160,120,200,.22); color: #C9B2E6; }
+  .qc-chip.c-n { background: rgba(192,101,79,.25); color: #E69A87; }
+  .q-toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%) translateY(20px); background: var(--surface3); border: 1px solid var(--gold); color: var(--text); padding: 10px 16px; border-radius: 10px; z-index: 500; opacity: 0; pointer-events: none; transition: .25s; font-size: .85rem; }
+  .q-toast.show { opacity: 1; transform: translateX(-50%); }
+  @media (max-width: 768px) { .qc-cell { min-height: 58px; } .qc-chip { font-size: .55rem; } }
+  @media (max-width: 768px) { .q-name { font-size: 1.45rem; } .q-date { font-size: .85rem; } }
 </style>
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 </head>
@@ -850,10 +924,11 @@
     <span id="preview-mode-toggle" style="display:none;align-items:center;white-space:nowrap;"></span>
     <span id="gateway-user-label" style="font-size:0.72rem;color:var(--text-dim);white-space:nowrap;"></span>
     <button class="sidebar-toggle-btn" onclick="gatewaySignOut()" style="white-space:nowrap;">Sign Out</button>
-    <button class="cart-btn" id="cart-btn" onclick="openCart()">
-      🛒
-      <span class="cart-count" id="cart-count">0</span>
-    </button>
+    <div class="top-links" id="top-links">
+      <button class="top-link active" id="top-menu" onclick="navigateTo('menu')">Main Menu</button>
+      <button class="top-link venue-only-nav" style="display:none;" id="top-queue" onclick="navigateTo('queue')">My Queue</button>
+      <button class="top-link cart-btn" id="cart-btn" onclick="openCart()">🛒 Shop <span class="cart-count" id="cart-count">0</span></button>
+    </div>
     <div class="nav-menu-wrap">
       <button class="burger-btn" id="burger-btn" onclick="toggleNavMenu(event)" aria-label="Menu" aria-expanded="false" title="Menu">
         <span></span><span></span><span></span>
@@ -1403,8 +1478,13 @@
       </div>
       <div class="desc-title" style="margin-top:2rem;">Your Category Queue</div>
       <div class="vp-card">
+        <div class="q-toolbar">
+          <button class="qm-btn gold" onclick="qOpenAdd()">+ Add category</button>
+          <button class="qm-btn" onclick="qOpenCalendar(0)">📅 Calendar view</button>
+          <button class="qm-btn" id="q-undo-btn" onclick="qUndo()" disabled style="opacity:.4;">↶ Undo</button>
+        </div>
         <div id="queue-category-list"><div class="vp-empty">Loading…</div></div>
-        <p style="font-size:0.78rem;color:var(--text-dim);margin-top:0.75rem;">Reorder your upcoming Trivia, Bingo, and Mini Game rotation freely — whatever's at the front locks in as your category for the week every Sunday at midnight.</p>
+        <p style="font-size:0.78rem;color:var(--text-dim);margin-top:0.75rem;">Drag a category by its ⠿ handle to move it. Each date stays where it is — the category you drop there takes that date. Anything you queue is written straight into our Planner, and ✎ adds a note for the host (shown as a ★). Whatever's at the front locks in as your category for the week every Sunday at midnight.</p>
       </div>
     </div>
   </div>
@@ -1469,8 +1549,9 @@
           <label>Impact</label>
           <select id="vp-ce-impact">
             <option value="delay">Delayed start</option>
-            <option value="cancel">Cancels the gig</option>
+            <option value="cancel">Cancels the gig (marks the date No Play)</option>
           </select>
+          <div style="font-size:0.78rem;color:var(--text-dim);margin-top:6px;">Need a night off? Fill this out with “Cancels the gig” — that’s how you tell us, and the date will show as No Play in your queue and in our Planner.</div>
         </div>
         <div class="vp-field" id="vp-ce-newtime-wrap">
           <label>New Start Time</label>
@@ -1550,6 +1631,7 @@
 </div>
 
 <!-- ═══ NIGHT DETAIL OVERLAY ═══ -->
+<div class="qm-overlay" id="q-modal" onclick="if(event.target===this)qModalClose()"><div class="qm-box" id="q-modal-box"></div></div>
 <div class="detail-overlay" id="detail-overlay" onclick="handleOverlayClick(event)">
   <div class="detail-card" id="detail-card" style="position:relative;">
     <button class="detail-close" onclick="closeDetail()">✕</button>
@@ -1575,7 +1657,7 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getFirestore, collection, doc, getDocs, getDoc, setDoc, updateDoc, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-import { getDatabase, ref, get, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { getDatabase, ref, get, runTransaction, update as rtdbUpdate } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
 const firebaseConfig = {
@@ -2208,6 +2290,9 @@ function navigateTo(view, typeFilter) {
   // Update nav tab active state
   document.querySelectorAll('#main-nav .nav-tab').forEach(t => t.classList.remove('active'));
   const navMap = { menu:'nav-menu', themed:'nav-themed', singalongs:'nav-singalongs', movies:'nav-movies', queue:'nav-queue', contract:'nav-contract', feedback:'nav-feedback', concurrent:'nav-concurrent', collaborators:'nav-collaborators' };
+  document.querySelectorAll('#top-links .top-link').forEach(b => b.classList.remove('active'));
+  const topMap = { menu:'top-menu', queue:'top-queue' };
+  if (topMap[view]) document.getElementById(topMap[view])?.classList.add('active');
   const activeNav = navMap[view];
   if (activeNav) document.getElementById(activeNav)?.classList.add('active');
   // Render the appropriate browse view
@@ -2824,6 +2909,7 @@ async function loadCategoryQueue() {
     categoryQueueDoc = { queue: [], currentLock: null, lastLockedWeekOf: null };
   }
   categoryQueueDoc.queue = categoryQueueDoc.queue || [];
+  categoryQueueDoc.history = categoryQueueDoc.history || [];
   await applyWeeklyLockIfDue();
   return categoryQueueDoc;
 }
@@ -2831,7 +2917,13 @@ async function loadCategoryQueue() {
 async function applyWeeklyLockIfDue() {
   const thisWeek = qThisWeekSundayKey(new Date());
   if (categoryQueueDoc.lastLockedWeekOf === thisWeek) return;
+  categoryQueueDoc.history = categoryQueueDoc.history || [];
   const popped = categoryQueueDoc.queue.shift() || null;
+  if (popped && categoryQueueDoc.currentLock) {
+    const o = categoryQueueDoc.currentLock;
+    categoryQueueDoc.history.push({ categoryId: o.categoryId, categoryName: o.categoryName, type: o.type || '', weekOf: o.weekOf });
+    if (categoryQueueDoc.history.length > 150) categoryQueueDoc.history.shift();
+  }
   categoryQueueDoc.currentLock = popped ? Object.assign({}, popped, { weekOf: thisWeek }) : (categoryQueueDoc.currentLock || null);
   categoryQueueDoc.lastLockedWeekOf = thisWeek;
   await saveCategoryQueue();
@@ -2845,9 +2937,11 @@ async function saveCategoryQueue() {
       venueName: (currentVenueRecord && currentVenueRecord.name) || currentProfile.name || '',
       queue: categoryQueueDoc.queue || [],
       currentLock: categoryQueueDoc.currentLock || null,
-      lastLockedWeekOf: categoryQueueDoc.lastLockedWeekOf || null
+      lastLockedWeekOf: categoryQueueDoc.lastLockedWeekOf || null,
+      history: categoryQueueDoc.history || []
     });
   } catch (e) { console.error('Could not save category queue:', e); }
+  qSyncPlanner().catch(e => console.error('Planner sync failed:', e));
 }
 
 function isInCategoryQueue(id) {
@@ -2856,11 +2950,23 @@ function isInCategoryQueue(id) {
   return categoryQueueDoc.queue.some(q => q.categoryId === id);
 }
 
+// ── undo ──
+let qUndoStack = [];
+function qSnap() { qUndoStack.push(JSON.stringify(categoryQueueDoc.queue || [])); if (qUndoStack.length > 25) qUndoStack.shift(); qUpdateUndoBtn(); }
+function qUpdateUndoBtn() { const b = document.getElementById('q-undo-btn'); if (b) { b.disabled = !qUndoStack.length; b.style.opacity = qUndoStack.length ? 1 : .4; } }
+async function qUndo() {
+  if (!qUndoStack.length) return;
+  categoryQueueDoc.queue = JSON.parse(qUndoStack.pop());
+  qUpdateUndoBtn(); renderCategoryQueueSection();
+  await saveCategoryQueue();
+}
+
 async function addCategoryToQueue(id) {
   const c = publishedCategories.find(x => x._id === id);
   if (!c) return;
   await loadCategoryQueue();
   if (!isInCategoryQueue(id)) {
+    qSnap();
     categoryQueueDoc.queue.push({ categoryId: c._id, categoryName: c.name, type: (c.type || '').split(',')[0].trim() });
     await saveCategoryQueue();
   }
@@ -2868,38 +2974,333 @@ async function addCategoryToQueue(id) {
   renderCategoryQueueSection();
   navigateTo('queue');
 }
-async function moveCategoryQueueItem(idx, dir) {
-  const q = categoryQueueDoc.queue;
-  const ni = idx + dir;
-  if (ni < 0 || ni >= q.length) return;
-  const tmp = q[idx]; q[idx] = q[ni]; q[ni] = tmp;
-  await saveCategoryQueue();
-  renderCategoryQueueSection();
-}
 async function removeCategoryQueueItem(idx) {
+  qSnap();
   categoryQueueDoc.queue.splice(idx, 1);
-  await saveCategoryQueue();
   renderCategoryQueueSection();
+  await saveCategoryQueue();
+}
+
+// ── schedule model ──
+const Q_WINDOW_DAYS = 56;
+function qWindowEnd() { const d = new Date(); d.setHours(12, 0, 0, 0); d.setDate(d.getDate() + Q_WINDOW_DAYS); return qDateToKey(d); }
+function qFmtTime(t) {
+  if (!t) return '';
+  t = String(t);
+  if (/[ap]\.?m/i.test(t)) return t;
+  const m = /^\s*(\d{1,2}):(\d{2})/.exec(t); if (!m) return t;
+  let h = +m[1]; const ap = h >= 12 ? 'PM' : 'AM'; h = h % 12 || 12; return h + ':' + m[2] + ' ' + ap;
+}
+function qFloorDate() {
+  const lock = categoryQueueDoc && categoryQueueDoc.currentLock;
+  const sunday = qThisWeekSundayKey(new Date());
+  const todayKey = qDateToKey(new Date());
+  if (lock && lock.weekOf === sunday) { const e = new Date(sunday + 'T12:00:00'); e.setDate(e.getDate() + 6); const ek = qDateToKey(e); return ek > todayKey ? ek : todayKey; }
+  return todayKey;
+}
+// A date is "blocked" for the queue when something else already owns it.
+function qBlockReason(it) {
+  if (queueNoPlay.has(it.date)) return 'noplay';
+  if (it.cancelled) return 'cancelled';
+  const k = (it.kind || '').toLowerCase();
+  if ((k === 'trivia' || k === 'bingo') && it.planned && !it.fromQueue) return 'planned';
+  return '';
+}
+function qSlotsFor(group, count) {
+  const g = (group || '').toLowerCase();
+  const floor = qFloorDate(), todayKey = qDateToKey(new Date());
+  const lockedWk = floor > todayKey;
+  const dates = (queueUpcomingItems || []).filter(it => (it.kind || '').toLowerCase() === g && !qBlockReason(it) && it.date >= todayKey && (!lockedWk || it.date > floor)).map(it => it.date);
+  const uniq = [...new Set(dates)].sort();
+  const blocked = new Set((queueUpcomingItems || []).filter(it => qBlockReason(it)).map(it => it.date));
+  queueNoPlay.forEach(d => blocked.add(d));
+  // past the dates we can see, keep going weekly from the last one
+  while (uniq.length && uniq.length < count) {
+    let d = new Date(uniq[uniq.length - 1] + 'T12:00:00'); d.setDate(d.getDate() + 7);
+    let k = qDateToKey(d);
+    while (blocked.has(k)) { d.setDate(d.getDate() + 7); k = qDateToKey(d); }
+    uniq.push(k);
+  }
+  return uniq;
+}
+function qTimeFor(group, date) {
+  const g = (group || '').toLowerCase();
+  const hit = (queueUpcomingItems || []).find(it => (it.kind || '').toLowerCase() === g && it.date === date && it.time);
+  if (hit) return qFmtTime(hit.time);
+  const any = (queueUpcomingItems || []).find(it => (it.kind || '').toLowerCase() === g && it.time);
+  return any ? qFmtTime(any.time) : '';
+}
+function qHistWarn(item, date) {
+  const hist = (categoryQueueDoc.history || []).slice();
+  if (categoryQueueDoc.currentLock) hist.push(categoryQueueDoc.currentLock);
+  const same = hist.filter(h => h.categoryId === item.categoryId || (h.categoryName || '').toLowerCase() === (item.categoryName || '').toLowerCase());
+  if (!same.length || !date) return '';
+  const last = same.map(h => h.weekOf).sort().pop();
+  const weeks = Math.round((new Date(date + 'T12:00:00') - new Date(last + 'T12:00:00')) / 604800000);
+  return weeks <= 8 ? 'Played the week of ' + qFmtDate(last) + ' — only ' + weeks + ' week' + (weeks === 1 ? '' : 's') + ' before this' : '';
+}
+// all rows for one game type, date-ordered: queue rows + fixed rows (already planned / No Play / cancelled)
+function qGroupRows(name) {
+  const items = [];
+  (categoryQueueDoc.queue || []).forEach((it, gi) => { if ((it.type || 'Other') === name) items.push({ it, gi }); });
+  const slots = qSlotsFor(name, items.length);
+  const rows = items.map((x, pos) => ({ kind: 'q', date: slots[pos] || '9999-12-31', it: x.it, gi: x.gi, pos }));
+  const floor = qFloorDate(), g = name.toLowerCase();
+  (queueUpcomingItems || []).filter(it => (it.kind || '').toLowerCase() === g && qBlockReason(it) && it.date >= qDateToKey(new Date()) && (floor === qDateToKey(new Date()) || it.date > floor))
+    .forEach(it => rows.push({ kind: 'fixed', date: it.date, reason: qBlockReason(it), item: it }));
+  rows.sort((a, b) => a.date.localeCompare(b.date));
+  return rows;
+}
+function qGroupNames() {
+  const names = [];
+  (categoryQueueDoc.queue || []).forEach(it => { const g = it.type || 'Other'; if (!names.includes(g)) names.push(g); });
+  ['Trivia', 'Bingo'].forEach(g => { if (!names.includes(g) && (queueUpcomingItems || []).some(it => (it.kind || '') === g)) names.push(g); });
+  return names;
+}
+function qRowHtml(r) {
+  const it = r.it, name = it.type || 'Other';
+  const t = qTimeFor(name, r.date);
+  const warn = qHistWarn(it, r.date);
+  return '<div class="qrow" data-group="' + esc(name) + '" data-pos="' + r.pos + '">'
+    + '<span class="q-handle" title="Drag to reorder" onpointerdown="qStartDrag(event)">⠿</span>'
+    + '<div class="q-main"><div class="q-name">' + esc(it.categoryName) + '</div>'
+    + (warn ? '<div class="q-warn">⚠ ' + esc(warn) + '</div>' : '')
+    + (it.note ? '<div class="q-note">★ ' + esc(it.note) + '</div>' : '')
+    + '</div>'
+    + '<div class="q-date">' + (r.date < '9999' ? esc(qFmtDate(r.date)) : 'Date TBD') + (t ? '<small>' + esc(t) + '</small>' : '') + '</div>'
+    + '<button class="q-ico" title="' + (it.note ? 'Edit note' : 'Add a note for the host') + '" onclick="qEditNote(' + r.gi + ')">' + (it.note ? '★' : '✎') + '</button>'
+    + '<button class="q-x" title="Remove from queue" onclick="removeCategoryQueueItem(' + r.gi + ')">✕</button>'
+    + '</div>';
+}
+function qFixedHtml(r) {
+  const it = r.item;
+  const label = r.reason === 'noplay' ? 'No Play — concurrent event' : r.reason === 'cancelled' ? 'Cancelled' : ('Already planned: ' + (it.themeName || it.notes || 'themed night'));
+  const cls = r.reason === 'planned' ? 'q-fixed' : 'q-fixed q-noplay';
+  const t = qTimeFor(it.kind, r.date);
+  return '<div class="qrow ' + cls + '"><span class="q-handle" style="cursor:default;">' + (r.reason === 'planned' ? '🔒' : '⛔') + '</span>'
+    + '<div class="q-main"><div class="q-name">' + esc(label) + '</div></div>'
+    + '<div class="q-date">' + esc(qFmtDate(r.date)) + (t ? '<small>' + esc(t) + '</small>' : '') + '</div></div>';
+}
+function qOtherFixedBeyond(endKey) {
+  return (queueUpcomingItems || []).filter(it => it.date > endKey && !['trivia', 'bingo'].includes((it.kind || '').toLowerCase()));
 }
 function renderCategoryQueueSection() {
   const el = document.getElementById('queue-category-list');
   if (!el || !categoryQueueDoc) return;
+  qUpdateUndoBtn();
   const lock = categoryQueueDoc.currentLock;
   const lockHtml = lock
-    ? '<div class="vp-row" style="border-color:var(--gold-dim);"><div class="vp-row-name">🔒 ' + esc(lock.categoryName) + '</div><div class="vp-row-meta">Locked in for the week of ' + esc(qFmtDate(lock.weekOf)) + (lock.type ? ' — ' + esc(lock.type) : '') + '</div></div>'
+    ? '<div class="qrow" style="cursor:default;border-color:var(--gold-dim);"><span class="q-handle" style="cursor:default;">🔒</span><div class="q-main"><div class="q-name">' + esc(lock.categoryName) + '</div></div><div class="q-date"><small>Locked in</small>Week of ' + esc(qFmtDate(lock.weekOf)) + '</div></div>'
     : '<div class="vp-empty">Nothing locked in yet.</div>';
-  const q = categoryQueueDoc.queue || [];
-  const queueHtml = q.length
-    ? q.map((item, i) => '<div class="vp-row" style="display:flex;align-items:center;justify-content:space-between;gap:0.75rem;">'
-        + '<div><div class="vp-row-name">' + (i + 1) + '. ' + esc(item.categoryName) + '</div><div class="vp-row-meta">' + esc(item.type || '') + '</div></div>'
-        + '<div style="display:flex;gap:0.3rem;flex-shrink:0;">'
-        + '<button class="weekday-btn" onclick="moveCategoryQueueItem(' + i + ',-1)"' + (i === 0 ? ' disabled' : '') + '>▲</button>'
-        + '<button class="weekday-btn" onclick="moveCategoryQueueItem(' + i + ',1)"' + (i === q.length - 1 ? ' disabled' : '') + '>▼</button>'
-        + '<button class="weekday-btn" style="color:#C0654F;" onclick="removeCategoryQueueItem(' + i + ')">✕</button>'
-        + '</div></div>').join('')
-    : '<div class="vp-empty">Nothing queued yet — browse Trivia, Bingo, or Mini Games and tap "Add to Queue."</div>';
-  el.innerHTML = '<div class="desc-title" style="font-size:0.9rem;margin-bottom:0.5rem;">This Week\'s Lock</div>' + lockHtml
-    + '<div class="desc-title" style="font-size:0.9rem;margin:1.25rem 0 0.5rem;">Up Next — reorder freely until Sunday midnight</div>' + queueHtml;
+  const endKey = qWindowEnd();
+  let html = '<div class="q-sub">This week</div>' + lockHtml;
+  const names = qGroupNames();
+  if (!names.length) html += '<div class="vp-empty">Nothing queued yet — tap “+ Add category” or browse Trivia, Bingo, or Mini Games and tap "Add to Queue."</div>';
+  const beyond = [];
+  names.forEach(name => {
+    const rows = qGroupRows(name);
+    const inWin = rows.filter(r => r.date <= endKey), out = rows.filter(r => r.date > endKey);
+    out.forEach(r => beyond.push(Object.assign({ group: name }, r)));
+    const h = r => r.kind === 'q' ? qRowHtml(r) : qFixedHtml(r);
+    html += '<div class="q-group-title">' + esc(name) + ' <button class="q-mini" onclick="qSurprise(\'' + esc(name).replace(/'/g, '') + '\')">🎲 Surprise me</button></div>';
+    if (!inWin.length) { html += '<div class="vp-empty">Nothing in the next 8 weeks.</div>'; return; }
+    html += '<div class="q-first4"><div class="q-sub">Next 4</div>' + inWin.slice(0, 4).map(h).join('') + '</div>';
+    if (inWin.length > 4) html += '<div class="q-rest"><div class="q-sub">The rest of the next 8 weeks</div>' + inWin.slice(4).map(h).join('') + '</div>';
+  });
+  const others = qOtherFixedBeyond(endKey);
+  if (beyond.length || others.length) {
+    const all = beyond.map(r => ({ date: r.date, html: r.kind === 'q' ? qRowHtml(r) : qFixedHtml(r) }))
+      .concat(others.map(it => ({ date: it.date, html: '<div class="qrow q-fixed"><span class="q-handle" style="cursor:default;">📅</span><div class="q-main"><div class="q-name">' + esc(it.kind + (it.notes ? ' — ' + it.notes : '')) + '</div></div><div class="q-date">' + esc(qFmtDate(it.date)) + '</div></div>' })));
+    all.sort((a, b) => a.date.localeCompare(b.date));
+    html += '<div class="q-beyond"><div class="q-sub">Scheduled beyond 8 weeks</div>' + all.map(a => a.html).join('') + '</div>';
+  }
+  const hist = (categoryQueueDoc.history || []).slice().reverse();
+  if (hist.length) html += '<details class="q-hist"><summary>Past categories (' + hist.length + ')</summary>' + hist.map(h => '<div class="q-hrow"><span>' + esc(h.categoryName) + (h.type ? ' <em>· ' + esc(h.type) + '</em>' : '') + '</span><span>Week of ' + esc(qFmtDate(h.weekOf)) + '</span></div>').join('') + '</details>';
+  el.innerHTML = html;
+}
+
+// ── modal helpers ──
+function qModalOpen(inner) { document.getElementById('q-modal-box').innerHTML = inner; document.getElementById('q-modal').classList.add('open'); }
+function qModalClose() { document.getElementById('q-modal').classList.remove('open'); }
+
+// notes
+function qEditNote(gi) {
+  const it = categoryQueueDoc.queue[gi]; if (!it) return;
+  qModalOpen('<h3>Note for the host — ' + esc(it.categoryName) + '</h3><p class="qm-help">Shows as a ★ on the schedule, in the gig info, and at the top of the host’s Tonight page.</p><textarea id="q-note-text" rows="4" maxlength="400" placeholder="e.g. Birthday party at table 5 — keep it clean">' + esc(it.note || '') + '</textarea><div class="qm-actions"><button class="qm-btn" onclick="qModalClose()">Cancel</button><button class="qm-btn gold" onclick="qSaveNote(' + gi + ')">Save note</button></div>');
+  setTimeout(() => { const t = document.getElementById('q-note-text'); if (t) t.focus(); }, 30);
+}
+async function qSaveNote(gi) {
+  const v = (document.getElementById('q-note-text').value || '').trim();
+  qSnap();
+  if (v) categoryQueueDoc.queue[gi].note = v; else delete categoryQueueDoc.queue[gi].note;
+  qModalClose(); renderCategoryQueueSection();
+  await saveCategoryQueue();
+}
+
+// add from library
+var qPickType = '';
+function qAllTypes() { const s = []; publishedCategories.forEach(c => { const t = (c.type || '').split(',')[0].trim(); if (t && !s.includes(t)) s.push(t); }); return s.sort(); }
+function qOpenAdd() {
+  const types = qAllTypes();
+  if (!qPickType || !types.includes(qPickType)) qPickType = types.includes('Trivia') ? 'Trivia' : (types[0] || '');
+  qModalOpen('<h3>Add a category</h3><div class="qm-row"><select id="q-pick-type" onchange="qPickType=this.value;qRenderPick()">' + types.map(t => '<option' + (t === qPickType ? ' selected' : '') + '>' + esc(t) + '</option>').join('') + '</select><input id="q-pick-search" type="search" placeholder="Search the library…" oninput="qRenderPick()"></div><div class="qm-actions" style="justify-content:flex-start;margin:0 0 8px;"><button class="qm-btn" onclick="qSurprise(qPickType)">🎲 Surprise me — fill the next 8 weeks</button></div><div id="q-pick-list"></div><div class="qm-actions"><button class="qm-btn gold" onclick="qModalClose()">Done</button></div>');
+  qRenderPick();
+}
+function qRenderPick() {
+  const el = document.getElementById('q-pick-list'); if (!el) return;
+  const s = ((document.getElementById('q-pick-search') || {}).value || '').toLowerCase();
+  const list = publishedCategories.filter(c => (c.type || '').split(',')[0].trim() === qPickType && (!s || (c.name || '').toLowerCase().includes(s))).sort((a, b) => (a.name || '').localeCompare(b.name || '')).slice(0, 80);
+  el.innerHTML = list.length ? list.map(c => '<div class="q-pickrow"><span>' + esc(c.name) + '</span>' + (isInCategoryQueue(c._id) ? '<em>In queue</em>' : '<button class="qm-btn" onclick="qPickAdd(\'' + c._id + '\')">Add</button>') + '</div>').join('') : '<div class="vp-empty">No matches.</div>';
+}
+async function qPickAdd(id) {
+  const c = publishedCategories.find(x => x._id === id); if (!c || isInCategoryQueue(id)) return;
+  qSnap();
+  categoryQueueDoc.queue.push({ categoryId: c._id, categoryName: c.name, type: (c.type || '').split(',')[0].trim() });
+  qRenderPick(); renderCategoryQueueSection();
+  await saveCategoryQueue();
+}
+async function qSurprise(type) {
+  if (!type) return;
+  await loadCategoryQueue();
+  const endKey = qWindowEnd();
+  const have = (categoryQueueDoc.queue || []).filter(it => (it.type || 'Other') === type).length;
+  const openSlots = qSlotsFor(type, 60).filter(d => d <= endKey).length;
+  let need = Math.max(openSlots - have, 0); if (!need) need = have ? 0 : 4;
+  const recent = new Set(); const cutoff = Date.now() - 56 * 864e5;
+  (categoryQueueDoc.history || []).concat(categoryQueueDoc.currentLock ? [categoryQueueDoc.currentLock] : []).forEach(h => { if (new Date(h.weekOf + 'T12:00:00').getTime() >= cutoff) recent.add(h.categoryId); });
+  const pool = publishedCategories.filter(c => (c.type || '').split(',')[0].trim() === type && !isInCategoryQueue(c._id) && !recent.has(c._id));
+  for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; }
+  const pick = pool.slice(0, need);
+  if (!pick.length) { qToast(need ? 'No fresh ' + type + ' categories left to add.' : 'Your next 8 weeks are already full.'); return; }
+  qSnap();
+  pick.forEach(c => categoryQueueDoc.queue.push({ categoryId: c._id, categoryName: c.name, type }));
+  renderCategoryQueueSection(); if (document.getElementById('q-pick-list')) qRenderPick();
+  qToast('Added ' + pick.length + ' ' + type + ' categor' + (pick.length === 1 ? 'y' : 'ies') + ' — tap Undo to take them back.');
+  await saveCategoryQueue();
+}
+function qToast(msg) {
+  let t = document.getElementById('q-toast');
+  if (!t) { t = document.createElement('div'); t.id = 'q-toast'; t.className = 'q-toast'; document.body.appendChild(t); }
+  t.textContent = msg; t.classList.add('show'); clearTimeout(qToast._t); qToast._t = setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+// calendar view
+let qCalMonth = null;
+function qOpenCalendar(delta) {
+  const now = new Date(); now.setDate(1); now.setHours(12, 0, 0, 0);
+  if (!qCalMonth || delta === 0) qCalMonth = now; else { qCalMonth = new Date(qCalMonth); qCalMonth.setMonth(qCalMonth.getMonth() + delta); }
+  const by = {};
+  const add = (d, label, cls, star) => { (by[d] = by[d] || []).push({ label, cls, star }); };
+  qGroupNames().forEach(name => qGroupRows(name).forEach(r => {
+    if (r.kind === 'q') add(r.date, r.it.categoryName, 'c-q', !!r.it.note);
+    else add(r.date, r.reason === 'planned' ? (r.item.themeName || r.item.notes || 'Planned') : (r.reason === 'noplay' ? 'No Play' : 'Cancelled'), r.reason === 'planned' ? 'c-p' : 'c-n', false);
+  }));
+  (queueUpcomingItems || []).filter(it => !['trivia', 'bingo'].includes((it.kind || '').toLowerCase())).forEach(it => add(it.date, it.kind + (it.notes ? ': ' + it.notes : ''), 'c-e', false));
+  queueNoPlay.forEach(d => { if (!(by[d] || []).some(x => x.label === 'No Play')) add(d, 'No Play', 'c-n', false); });
+  const y = qCalMonth.getFullYear(), m = qCalMonth.getMonth();
+  const first = new Date(y, m, 1), days = new Date(y, m + 1, 0).getDate();
+  let cells = '';
+  for (let i = 0; i < first.getDay(); i++) cells += '<div class="qc-cell empty"></div>';
+  for (let d = 1; d <= days; d++) {
+    const k = y + '-' + String(m + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+    cells += '<div class="qc-cell"><div class="qc-d">' + d + '</div>' + (by[k] || []).map(x => '<div class="qc-chip ' + x.cls + '">' + (x.star ? '★ ' : '') + esc(x.label) + '</div>').join('') + '</div>';
+  }
+  qModalOpen('<div class="qc-head"><button class="qm-btn" onclick="qOpenCalendar(-1)">‹</button><h3>' + first.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) + '</h3><button class="qm-btn" onclick="qOpenCalendar(1)">›</button></div><div class="qc-grid qc-dow"><div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div></div><div class="qc-grid">' + cells + '</div><div class="qm-actions"><button class="qm-btn gold" onclick="qModalClose()">Close</button></div>');
+  document.getElementById('q-modal-box').classList.add('wide');
+}
+
+// ── write the queue into the Planner / Bingo schedule so everything stays in sync ──
+async function qSyncPlanner() {
+  if (!categoryQueueDoc || !queueTargets) return;
+  const endKey = qWindowEnd();
+  // Trivia -> Planner gigs
+  const tt = queueTargets.trivia;
+  if (tt) {
+    const rows = qGroupRows('Trivia').filter(r => r.kind === 'q' && r.date <= endKey);
+    const assigned = {}; rows.forEach(r => { assigned[r.date] = r.it; });
+    const base = 'trivia/planner/gigs/' + tt.pid + '/';
+    let cats = {}; try { const s = await get(ref(rtdb, 'trivia/categories')); cats = s.exists() ? s.val() : {}; } catch (e) {}
+    const idByName = {}; Object.entries(cats).forEach(([id, c]) => { if (c && c.name) idByName[c.name.trim().toLowerCase()] = id; });
+    const known = (queueUpcomingItems || []).filter(it => (it.kind || '') === 'Trivia' && it.date <= endKey);
+    for (const it of known) {
+      const a = assigned[it.date];
+      if (a) {
+        await updateRtdb(base + it.date, { themeId: idByName[(a.categoryName || '').trim().toLowerCase()] || null, themeName: a.categoryName, status: 'planned', locked: true, fromQueue: true, venueNote: a.note || null });
+        it.themeName = a.categoryName; it.fromQueue = true; it.planned = true;
+      } else if (it.fromQueue && !queueNoPlay.has(it.date)) {
+        await updateRtdb(base + it.date, { themeId: null, themeName: null, locked: false, fromQueue: null, venueNote: null });
+        it.themeName = ''; it.fromQueue = false; it.planned = false;
+      }
+    }
+  }
+  // Bingo -> dated schedule entries (rounds), only entries that already exist
+  const bt = queueTargets.bingo;
+  if (bt) {
+    const rows = qGroupRows('Bingo').filter(r => r.kind === 'q' && r.date <= endKey);
+    let cats = {}; try { const s = await get(ref(rtdb, 'bingo/landing/categories')); cats = s.exists() ? s.val() : {}; } catch (e) {}
+    const idByTitle = {}; Object.entries(cats).forEach(([id, c]) => { if (c && c.title) idByTitle[c.title.trim().toLowerCase()] = id; });
+    for (const r of rows) {
+      const entry = (queueUpcomingItems || []).find(it => it.kind === 'Bingo' && it.date === r.date && it.entryKey);
+      const cid = idByTitle[(r.it.categoryName || '').trim().toLowerCase()];
+      if (!entry || !cid) continue;
+      await updateRtdb('bingo/landing/schedule/' + entry.entryKey, { rounds: [cid], categoryIds: [cid], locked: true, fromQueue: true, venueNote: r.it.note || null });
+      entry.fromQueue = true;
+    }
+  }
+}
+async function updateRtdb(path, obj) {
+  try { await rtdbUpdate(ref(rtdb, path), obj); } catch (e) { console.warn('Planner write blocked:', path, e && e.message); }
+}
+
+// ── drag & drop (pointer events: works with mouse and touch) ──
+let qDrag = null;
+function qStartDrag(e) {
+  const row = e.target.closest('.qrow'); if (!row) return;
+  e.preventDefault();
+  const group = row.dataset.group;
+  const rows = [...document.querySelectorAll('#queue-category-list .qrow[data-group]')].filter(r => r.dataset.group === group);
+  const rects = rows.map(r => r.getBoundingClientRect());
+  const from = rows.indexOf(row);
+  qDrag = { row, rows, rects, from, to: from, startY: e.clientY, group };
+  row.classList.add('dragging');
+  try { e.target.setPointerCapture(e.pointerId); } catch (_) {}
+  window.addEventListener('pointermove', qMoveDrag);
+  window.addEventListener('pointerup', qEndDrag);
+  window.addEventListener('pointercancel', qCancelDrag);
+}
+function qMoveDrag(e) {
+  if (!qDrag) return;
+  const dy = e.clientY - qDrag.startY;
+  qDrag.row.style.transform = 'translateY(' + dy + 'px)';
+  const r0 = qDrag.rects[qDrag.from];
+  const center = r0.top + r0.height / 2 + dy;
+  let to = qDrag.from;
+  qDrag.rects.forEach((r, i) => { if (i === qDrag.from) return; const mid = r.top + r.height / 2; if (i < qDrag.from && center < mid) to = Math.min(to, i); if (i > qDrag.from && center > mid) to = Math.max(to, i); });
+  qDrag.to = to;
+  qDrag.rows.forEach((r, i) => { r.classList.remove('drop-before', 'drop-after'); if (i === to && to !== qDrag.from) r.classList.add(to < qDrag.from ? 'drop-before' : 'drop-after'); });
+  if (e.clientY < 80) window.scrollBy(0, -12); else if (e.clientY > window.innerHeight - 80) window.scrollBy(0, 12);
+}
+function qCleanupDrag() {
+  window.removeEventListener('pointermove', qMoveDrag);
+  window.removeEventListener('pointerup', qEndDrag);
+  window.removeEventListener('pointercancel', qCancelDrag);
+  if (qDrag) { qDrag.row.classList.remove('dragging'); qDrag.row.style.transform = ''; qDrag.rows.forEach(r => r.classList.remove('drop-before', 'drop-after')); }
+}
+function qCancelDrag() { qCleanupDrag(); qDrag = null; }
+async function qEndDrag() {
+  const d = qDrag; qCleanupDrag(); qDrag = null;
+  if (!d || d.to === d.from) return;
+  await qReorderGroup(d.group, d.from, d.to);
+}
+async function qReorderGroup(group, from, to) {
+  qSnap();
+  const q = categoryQueueDoc.queue;
+  const idxs = q.map((it, i) => ((it.type || 'Other') === group ? i : -1)).filter(i => i >= 0);
+  const items = idxs.map(i => q[i]);
+  const [m] = items.splice(from, 1); items.splice(to, 0, m);
+  idxs.forEach((qi, k) => { q[qi] = items[k]; });
+  renderCategoryQueueSection();
+  await saveCategoryQueue();
 }
 
 function esc(str) { return (str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
@@ -3316,7 +3717,7 @@ Object.assign(window, {
   openSeasonalPopup, closeSeasonalPopup, closeSeasonalPopupDirect, addSeasonalToCart,
   toggleSidebarFilter, toggleAccordion, clearAllFilters, removeFilter,
   openNightDetail, closeDetail, handleOverlayClick, nightAddToCart, openCategoryDetail, categoryAddToCart, toggleKaraokeSongs,
-  addCategoryToQueue, moveCategoryQueueItem, removeCategoryQueueItem,
+  addCategoryToQueue, removeCategoryQueueItem, qStartDrag, qUndo, qEditNote, qSaveNote, qOpenAdd, qRenderPick, qPickAdd, qSurprise, qOpenCalendar, qModalClose,
   renderThemedNights, renderTrivia, renderBingo, renderSingAlongs, renderMiniGames, renderBattles,
   renderWayToPlay, renderQuickies, renderAlsoSee, loadBattlesPageContent
 });
@@ -3410,7 +3811,12 @@ window.submitConcurrentNotice = async function() {
     });
     document.getElementById('vp-ce-description').value = '';
     document.getElementById('vp-ce-newtime').value = '';
-    vpMsg('vp-concurrent-msg', 'Notice sent — thank you!', 'success');
+    if (impactType === 'cancel') {
+      queueNoPlay.add(date);
+      try { if (queueTargets.trivia) await updateRtdb('trivia/planner/gigs/' + queueTargets.trivia.pid + '/' + date, { status: 'cancelled', noPlay: true, note: 'No Play — concurrent event' }); } catch (_) {}
+      if (categoryQueueLoaded) renderCategoryQueueSection();
+    }
+    vpMsg('vp-concurrent-msg', impactType === 'cancel' ? 'Notice sent — that date is now marked No Play on your queue and in the Planner.' : 'Notice sent — thank you!', 'success');
   } catch (e) {
     vpMsg('vp-concurrent-msg', 'Could not send: ' + e.message, 'error');
   }
@@ -3458,6 +3864,8 @@ function qFmtDate(dk) {
 
 let queueUpcomingLoaded = false;
 let queueUpcomingItems = [];
+let queueTargets = { trivia: null, bingo: null };
+let queueNoPlay = new Set();
 async function loadVenueUpcoming() {
   if (queueUpcomingLoaded) return queueUpcomingItems;
   queueUpcomingLoaded = true;
@@ -3486,6 +3894,7 @@ async function loadVenueUpcoming() {
     const triviaMatch = Object.entries(plannerVenues).find(([id,v]) => qNormVenueName(v.name) === vName);
     if (triviaMatch) {
       const [pid, pv] = triviaMatch;
+      queueTargets.trivia = { pid };
       if (pv.status === 'active' || pv.status === 'seasonal') {
         const targetDow = Q_PLANNER_DAY_MAP[pv.day];
         if (targetDow !== undefined) {
@@ -3495,7 +3904,8 @@ async function loadVenueUpcoming() {
             const dk = qDateToKey(d);
             const override = (plannerGigs[pid] || {})[dk];
             const cancelled = !!(override && override.status === 'cancelled');
-            items.push({ date: dk, kind: 'Trivia', cancelled, notes: (override && (override.themeName || override.note)) || '' });
+            const tn = (override && override.themeName) || '';
+            items.push({ date: dk, kind: 'Trivia', time: pv.time || '', cancelled, themeName: tn, planned: !!tn, fromQueue: !!(override && override.fromQueue), notes: tn || (override && override.note) || '' });
           }
         }
       }
@@ -3504,11 +3914,13 @@ async function loadVenueUpcoming() {
     // Bingo gigs are individually dated schedule entries.
     const bingoMatch = Object.entries(bingoVenues).find(([id,v]) => qNormVenueName(v.name) === vName);
     if (bingoMatch) {
-      const [bid] = bingoMatch;
+      const [bid, bv] = bingoMatch;
+      queueTargets.bingo = { bid };
       const todayKey = qDateToKey(today);
-      bingoSchedule.filter(e => e.venueId === bid && e.date >= todayKey).forEach(e => {
+      const bingoEntries = bsSnap.exists() ? Object.entries(bsSnap.val() || {}) : [];
+      bingoEntries.filter(([k, e]) => e.venueId === bid && e.date >= todayKey).forEach(([k, e]) => {
         const roundNames = (e.rounds || e.categoryIds || []).map(cid => bingoCats[cid] ? bingoCats[cid].title : null).filter(Boolean);
-        items.push({ date: e.date, kind: 'Bingo', cancelled: false, notes: (roundNames.length ? 'Rounds: ' + roundNames.join(', ') : '') + (e.notes ? (roundNames.length ? ' — ' : '') + e.notes : '') });
+        items.push({ date: e.date, kind: 'Bingo', entryKey: k, time: e.time || (bv && (bv.time || bv.startTime)) || '', cancelled: !!(e.status === 'cancelled'), planned: roundNames.length > 0, fromQueue: !!e.fromQueue, themeName: roundNames.join(', '), notes: (roundNames.length ? 'Rounds: ' + roundNames.join(', ') : '') + (e.notes ? (roundNames.length ? ' — ' : '') + e.notes : '') });
       });
     }
 
@@ -3520,9 +3932,15 @@ async function loadVenueUpcoming() {
     hqGigs.filter(g => g.venue && qNormVenueName(g.venue) === vName && g.date >= todayKeyHq
       && !['trivia','bingo'].includes((g.kind||'').toLowerCase())
     ).forEach(g => {
-      items.push({ date: g.date, kind: g.kind || 'Event', cancelled: g.status === 'cancelled', notes: g.notes || '' });
+      items.push({ date: g.date, kind: g.kind || 'Event', time: g.startTime || g.time || '', cancelled: g.status === 'cancelled', notes: g.notes || '' });
     });
 
+    // Concurrent Event notices that cancel the gig mark that date "No Play"
+    try {
+      const nSnap = await getDocs(collection(db, 'concurrentEventNotices'));
+      nSnap.docs.map(d => d.data()).filter(n => n.venueId && n.venueId === (currentProfile && currentProfile.venueId) && n.impactType === 'cancel' && n.date)
+        .forEach(n => queueNoPlay.add(n.date));
+    } catch (e) { console.warn('Could not read concurrent notices:', e && e.message); }
     items.sort((a,b) => a.date.localeCompare(b.date));
     queueUpcomingItems = items;
   } catch (e) {
