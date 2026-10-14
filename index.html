@@ -2093,7 +2093,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/fireba
 import {
   getFirestore, collection, doc,
   getDocs, getDoc, setDoc, updateDoc, deleteDoc, writeBatch,
-  query, orderBy, onSnapshot, addDoc, serverTimestamp, deleteField
+  query, orderBy, where, onSnapshot, addDoc, serverTimestamp, deleteField
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { getDatabase, ref, get, push, set, update, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
@@ -5778,11 +5778,14 @@ function renderRequests() {
 
   list.innerHTML = filtered.map(req => {
     const statusColor = { new: '#C9A84C', 'in-progress': '#7BA7C7', confirmed: '#5AC47A', declined: '#C0654F', history: 'var(--text-dim)' }[req.status] || 'var(--text-dim)';
-    const statusLabel = { new: 'New', 'in-progress': 'In Progress', confirmed: 'Confirmed', declined: 'Declined', history: 'History' }[req.status] || req.status;
+    const statusLabel = { new: 'New', 'in-progress': 'In Progress', confirmed: 'Approved', declined: 'Declined', history: 'History' }[req.status] || req.status;
     const items = (req.items || []).map(i =>
       '<div style="font-size:0.88rem;color:var(--text-muted);padding:0.25rem 0;border-bottom:1px solid var(--border);">'
       + '<span style="font-family:Cinzel,serif;font-size:0.72rem;text-transform:uppercase;color:var(--text);">' + esc(i.name) + '</span>'
+      + (i.premium ? ' <span style="font-family:Cinzel,serif;font-size:0.6rem;background:var(--gold);color:#1a1408;border-radius:9px;padding:1px 7px;margin-left:4px;">$ COSTS EXTRA</span>' : '')
       + ' <span style="color:var(--text-dim);">—</span> ' + esc(i.scheduling)
+      + (i.details ? '<div style="font-size:0.82rem;color:var(--text-dim);margin-top:2px;">' + esc(i.details) + '</div>' : '')
+      + (i.conflicts && i.conflicts.length ? '<div style="font-size:0.82rem;color:#E69A87;border:1px solid #C0654F;border-radius:5px;padding:4px 8px;margin-top:4px;">Scheduled at this venue that night: ' + i.conflicts.map(c => esc(c.kind) + (c.time ? ' ' + esc(c.time) : '') + (c.theme ? ' (' + esc(c.theme) + ')' : '')).join(', ') + '. Approving will most likely replace it.</div>' : '')
       + '</div>'
     ).join('');
 
@@ -5801,7 +5804,7 @@ function renderRequests() {
       + (req.notes ? '<div style="font-size:0.88rem;color:var(--text-muted);font-style:italic;margin-bottom:0.75rem;padding:0.5rem;background:var(--surface2);border-radius:4px;">' + esc(req.notes) + '</div>' : '')
       + '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">'
       + (req.status !== 'in-progress' ? '<button class="btn btn-sm btn-ghost" style="color:#7BA7C7;border-color:rgba(123,167,199,0.5);" onclick="updateRequestStatus(\'' + req._id + '\',\'in-progress\')">⟳ In Progress</button>' : '')
-      + (req.status !== 'confirmed'   ? '<button class="btn btn-sm" onclick="updateRequestStatus(\'' + req._id + '\',\'confirmed\')">✓ Confirm</button>' : '')
+      + (req.status !== 'confirmed'   ? '<button class="btn btn-sm" onclick="approveRequest(\'' + req._id + '\')">✓ Approve</button>' : '')
       + (req.status !== 'declined'    ? '<button class="btn btn-sm btn-danger" onclick="updateRequestStatus(\'' + req._id + '\',\'declined\')">✕ Decline</button>' : '')
       + (req.status !== 'history'     ? '<button class="btn btn-sm btn-ghost" onclick="updateRequestStatus(\'' + req._id + '\',\'history\')">📁 History</button>' : '')
       + '<button class="btn btn-sm btn-ghost" onclick="window.location.href=\'mailto:' + (req.email||'') + '\'">✉ Reply</button>'
@@ -5811,6 +5814,72 @@ function renderRequests() {
   }).join('');
 }
 
+// ── APPROVING A REQUEST ── dated events (parties, holiday, ticketed, themed nights, sing-alongs, battles)
+// replace whatever is scheduled at that venue that night, and go onto the schedule.
+const REQ_EVENT_LABEL = { party: 'Private Party', holiday: 'Holiday Party', ticketed: 'Ticketed Event', night: 'Themed Night', singalong: 'Sing-Along', battle: 'Belladonna Battles' };
+function reqNorm(v) { return (v || '').toString().toLowerCase().trim(); }
+function reqDates(item) {
+  if (!item.date) return [];
+  if (item.kind === 'battle') { return [0, 1, 2, 3].map(w => { const d = new Date(item.date + 'T12:00:00'); d.setDate(d.getDate() + 7 * w); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }); }
+  return [item.date];
+}
+async function reqFindConflicts(venueName, date) {
+  const out = [];
+  const v = reqNorm(venueName);
+  try {
+    const sn = await getDocs(query(collection(db, 'gig_schedule'), where('date', '==', date)));
+    sn.docs.forEach(d => { const g = d.data(); if (reqNorm(g.venue) === v && g.status !== 'cancelled') out.push({ src: 'hq', id: d.id, kind: g.kind || 'Gig', loc: g.locationId || null }); });
+  } catch (e) { console.warn('gig_schedule lookup failed', e); }
+  try {
+    const pv = (await get(ref(rtdb, 'trivia/planner/venues'))).val() || {};
+    const m = Object.entries(pv).find(([id, x]) => reqNorm(x.name) === v);
+    if (m && (m[1].status === 'active' || m[1].status === 'seasonal') && ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][new Date(date + 'T12:00:00').getDay()] === m[1].day) {
+      const g = (await get(ref(rtdb, 'trivia/planner/gigs/' + m[0] + '/' + date))).val();
+      if (!(g && g.status === 'cancelled') && !out.some(x => reqNorm(x.kind) === 'trivia')) out.push({ src: 'trivia', pid: m[0], kind: 'Trivia' });
+    }
+  } catch (e) { console.warn('trivia lookup failed', e); }
+  try {
+    const bv = (await get(ref(rtdb, 'bingo/landing/venues'))).val() || {};
+    const bm = Object.entries(bv).find(([id, x]) => reqNorm(x.name) === v);
+    if (bm) {
+      const sc = (await get(ref(rtdb, 'bingo/landing/schedule'))).val() || {};
+      Object.entries(sc).forEach(([k, e]) => { if (e.venueId === bm[0] && e.date === date && !e.cancelled && !out.some(x => reqNorm(x.kind) === 'bingo')) out.push({ src: 'bingo', key: k, kind: 'Bingo' }); });
+    }
+  } catch (e) { console.warn('bingo lookup failed', e); }
+  return out;
+}
+async function approveRequest(id) {
+  const req = bookingRequests.find(r => r._id === id); if (!req) return;
+  const dated = (req.items || []).filter(i => i.premium && i.date && REQ_EVENT_LABEL[i.kind]);
+  const undated = (req.items || []).filter(i => i.premium && !i.date);
+  if (!dated.length) {
+    if (undated.length && !confirm('Nothing here has a date yet, so nothing will be added to the schedule. Mark it approved anyway?')) return;
+    return updateRequestStatus(id, 'confirmed');
+  }
+  const plan = [];
+  for (const it of dated) for (const d of reqDates(it)) plan.push({ it, date: d, conflicts: await reqFindConflicts(req.venue, d) });
+  const lines = plan.map(p => '• ' + REQ_EVENT_LABEL[p.it.kind] + ' on ' + p.date + (p.conflicts.length ? ' — REPLACES ' + p.conflicts.map(c => c.kind).join(' + ') : ' — no gig that night'));
+  if (!confirm('Approve this request for ' + (req.venue || 'this venue') + '?\n\n' + lines.join('\n') + '\n\nThis adds it to the schedule and cancels anything it replaces.' + (undated.length ? '\n(Items without a date are not scheduled.)' : ''))) return;
+  try {
+    for (const p of plan) {
+      const label = REQ_EVENT_LABEL[p.it.kind];
+      let loc = null;
+      for (const c of p.conflicts) {
+        if (c.loc) loc = c.loc;
+        const note = 'Replaced by ' + label + ' (approved)';
+        if (c.src === 'hq') await updateDoc(doc(db, 'gig_schedule', c.id), { status: 'cancelled', notes: note });
+        else if (c.src === 'trivia') await update(ref(rtdb, 'trivia/planner/gigs/' + c.pid + '/' + p.date), { status: 'cancelled', note });
+        else if (c.src === 'bingo') await update(ref(rtdb, 'bingo/landing/schedule/' + c.key), { cancelled: true, notes: note });
+      }
+      const gig = { date: p.date, time: '', endTime: '', kind: label, venue: req.venue, host: 'Unassigned', status: 'scheduled', notes: [p.it.details, 'Approved request'].filter(Boolean).join(' — '), seriesId: null, timeLocked: false, cadence: null, cadenceAnchor: null };
+      if (loc) gig.locationId = loc;
+      await addDoc(collection(db, 'gig_schedule'), gig);
+    }
+    await updateDoc(doc(db, 'venueMenuBookingRequests', id), { status: 'confirmed', approvedAt: serverTimestamp() });
+    toast('Approved — added to the schedule', 'success');
+  } catch (e) { console.error(e); toast('Approve failed: ' + (e.message || e), 'error'); }
+}
+window.approveRequest = approveRequest;
 async function updateRequestStatus(id, status) {
   try {
     await updateDoc(doc(db, 'venueMenuBookingRequests', id), { status });
