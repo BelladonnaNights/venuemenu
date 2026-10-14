@@ -886,6 +886,13 @@
   .br-btn.gold { background: var(--gold); border-color: var(--gold); color: #1a1408; font-weight: 700; }
   .br-btn.done { border-color: var(--gold); color: var(--gold); }
   @media (max-width: 768px) { .br-card { flex-basis: 190px; } }
+  .br-pill { display: inline-block; margin-left: 8px; vertical-align: middle; font-family: var(--cinzel); font-size: .55rem; letter-spacing: .1em; text-transform: uppercase; color: #1a1408; background: var(--gold); border-radius: 10px; padding: 2px 8px; }
+  .br-blurb { padding: 0 12px; color: var(--text-muted); font-size: .85rem; line-height: 1.4; }
+  .cart-premium { margin-top: .6rem; padding: .5rem .7rem; border: 1px solid var(--gold); border-radius: 6px; color: var(--gold-light); font-size: .8rem; }
+  .cart-conflict { margin-top: .5rem; padding: .5rem .7rem; border: 1px solid #C0654F; border-radius: 6px; color: #E69A87; font-size: .8rem; line-height: 1.45; }
+  .cart-note { margin-top: .5rem; font-size: .78rem; color: var(--text-muted); }
+  .cart-flabel { display: block; font-size: .72rem; color: var(--text-dim); margin: .6rem 0 .2rem; }
+  .cart-finput { width: 100%; background: var(--surface3); color: var(--text); border: 1px solid var(--border2); border-radius: 6px; padding: 8px; font: inherit; font-size: .85rem; }
   .q-toolbar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
   .q-main { flex: 1; min-width: 0; }
   .q-main .q-name { flex: none; }
@@ -3352,6 +3359,8 @@ async function updateRtdb(path, obj) {
 function venueHasGame(kind) {
   return (queueUpcomingItems || []).some(it => (it.kind || '') === kind) || (categoryQueueDoc && (categoryQueueDoc.queue || []).some(it => (it.type || '') === kind));
 }
+const PREMIUM_KINDS = ['night', 'singalong', 'battle', 'party', 'holiday', 'ticketed'];
+function brPill(kind) { return PREMIUM_KINDS.includes(kind) ? '<span class="br-pill" title="This costs extra">$ Costs extra</span>' : ''; }
 function brCardImg(src, name) {
   return src ? '<img src="' + src + '" alt="' + esc(name) + '" loading="lazy">' : '<div class="br-noimg">' + esc(name) + '</div>';
 }
@@ -3368,11 +3377,12 @@ function brCatCard(c) {
   } else {
     btns = '<button class="br-btn" onclick="event.stopPropagation();brWish(\'cat\',\'' + id + '\')">Add to Wish List</button><button class="br-btn gold" onclick="event.stopPropagation();brRequest(\'cat\',\'' + id + '\')">Request This Night</button>';
   }
-  return '<div class="br-card" onclick="openCategoryDetail(\'' + id + '\')"><div class="br-img">' + brCardImg(c.miniGameImage || c.bannerData, c.name) + '</div><div class="br-name">' + esc(c.name) + '</div><div class="br-btns">' + btns + '</div></div>';
+  const kind = isSingAlong(c) ? 'singalong' : (isBattles(c) ? 'battle' : '');
+  return '<div class="br-card" onclick="openCategoryDetail(\'' + id + '\')"><div class="br-img">' + brCardImg(c.miniGameImage || c.bannerData, c.name) + '</div><div class="br-name">' + esc(c.name) + brPill(kind) + '</div><div class="br-btns">' + btns + '</div></div>';
 }
 function brNightCard(n) {
   const i = publishedNights.indexOf(n);
-  return '<div class="br-card" onclick="openNightDetail(' + i + ')"><div class="br-img">' + brCardImg(n.bannerData, n.name) + '</div><div class="br-name">' + esc(n.name) + '</div><div class="br-btns"><button class="br-btn" onclick="event.stopPropagation();brWish(\'night\',' + i + ')">Add to Wish List</button><button class="br-btn gold" onclick="event.stopPropagation();brRequest(\'night\',' + i + ')">Request This Night</button></div></div>';
+  return '<div class="br-card" onclick="openNightDetail(' + i + ')"><div class="br-img">' + brCardImg(n.bannerData, n.name) + '</div><div class="br-name">' + esc(n.name) + brPill('night') + '</div><div class="br-btns"><button class="br-btn" onclick="event.stopPropagation();brWish(\'night\',' + i + ')">Add to Wish List</button><button class="br-btn gold" onclick="event.stopPropagation();brRequest(\'night\',' + i + ')">Request This Night</button></div></div>';
 }
 function brMovieCard(m) {
   return '<div class="br-card"><div class="br-img">' + brCardImg(m.poster, m.title) + '</div><div class="br-name">' + esc(m.title) + (m.year ? ' <span class="br-yr">' + esc(String(m.year)) + '</span>' : '') + '</div><div class="br-btns"><button class="br-btn" onclick="brWish(\'movie\',\'' + m._id + '\')">Add to Wish List</button><button class="br-btn gold" onclick="brRequest(\'movie\',\'' + m._id + '\')">Request This Night</button></div></div>';
@@ -3380,9 +3390,32 @@ function brMovieCard(m) {
 function brWish(kind, ref) { brAdd(kind, ref, 'later'); }
 function brRequest(kind, ref) { qToast('Pick your date in the cart, then send the request from there.'); brAdd(kind, ref, 'date'); }
 function brAdd(kind, ref, bookingType) {
-  if (kind === 'night') nightAddToCart(ref, bookingType);
+  let id = ref, k = kind;
+  if (kind === 'night') { nightAddToCart(ref, bookingType); id = publishedNights[ref] && publishedNights[ref]._id; }
   else if (kind === 'movie') movieAddToCart(ref, bookingType);
-  else categoryAddToCart(ref, bookingType);
+  else {
+    categoryAddToCart(ref, bookingType);
+    const c = publishedCategories.find(x => x._id === ref);
+    k = c && isSingAlong(c) ? 'singalong' : (c && isBattles(c) ? 'battle' : 'category');
+  }
+  if (id) cartMeta(id, { kind: k, premium: PREMIUM_KINDS.includes(k) });
+}
+// Events a venue can ask for that aren't on the menu as a single category
+const BR_EVENTS = [
+  { key: 'party',    name: 'Private Party',      blurb: 'A private event at your venue — birthday, corporate, anything.', fields: ['time', 'guests'] },
+  { key: 'holiday',  name: 'Holiday Party',      blurb: 'A themed holiday night with a Belladonna host.', fields: ['time', 'guests'] },
+  { key: 'ticketed', name: 'Ticketed Event',     blurb: 'A special event guests buy tickets for.', fields: ['time', 'guests', 'ticket'] },
+  { key: 'battle',   name: 'Belladonna Battles — 4-Week Series', blurb: 'Four weeks of head-to-head play with brackets at your venue.', fields: ['game', 'time'] }
+];
+function brEventCard(e) {
+  return '<div class="br-card br-event"><div class="br-img"><div class="br-noimg">' + esc(e.name) + '</div></div><div class="br-name">' + esc(e.name) + brPill(e.key) + '</div><div class="br-blurb">' + esc(e.blurb) + '</div><div class="br-btns"><button class="br-btn gold" onclick="brEvent(\'' + e.key + '\')">Request This</button></div></div>';
+}
+function brEvent(key) {
+  const e = BR_EVENTS.find(x => x.key === key); if (!e) return;
+  const id = 'event:' + key + ':' + Date.now();
+  addToCart(id, e.name, 0);
+  cartMeta(id, { kind: key, premium: true, details: {} });
+  qToast('Pick your date in the cart, fill in the details, then send the request.');
 }
 async function renderBrowse() {
   const el = document.getElementById('browse-rows'); if (!el) return;
@@ -3394,6 +3427,7 @@ async function renderBrowse() {
     ['Themed Nights', publishedNights.filter(nightVisibleNow).map(brNightCard)],
     ['Sing-Alongs', publishedCategories.filter(isSingAlong).map(brCatCard)],
     ['Belladonna Battles', publishedCategories.filter(isBattles).map(brCatCard)],
+    ['Plan an Event', BR_EVENTS.map(brEventCard)],
     ['Movies', publishedMovies.map(brMovieCard)]
   ].filter(r => r[1].length);
   el.innerHTML = rows.length ? rows.map(([title, cards], i) => '<section class="br-row"><div class="br-head"><h3>' + esc(title) + '</h3><div class="br-arrows"><button onclick="brScroll(' + i + ',-1)" aria-label="Scroll left">‹</button><button onclick="brScroll(' + i + ',1)" aria-label="Scroll right">›</button></div></div><div class="br-scroller" id="br-scroll-' + i + '">' + cards.join('') + '</div></section>').join('') : '<div class="vp-empty">Nothing to browse yet.</div>';
@@ -3503,6 +3537,34 @@ function cartSave() {
   const pendingEl = document.getElementById('queue-pending-list');
   if (pendingEl) renderQueuePending();
 }
+function cartMeta(id, meta) { const i = cart.findIndex(c => c.id === id); if (i >= 0) { Object.assign(cart[i], meta); cartSave(); if (document.getElementById('cart-drawer').classList.contains('open')) renderCartItems(); } }
+function cartField(i, key, val) { if (!cart[i]) return; cart[i].details = cart[i].details || {}; cart[i].details[key] = val; cartSave(); }
+function cartConflicts(date) {
+  if (!date || queueNoPlay.has(date)) return [];
+  return (queueUpcomingItems || []).filter(it => it.date === date && !it.cancelled).map(it => ({ kind: it.kind, time: qFmtTime(it.time), theme: it.themeName || '' }));
+}
+const CART_FIELD_DEFS = {
+  time:   { label: 'Start time (and end, if you know it)', ph: 'e.g. 7pm – 10pm', type: 'text' },
+  guests: { label: 'About how many guests?', ph: 'e.g. 40', type: 'text' },
+  ticket: { label: 'Ticket price and who sells the tickets', ph: 'e.g. $15 — sold by the venue', type: 'text' },
+  game:   { label: 'Which game?', ph: 'Bingo, Trivia, Karaoke…', type: 'text' }
+};
+function cartExtrasHtml(item, i) {
+  if (!item.premium) return '';
+  let h = '<div class="cart-premium">$ This costs extra. We will confirm the price when we approve it.</div>';
+  const ev = (typeof BR_EVENTS !== 'undefined') ? BR_EVENTS.find(x => x.key === item.kind) : null;
+  if (ev) {
+    h += ev.fields.map(f => { const d = CART_FIELD_DEFS[f]; return '<label class="cart-flabel">' + d.label + '</label><input class="cart-finput" type="text" placeholder="' + d.ph + '" value="' + esc((item.details && item.details[f]) || '') + '" oninput="cartField(' + i + ',\'' + f + '\',this.value)">'; }).join('');
+    if (item.kind === 'battle') h += '<div class="cart-note">Runs four weeks in a row, starting on the date you pick. We may suggest a different start.</div>';
+  }
+  if (item.bookingType === 'date' && item.selectedDate) {
+    const cf = cartConflicts(item.selectedDate);
+    if (cf.length) h += '<div class="cart-conflict">You already have ' + cf.map(c => esc(c.kind) + (c.time ? ' at ' + esc(c.time) : '')).join(' and ') + ' that night. If we approve this, it replaces that night.</div>';
+  } else if (item.bookingType === 'weekly') {
+    h += '<div class="cart-conflict">Weekly requests replace your regular game on those days if approved.</div>';
+  }
+  return h;
+}
 function cartItemIdx(id) { return cart.findIndex(c => c.id === id); }
 function cartHas(id) { return cartItemIdx(id) >= 0; }
 
@@ -3569,6 +3631,7 @@ function isBooked(dateStr)    { return availDates[dateStr] === 'booked'; }
 // ── CART DRAWER ──
 function openCart() {
   document.getElementById('cart-drawer').classList.add('open');
+  if (!queueUpcomingLoaded) loadVenueUpcoming().then(() => renderCartItems()).catch(() => {});
   const bd = document.getElementById('cart-backdrop');
   bd.style.display = 'block';
   setTimeout(() => bd.classList.add('open'), 10);
@@ -3627,6 +3690,7 @@ function renderCartItems() {
       + '</div>'
       + (item.bookingType === 'date' ? dateSel : '')
       + (item.bookingType === 'weekly' ? weekSel : '')
+      + cartExtrasHtml(item, i)
       + queueNote
       + saveLaterSel
       + '</div></div>';
@@ -3755,7 +3819,14 @@ async function submitCart() {
     if (item.bookingType === 'weekly') scheduling = 'Weekly Gig — ' + (item.weekdays.length ? 'Every ' + item.weekdays.map(i=>WEEKDAYS[i]).join(' & ') : 'Days TBD');
     if (item.bookingType === 'later')  scheduling = 'Save for Later';
     if (item.bookingType === 'queue')  scheduling = 'Scheduling Queue (no date picked yet — find us an opening)';
-    return { name: item.name + (item.price ? ' (+$' + item.price.toFixed(2) + ' add-on)' : ''), scheduling };
+    const det = item.details || {};
+    const detailText = Object.entries(det).filter(([k, v]) => v).map(([k, v]) => ((CART_FIELD_DEFS[k] || {}).label || k).split(' (')[0] + ': ' + v).join(' · ');
+    return {
+      name: item.name + (item.price ? ' (+$' + item.price.toFixed(2) + ' add-on)' : ''), scheduling,
+      kind: item.kind || 'category', premium: !!item.premium, bookingType: item.bookingType,
+      date: item.bookingType === 'date' ? (item.selectedDate || '') : '', weekdays: item.bookingType === 'weekly' ? (item.weekdays || []) : [],
+      details: detailText, conflicts: item.bookingType === 'date' ? cartConflicts(item.selectedDate) : []
+    };
   });
 
   const payload = { venue, contactName: name, email, phone, notes, items, submittedAt: serverTimestamp(), status: 'new' };
@@ -3770,7 +3841,7 @@ async function submitCart() {
       contact_name:  name,
       email:         email,
       phone:         phone || 'Not provided',
-      items:         items.map(i => '• ' + i.name + ' — ' + i.scheduling).join('\n'),
+      items:         items.map(i => '• ' + i.name + (i.premium ? ' [costs extra]' : '') + ' — ' + i.scheduling + (i.details ? ' (' + i.details + ')' : '') + (i.conflicts && i.conflicts.length ? ' — REPLACES: ' + i.conflicts.map(c => c.kind).join(', ') : '')).join('\n'),
       notes:         notes || 'None',
     });
 
@@ -3783,7 +3854,7 @@ async function submitCart() {
     document.getElementById('cart-body').innerHTML = '<div style="text-align:center;padding:3rem 1.5rem;">'
       + '<div style="font-size:2.5rem;margin-bottom:1rem;">✦</div>'
       + '<div style="font-family:Cinzel,serif;font-size:0.85rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--gold);margin-bottom:0.75rem;">Request Sent!</div>'
-      + '<div style="color:var(--text-muted);font-size:0.95rem;line-height:1.6;">We\'ll be in touch at ' + email + ' to confirm your dates and details. Thank you!</div>'
+      + '<div style="color:var(--text-muted);font-size:0.95rem;line-height:1.6;">We\'ll review it and be in touch at ' + email + '. Nothing is booked until we approve it. Thank you!</div>'
       + '</div>';
     document.getElementById('cart-footer').style.display = 'none';
 
@@ -3888,7 +3959,7 @@ Object.assign(window, {
   openSeasonalPopup, closeSeasonalPopup, closeSeasonalPopupDirect, addSeasonalToCart,
   toggleSidebarFilter, toggleAccordion, clearAllFilters, removeFilter,
   openNightDetail, closeDetail, handleOverlayClick, nightAddToCart, openCategoryDetail, categoryAddToCart, toggleKaraokeSongs,
-  addCategoryToQueue, qSetType, brWish, brRequest, brScroll, qOpenDatePick, qDatePicked, removeCategoryQueueItem, qStartDrag, qUndo, qEditNote, qSaveNote, qOpenAdd, qRenderPick, qPickAdd, qSurprise, qOpenCalendar, qModalClose,
+  addCategoryToQueue, qSetType, brEvent, cartField, brWish, brRequest, brScroll, qOpenDatePick, qDatePicked, removeCategoryQueueItem, qStartDrag, qUndo, qEditNote, qSaveNote, qOpenAdd, qRenderPick, qPickAdd, qSurprise, qOpenCalendar, qModalClose,
   renderThemedNights, renderTrivia, renderBingo, renderSingAlongs, renderMiniGames, renderBattles,
   renderWayToPlay, renderQuickies, renderAlsoSee, loadBattlesPageContent
 });
