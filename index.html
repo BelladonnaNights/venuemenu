@@ -965,6 +965,22 @@
   .category-card-name { font-family: var(--cinzel); font-size: 13px; font-weight: 600; letter-spacing: .07em; color: var(--text); line-height: 1.35; }
   .category-card-actions { margin-top: 8px; padding-top: 0; border-top: none; }
   .filter-sidebar:not(.open) { border-right: none; }
+
+  /* header: three-bar dropdown menu (replaces the tab row) */
+  .site-header { flex-wrap: nowrap; justify-content: space-between; }
+  .nav-menu-wrap { position: relative; }
+  .burger-btn { display: flex; flex-direction: column; justify-content: center; gap: 5px; width: 42px; height: 38px; padding: 0 9px; cursor: pointer;
+    background: var(--surface2); border: 1px solid var(--border2); border-radius: 8px; transition: border-color .2s, background .2s; }
+  .burger-btn span { display: block; height: 2px; border-radius: 2px; background: var(--gold); }
+  .burger-btn:hover, .burger-btn[aria-expanded="true"] { border-color: var(--gold); background: var(--gold-dim); }
+  #main-nav { display: none; position: absolute; top: calc(100% + 10px); right: 0; z-index: 400; min-width: 230px; width: auto; margin: 0; padding: 8px; order: 0;
+    flex-direction: column; flex-wrap: nowrap; align-items: stretch; gap: 2px; background: rgba(14,14,14,.98); backdrop-filter: blur(16px);
+    border: 1px solid var(--border2); border-radius: 12px; box-shadow: 0 14px 40px rgba(0,0,0,.65); max-height: calc(100vh - 100px); overflow-y: auto; }
+  #main-nav.open { display: flex; }
+  #main-nav .nav-tab { text-align: left; padding: 12px 14px; font-size: 11px; letter-spacing: .14em; border: none; border-radius: 8px; background: none; color: var(--text-muted); }
+  #main-nav .nav-tab:hover { background: var(--gold-dim); color: var(--gold-light); }
+  #main-nav .nav-tab.active { background: var(--gold-dim); color: var(--gold); border: none; }
+  @media (max-width: 768px) { .site-header { flex-direction: row; padding: 0.6rem 1rem; gap: 8px; flex-wrap: wrap; } }
 </style>
 </head>
 <body>
@@ -979,26 +995,32 @@
       <span class="logo-sub">Audio Alchemies</span>
     </div>
   </div>
-  <nav class="nav-tabs">
-    <button class="nav-tab active" onclick="switchView('library')">Library</button>
-    <button class="nav-tab" onclick="switchView('trivia')">Trivia</button>
-    <button class="nav-tab" onclick="switchView('bingo')">Bingo</button>
-    <button class="nav-tab" onclick="switchView('singalongs')">Sing-Alongs</button>
-    <button class="nav-tab" onclick="switchView('movies')">Movies</button>
-    <button class="nav-tab" onclick="switchView('minigames')">Mini Games</button>
-    <button class="nav-tab" onclick="switchView('waytoplay')">Ways to Play</button>
-    <button class="nav-tab" onclick="switchView('battles')">Belladonna Battles</button>
-    <button class="nav-tab" onclick="switchView('nights')">Themed Nights</button>
-    <button class="nav-tab" onclick="switchView('mainmenu')">Main Menu</button>
-    <button class="nav-tab" onclick="switchView('seasonal')">Carousel Calendar</button>
-    <button class="nav-tab" onclick="switchView('bookings')">Bookings</button>
-    <button class="nav-tab" onclick="switchView('import')">Import</button>
-    <button class="nav-tab" onclick="switchView('feedback')">Feedback Inbox</button>
-    <button class="nav-tab" onclick="switchView('portal')">Portal Content</button>
-  </nav>
   <div class="header-account" style="display:flex;align-items:center;gap:10px;margin-left:auto;">
     <span id="gateway-user-label" style="font-size:0.72rem;color:var(--text-dim);"></span>
     <button class="btn btn-sm btn-ghost" onclick="gatewaySignOut()">Sign Out</button>
+    <div class="nav-menu-wrap">
+      <button class="burger-btn" id="burger-btn" onclick="toggleNavMenu(event)" aria-label="Menu" aria-expanded="false" title="Menu">
+        <span></span><span></span><span></span>
+      </button>
+    <nav class="nav-tabs" id="main-nav">
+      <button class="nav-tab active" onclick="closeNavMenu();switchView('library')">Library</button>
+      <button class="nav-tab" onclick="closeNavMenu();switchView('trivia')">Trivia</button>
+      <button class="nav-tab" onclick="closeNavMenu();switchView('bingo')">Bingo</button>
+      <button class="nav-tab" onclick="closeNavMenu();switchView('singalongs')">Sing-Alongs</button>
+      <button class="nav-tab" onclick="closeNavMenu();switchView('movies')">Movies</button>
+      <button class="nav-tab" onclick="closeNavMenu();switchView('minigames')">Mini Games</button>
+      <button class="nav-tab" onclick="closeNavMenu();switchView('waytoplay')">Ways to Play</button>
+      <button class="nav-tab" onclick="closeNavMenu();switchView('battles')">Belladonna Battles</button>
+      <button class="nav-tab" onclick="closeNavMenu();switchView('nights')">Themed Nights</button>
+      <button class="nav-tab" onclick="closeNavMenu();switchView('mainmenu')">Main Menu</button>
+      <button class="nav-tab" onclick="closeNavMenu();switchView('seasonal')">Carousel Calendar</button>
+      <button class="nav-tab" onclick="closeNavMenu();switchView('bookings')">Bookings</button>
+      <button class="nav-tab" onclick="closeNavMenu();switchView('import')">Import</button>
+      <button class="nav-tab" onclick="closeNavMenu();switchView('feedback')">Feedback Inbox</button>
+      <button class="nav-tab" onclick="closeNavMenu();switchView('portal')">Portal Content</button>
+    </nav>
+
+    </div>
   </div>
 </header>
 
@@ -2525,6 +2547,17 @@ async function saveMovieBulk() {
 // ═══════════════════════════════════════════════
 // VIEW SWITCHING
 // ═══════════════════════════════════════════════
+function toggleNavMenu(e){
+  if(e) e.stopPropagation();
+  const nav = document.getElementById('main-nav'), b = document.getElementById('burger-btn');
+  const open = !nav.classList.contains('open');
+  nav.classList.toggle('open', open); if(b) b.setAttribute('aria-expanded', open ? 'true' : 'false');
+}
+function closeNavMenu(){
+  const nav = document.getElementById('main-nav'), b = document.getElementById('burger-btn');
+  if(nav) nav.classList.remove('open'); if(b) b.setAttribute('aria-expanded','false');
+}
+document.addEventListener('click', e=>{ if(!e.target.closest('.nav-menu-wrap')) closeNavMenu(); });
 function switchView(name) {
   if (name === 'mainmenu' && !mmData) loadMainMenu();
   if (name === 'seasonal') renderSeasonalAdmin();
@@ -6241,6 +6274,7 @@ window.deletePortalCollaborator = async function(id) {
 };
 
 Object.assign(window, {
+  toggleNavMenu, closeNavMenu,
   renderMovies, openMovieModal, addMovieLinkRow, closeMovieModal, saveMovie, deleteMovie, openMovieBulk, closeMovieBulk, saveMovieBulk,
   switchView, renderLibrary, runSearch, renderMiniGames, renderWayToPlay,
   toggleSortAZ, setTriviaTierFilter, renderBingo, renderNights,
