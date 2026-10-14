@@ -920,7 +920,11 @@
   .qm-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 14px; }
   .qm-btn { background: var(--surface3); border: 1px solid var(--border2); color: var(--text); padding: 9px 14px; border-radius: 8px; cursor: pointer; font: inherit; font-size: .85rem; }
   .qm-btn.gold { background: var(--gold); color: #1a1408; border-color: var(--gold); font-weight: 700; }
-  .q-pickrow { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border2); }
+  .q-pickrow { display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--border2); }
+  .q-pickimg { flex: none; width: 112px; aspect-ratio: 16/10; border-radius: 8px; overflow: hidden; background: var(--surface3); display: flex; align-items: center; justify-content: center; }
+  .q-pickimg img { width: 100%; height: 100%; object-fit: cover; }
+  .q-pickimg span { font-size: .6rem; color: var(--gold-light); text-align: center; padding: 4px; }
+  .q-pickname { flex: 1; min-width: 0; font-family: var(--display); font-size: 1.25rem; color: #fff; line-height: 1.1; }
   .q-pickrow em { color: var(--text-dim); font-size: .8rem; }
   #q-pick-list { max-height: 46vh; overflow-y: auto; }
   .qc-head { display: flex; align-items: center; justify-content: space-between; }
@@ -2547,10 +2551,14 @@ function renderCategoryGrid(gridId, emptyId, filterFn, starKind, clickable) {
   empty.style.display='none';
   grid.innerHTML = filtered.map(c => {
     const img = c.miniGameImage||c.bannerData;
-    const imgEl = img ? '<img class="night-card-img" src="' + img + '" alt="' + esc(c.name) + '" loading="lazy" style="aspect-ratio:4/5;">' : '<div class="night-card-img" style="aspect-ratio:4/5;display:flex;align-items:center;justify-content:center;background:var(--surface2);color:var(--text-dim);font-size:2rem;">\uD83C\uDFB5</div>';
+    const ratio = gridId === 'trivia-grid' ? '16/10' : '4/5';   // Trivia + Book Trivia match the Browse page's 16:10 images
+    const imgEl = img ? '<img class="night-card-img" src="' + img + '" alt="' + esc(c.name) + '" loading="lazy" style="aspect-ratio:' + ratio + ';">' : '<div class="night-card-img" style="aspect-ratio:' + ratio + ';display:flex;align-items:center;justify-content:center;background:var(--surface2);color:var(--text-dim);font-size:2rem;">\uD83C\uDFB5</div>';
     const star = starKind ? starBtnHtml(starKind, c._id) : '';
     const click = clickable ? ' onclick="openCategoryDetail(\'' + c._id + '\')"' : '';
-    return '<div class="night-card"' + click + '>' + imgEl + star + '<div class="night-card-body"><div class="night-name">' + esc(c.name) + '</div>' + '</div></div>';
+    const singaBtns = (gridId === 'singa-grid' && effectiveMode() === 'venue')
+      ? '<div class="br-btns" style="padding:8px 0 0;"><button class="br-btn gold" onclick="event.stopPropagation();brWish(\'cat\',\'' + c._id + '\')">Add to Wish List</button><button class="br-btn" onclick="event.stopPropagation();brRequest(\'cat\',\'' + c._id + '\')">Pick a Date</button></div>' : '';
+    const singaPill = gridId === 'singa-grid' ? brPill('singalong') : '';
+    return '<div class="night-card"' + click + '>' + imgEl + star + '<div class="night-card-body"><div class="night-name">' + esc(c.name) + singaPill + '</div>' + singaBtns + '</div></div>';
   }).join('');
 }
 
@@ -3197,7 +3205,7 @@ function renderCategoryQueueSection() {
     html += '<div class="q-group-title">' + esc(name) + ' <button class="q-mini" onclick="qSurprise(\'' + esc(name).replace(/'/g, '') + '\')">Surprise me</button></div>';
     if (!inWin.length) { html += '<div class="vp-empty">Nothing in the next 10 weeks.</div>'; return; }
     html += '<div class="q-first4"><div class="q-sub">Next 4</div>' + inWin.slice(0, 4).map(h).join('') + '</div>';
-    if (inWin.length > 4) html += '<div class="q-rest"><div class="q-sub">The rest of the next 10 weeks</div>' + inWin.slice(4).map(h).join('') + '</div>';
+    if (inWin.length > 4) html += '<div class="q-rest"><div class="q-sub">Following weeks</div>' + inWin.slice(4).map(h).join('') + '</div>';
   });
   const others = qOtherFixedBeyond(endKey);
   if (beyond.length || others.length) {
@@ -3237,14 +3245,14 @@ function qAllTypes() { const s = []; publishedCategories.forEach(c => { const t 
 function qOpenAdd() {
   const types = qAllTypes();
   if (!qPickType || !types.includes(qPickType)) qPickType = types.includes('Trivia') ? 'Trivia' : (types[0] || '');
-  qModalOpen('<h3>Add a category</h3><div class="qm-row"><select id="q-pick-type" onchange="qSetType(this.value)">' + types.map(t => '<option' + (t === qPickType ? ' selected' : '') + '>' + esc(t) + '</option>').join('') + '</select><input id="q-pick-search" type="search" placeholder="Search the library…" oninput="qRenderPick()"></div><div class="qm-actions" style="justify-content:flex-start;margin:0 0 8px;"><button class="qm-btn" onclick="qSurprise(window.qCurType())">Surprise me — fill the next 10 weeks</button></div><div id="q-pick-list"></div><div class="qm-actions"><button class="qm-btn gold" onclick="qModalClose()">Done</button></div>');
+  qModalOpen('<h3>Add a category</h3><div class="qm-row"><select id="q-pick-type" onchange="qSetType(this.value)">' + types.map(t => '<option' + (t === qPickType ? ' selected' : '') + '>' + esc(t) + '</option>').join('') + '</select><input id="q-pick-search" type="search" placeholder="Search the library…" oninput="qRenderPick()"></div><div class="qm-actions" style="justify-content:flex-start;margin:0 0 8px;"></div><div id="q-pick-list"></div><div class="qm-actions"><button class="qm-btn gold" onclick="qModalClose()">Done</button></div>');
   qRenderPick();
 }
 function qRenderPick() {
   const el = document.getElementById('q-pick-list'); if (!el) return;
   const s = ((document.getElementById('q-pick-search') || {}).value || '').toLowerCase();
   const list = publishedCategories.filter(c => (c.type || '').split(',')[0].trim() === qPickType && (!s || (c.name || '').toLowerCase().includes(s))).sort((a, b) => (a.name || '').localeCompare(b.name || '')).slice(0, 80);
-  el.innerHTML = list.length ? list.map(c => '<div class="q-pickrow"><span>' + esc(c.name) + '</span>' + (isInCategoryQueue(c._id) ? '<em>In queue</em>' : '<button class="qm-btn" onclick="qPickAdd(\'' + c._id + '\')">Add</button>') + '</div>').join('') : '<div class="vp-empty">No matches.</div>';
+  el.innerHTML = list.length ? list.map(c => { const img = c.miniGameImage || c.bannerData; return '<div class="q-pickrow"><div class="q-pickimg">' + (img ? '<img src="' + img + '" alt="" loading="lazy">' : '<span>' + esc(c.name) + '</span>') + '</div><div class="q-pickname">' + esc(c.name) + '</div>' + (isInCategoryQueue(c._id) ? '<em>In queue</em>' : '<button class="qm-btn gold" onclick="qPickAdd(\'' + c._id + '\')">Add</button>') + '</div>'; }).join('') : '<div class="vp-empty">No matches.</div>';
 }
 async function qPickAdd(id) {
   const c = publishedCategories.find(x => x._id === id); if (!c || isInCategoryQueue(id)) return;
