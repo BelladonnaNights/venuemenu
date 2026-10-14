@@ -2126,7 +2126,8 @@ function mapLiveCategory(id, c, kind) {
     publishedTabs: [],
     shows: Array.isArray(vm.shows) ? vm.shows : [],
     bannerData: vm.bannerUrl || c.bgImage || c.squareImage || c.image || null,
-    miniGameImage: vm.miniGameImage || null
+    miniGameImage: vm.miniGameImage || null,
+    unified: c.unified === true
   };
 }
 async function loadLiveCategories() {
@@ -2147,7 +2148,7 @@ async function loadLiveCategories() {
     publishedCategories.concat(live).forEach(c => {
       const key = (c.type || '') + '|' + (c.name || '').trim().toLowerCase();
       const prev = seen.get(key);
-      const score = x => (x.bannerData ? 2 : 0) + (x.theme ? 1 : 0);
+      const score = x => (x.unified ? 4 : 0) + (x.bannerData ? 2 : 0) + (x.theme ? 1 : 0);
       if (!prev || score(c) > score(prev)) seen.set(key, c);
     });
     publishedCategories = [...seen.values()];
