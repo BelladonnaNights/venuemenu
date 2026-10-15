@@ -1642,6 +1642,14 @@
           </div>
         </div>
         <div class="form-group">
+          <label class="form-label">5:4 Image URL <span style="color:var(--text-dim);font-size:0.72rem;font-style:italic;font-family:'Crimson Text',serif;text-transform:none;letter-spacing:0;">— 5:4 landscape, shown on Browse &amp; Trivia pages</span></label>
+          <input type="text" id="cat-l54-url" placeholder="Paste 5:4 image URL…">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Square Image URL <span style="color:var(--text-dim);font-size:0.72rem;font-style:italic;font-family:'Crimson Text',serif;text-transform:none;letter-spacing:0;">— 1:1</span></label>
+          <input type="text" id="cat-square-url" placeholder="Paste square image URL…">
+        </div>
+        <div class="form-group">
           <label class="form-label">Portrait Image URL <span style="color:var(--text-dim);font-size:0.72rem;font-style:italic;font-family:'Crimson Text',serif;text-transform:none;letter-spacing:0;">— 4:5, shown on Trivia, Mini Games &amp; Sing-Alongs tabs</span></label>
           <input type="text" id="cat-minigame-url" placeholder="Paste 4:5 portrait image URL…" oninput="handleCatMiniUrl(this.value)">
           <div id="cat-minigame-preview" style="display:none; margin-top:0.6rem; max-width:120px; aspect-ratio:4/5; border-radius:5px; overflow:hidden; border:1px solid var(--border); position:relative; background:var(--surface2);">
@@ -2212,7 +2220,8 @@ function mapLiveCategory(id, c, kind){
     plannerTier: c.plannerTier || null,
     karaokeSongs: Array.isArray(c.karaokeSongs) ? c.karaokeSongs : [],
     bannerData: vm.bannerUrl || c.bgImage || c.squareImage || c.image || null,
-    miniGameImage: vm.miniGameImage || null
+    miniGameImage: (c.images && c.images.p45) || vm.miniGameImage || null,
+    images: c.images || { banner: vm.bannerUrl || c.bgImage || c.image || null, p45: vm.miniGameImage || null, l54: null, square: c.squareImage || null }
   };
 }
 let nights = [];
@@ -2974,6 +2983,7 @@ function openAddCategoryModal() {
   clearCatDimFields();
   document.getElementById('cat-banner-url').value = '';
   document.getElementById('cat-minigame-url').value = '';
+  document.getElementById('cat-l54-url').value = ''; document.getElementById('cat-square-url').value = '';
   setCatMiniPreview(null);
   setCatBannerPreview(null);
   document.getElementById('cat-modal-delete-btn').style.display = 'none';
@@ -3021,6 +3031,7 @@ function editCategory(idx) {
   document.getElementById('cat-alsosee-trivia').checked     = ase.includes('trivia');
   document.getElementById('cat-alsosee-booktrivia').checked = ase.includes('booktrivia');
   document.getElementById('cat-alsosee-bingo').checked      = ase.includes('bingo');
+  { const im = c.images || {}; document.getElementById('cat-l54-url').value = im.l54 || c.l54Image || ''; document.getElementById('cat-square-url').value = im.square || c.squareImage || ''; }
   document.getElementById('cat-minigame-url').value = c.miniGameImage || '';
   setCatMiniPreview(c.miniGameImage || null);
   setCatBannerPreview(c.bannerData || null);
@@ -3158,6 +3169,8 @@ async function saveCategoryFromModal() {
     published: ['karaoke','trivia','mini','battles','singa','waytoplay','quickies'].some(k => document.getElementById('cat-pub-' + k).checked),
     alsoSee: ['karaoke','trivia','booktrivia','bingo'].filter(k => document.getElementById('cat-alsosee-' + k).checked),
     miniGameImage: document.getElementById('cat-minigame-url').value.trim() || null,
+    l54Image: document.getElementById('cat-l54-url').value.trim() || null,
+    squareImage: document.getElementById('cat-square-url').value.trim() || null,
     miniSection: document.getElementById('cat-mini-section').value || null,
     addonPrice: document.getElementById('cat-addon-price').value.trim() ? parseFloat(document.getElementById('cat-addon-price').value) : null,
     bannerData: catBannerData || null,
@@ -3172,6 +3185,7 @@ async function saveCategoryFromModal() {
   if (bannerUrl) cat.image = bannerUrl; else if (existing.image && existing.image === existing.bannerData) cat.image = '';
   else if (existing.image) cat.image = existing.image;
 
+  cat.images = { banner: bannerUrl || null, p45: cat.miniGameImage || null, l54: cat.l54Image || null, square: cat.squareImage || null };
   try {
     await saveCat(cat);
     await pushBannersToLiveApps(cat, existing, bannerUrl);
@@ -3192,10 +3206,13 @@ async function pushBannersToLiveApps(cat, existing, bannerUrl) {
     const miniUrl = (typeof cat.miniGameImage === 'string' && /^https?:/i.test(cat.miniGameImage)) ? cat.miniGameImage : '';
     const hadBanner = !!(existing && (existing.bannerData || existing.image));
     const hadMini = !!(existing && existing.miniGameImage);
-    if (!bannerUrl && !miniUrl && !hadBanner && !hadMini) return;
+    const imgs = cat.images || {}; const anyImg = Object.values(imgs).some(Boolean) || (existing && existing.images && Object.values(existing.images).some(Boolean));
+    if (!bannerUrl && !miniUrl && !hadBanner && !hadMini && !anyImg) return;
     const key = normCatName(cat.name);
     const ups = {};
     const apply = (base, id) => {
+      ups[`${base}/${id}/images`] = { banner: imgs.banner || null, p45: imgs.p45 || null, l54: imgs.l54 || null, square: imgs.square || null };
+      ups[`${base}/${id}/squareImage`] = imgs.square || null;
       if (bannerUrl || hadBanner) {
         ups[`${base}/${id}/venueMenu/bannerUrl`] = bannerUrl || null;
         if (base.startsWith('trivia')) ups[`${base}/${id}/bgImage`] = bannerUrl || null;
