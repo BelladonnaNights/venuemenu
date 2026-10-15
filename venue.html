@@ -3011,7 +3011,8 @@ async function saveCategoryQueue() {
       engaged: !!categoryQueueDoc.engaged
     });
   } catch (e) { console.error('Could not save category queue:', e); }
-  qSyncPlanner().catch(e => console.error('Planner sync failed:', e));
+  window.__plannerWriteBlocked = false;
+  qSyncPlanner().then(() => { if (window.__plannerWriteBlocked) qToast('Your queue is saved, but it could not update our schedule yet — please tell us.'); }).catch(e => console.error('Planner sync failed:', e));
 }
 
 function isInCategoryQueue(id) {
@@ -3366,7 +3367,7 @@ async function qSyncPlanner() {
   }
 }
 async function updateRtdb(path, obj) {
-  try { await rtdbUpdate(ref(rtdb, path), obj); } catch (e) { console.warn('Planner write blocked:', path, e && e.message); }
+  try { await rtdbUpdate(ref(rtdb, path), obj); } catch (e) { console.warn('Planner write blocked:', path, e && e.message); window.__plannerWriteBlocked = true; }
 }
 
 
@@ -4215,7 +4216,8 @@ async function loadQueueView() {
   renderQueuePending();
 
   await loadCategoryQueue();
-  qReconcileFromPlanner();
+  // Once the venue has arranged their queue, the queue is the source of truth — never rebuild it from the Planner.
+  if (!categoryQueueDoc.engaged) qReconcileFromPlanner();
   renderCategoryQueueSection();
 }
 
