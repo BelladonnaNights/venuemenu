@@ -2170,6 +2170,7 @@ function mapLiveCategory(id, c, kind) {
     published: true,
     publishedTabs: [],
     shows: Array.isArray(vm.shows) ? vm.shows : [],
+    _alts: (regImgAlts([(c.images && c.images.banner), (c.images && c.images.l54), vm.bannerUrl, c.bgImage, c.image, c.squareImage, (c.images && c.images.square), (c.images && c.images.p45), vm.miniGameImage]), 0),
     bannerData: (c.images && c.images.banner) || vm.bannerUrl || c.bgImage || c.squareImage || c.image || null,
     miniGameImage: (c.images && c.images.p45) || vm.miniGameImage || null,
     images: c.images || { banner: vm.bannerUrl || c.bgImage || c.image || null, p45: vm.miniGameImage || null, l54: null, square: c.squareImage || null },
@@ -2332,6 +2333,19 @@ function closeNavMenu(){
   if(nav) nav.classList.remove('open'); if(b) b.setAttribute('aria-expanded','false');
 }
 document.addEventListener('click', e=>{ if(!e.target.closest('.nav-menu-wrap')) closeNavMenu(); });
+// If a category's banner link is dead, try its other saved image links before giving up (any <img> on the page).
+const __imgAlts = new Map();
+function regImgAlts(urls) {
+  const u = [...new Set((urls || []).filter(x => typeof x === 'string' && /^https?:/i.test(x)))];
+  if (u.length > 1) u.forEach(x => { if (!__imgAlts.has(x)) __imgAlts.set(x, u); });
+}
+document.addEventListener('error', e => {
+  const t = e.target; if (!t || t.tagName !== 'IMG') return;
+  const src = t.getAttribute('src'), list = __imgAlts.get(src); if (!list) return;
+  const tried = (t.dataset.tried || '').split('|').filter(Boolean); tried.push(src);
+  const next = list.find(x => !tried.includes(x)); if (!next) return;
+  t.dataset.tried = tried.join('|'); t.style.opacity = ''; t.src = next;
+}, true);
 // Picks the right image shape for a card, falling back through the other shapes when a category lacks that one.
 function catImg(c, shape) {
   const im = c.images || {};
