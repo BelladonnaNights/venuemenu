@@ -3221,6 +3221,26 @@ function qFixedHtml(r) {
 function qOtherFixedBeyond(endKey) {
   return (queueUpcomingItems || []).filter(it => it.date > endKey && !['trivia', 'bingo'].includes((it.kind || '').toLowerCase()));
 }
+// Diagnostics panel — open the venue page with ?sync at the end of the address to see it.
+function qSyncDiag() {
+  const d = categoryQueueDoc || {}, row = (k, v) => '<div><b>' + k + ':</b> ' + esc(String(v)) + '</div>';
+  const tri = (queueUpcomingItems || []).filter(i => i.kind === 'Trivia');
+  return '<div class="q-sub" style="margin-top:1.4rem">Sync check</div><div id="q-diag" style="font-size:.8rem;line-height:1.6;border:1px dashed var(--border2);border-radius:8px;padding:.7rem;">'
+    + row('Venue record name', currentVenueRecord && currentVenueRecord.name) + row('Venue ID', currentProfile && currentProfile.venueId)
+    + row('Matched Planner trivia venue', queueTargets.trivia ? queueTargets.trivia.pid : 'NOT MATCHED') + row('Matched Bingo venue', queueTargets.bingo ? queueTargets.bingo.bid : 'not matched')
+    + row('Trivia dates found in Planner', tri.length) + row('Queue touched (engaged)', !!d.engaged)
+    + row('Last push to server', d.plannerSyncAt ? new Date(d.plannerSyncAt).toLocaleString() : 'never') + row('Server confirmed', d.plannerSyncAck ? new Date(d.plannerSyncAck).toLocaleString() : 'NO — function not running / not deployed')
+    + '<div style="margin-top:.5rem;display:flex;gap:.5rem;flex-wrap:wrap"><button class="q-mini" onclick="qDiagTest()">Test Planner write</button><button class="q-mini" onclick="qDiagPush()">Push queue now</button></div><div id="q-diag-out" style="margin-top:.5rem;color:var(--gold)"></div></div>';
+}
+async function qDiagTest() {
+  const o = document.getElementById('q-diag-out'); if (!queueTargets.trivia) { o.textContent = 'No Planner venue matched — nothing to write to.'; return; }
+  try { await rtdbUpdate(ref(rtdb, 'trivia/planner/gigs/' + queueTargets.trivia.pid + '/__synctest'), { t: Date.now() }); await rtdbUpdate(ref(rtdb, 'trivia/planner/gigs/' + queueTargets.trivia.pid), { __synctest: null }); o.textContent = 'Direct write to the Planner WORKED from this login.'; }
+  catch (e) { o.textContent = 'Direct write BLOCKED: ' + (e && e.message) + ' (the Cloud Function has to do the writing).'; }
+}
+async function qDiagPush() {
+  const o = document.getElementById('q-diag-out'); o.textContent = 'Pushing…'; window.__plannerWriteBlocked = false;
+  try { await qSyncPlanner(); o.textContent = 'Pushed.' + (window.__plannerWriteBlocked ? ' Direct write was blocked; waiting on the Cloud Function — reload in a few seconds to see "Server confirmed".' : ' Direct write worked.'); } catch (e) { o.textContent = 'Failed: ' + (e && e.message); }
+}
 function renderCategoryQueueSection() {
   const el = document.getElementById('queue-category-list');
   if (!el || !categoryQueueDoc) return;
@@ -3244,6 +3264,7 @@ function renderCategoryQueueSection() {
     html += '<div class="q-first4"><div class="q-sub">Next 4</div>' + inWin.slice(0, 4).map(h).join('') + '</div>';
     if (inWin.length > 4) html += '<div class="q-rest"><div class="q-sub">Following weeks</div>' + inWin.slice(4).map(h).join('') + '</div>';
   });
+  if (/[?&]sync/.test(location.search)) html += qSyncDiag();
   const others = qOtherFixedBeyond(endKey);
   if (beyond.length || others.length) {
     const all = beyond.map(r => ({ date: r.date, html: r.kind === 'q' ? qRowHtml(r) : qFixedHtml(r) }))
@@ -4016,7 +4037,7 @@ Object.assign(window, {
   openSeasonalPopup, closeSeasonalPopup, closeSeasonalPopupDirect, addSeasonalToCart,
   toggleSidebarFilter, toggleAccordion, clearAllFilters, removeFilter,
   openNightDetail, closeDetail, handleOverlayClick, nightAddToCart, openCategoryDetail, categoryAddToCart, toggleKaraokeSongs,
-  addCategoryToQueue, qSetType, brEvent, cartField, brWish, brRequest, brScroll, qOpenDatePick, qDatePicked, removeCategoryQueueItem, qStartDrag, qUndo, qEditNote, qSaveNote, qOpenAdd, qRenderPick, qPickAdd, qSurprise, qOpenCalendar, qModalClose,
+  addCategoryToQueue, qDiagTest, qDiagPush, qSetType, brEvent, cartField, brWish, brRequest, brScroll, qOpenDatePick, qDatePicked, removeCategoryQueueItem, qStartDrag, qUndo, qEditNote, qSaveNote, qOpenAdd, qRenderPick, qPickAdd, qSurprise, qOpenCalendar, qModalClose,
   renderThemedNights, renderTrivia, renderBingo, renderSingAlongs, renderMiniGames, renderBattles,
   renderWayToPlay, renderQuickies, renderAlsoSee, loadBattlesPageContent
 });
