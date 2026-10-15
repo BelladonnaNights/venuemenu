@@ -3009,7 +3009,7 @@ async function saveCategoryQueue() {
       lastLockedWeekOf: categoryQueueDoc.lastLockedWeekOf || null,
       history: categoryQueueDoc.history || [],
       engaged: !!categoryQueueDoc.engaged
-    });
+    }, { merge: true });
   } catch (e) { console.error('Could not save category queue:', e); }
   window.__plannerWriteBlocked = false;
   qSyncPlanner().then(() => { if (window.__plannerWriteBlocked) qToast('Your queue is saved, but it could not update our schedule yet — please tell us.'); }).catch(e => console.error('Planner sync failed:', e));
@@ -3075,6 +3075,33 @@ function qReconcileFromPlanner() {
     const rest = cur.slice(planned.length).filter(x => !x.empty && !planned.some(p => !p.empty && p.categoryName.toLowerCase() === (x.categoryName || '').toLowerCase()));
     categoryQueueDoc.queue = q.filter(x => (x.type || 'Other') !== g).concat(planned, rest);
   });
+}
+
+// Planner -> queue: if the Planner changed a date after our last push (the server records what it last wrote in
+// `lastSynced`), take the Planner's version into the matching slot. Only runs once the server has confirmed our last push.
+async function qPullFromPlanner() {
+  const d = categoryQueueDoc;
+  if (!d || !d.engaged || !queueTargets.trivia || !d.plannerSyncAt || (d.plannerSyncAck || 0) < d.plannerSyncAt) return false;
+  const L = d.lastSynced || {}, todayKey = qDateToKey(new Date()), endKey = qWindowEnd(), floor = qFloorDate();
+  const its = (queueUpcomingItems || []).filter(it => it.kind === 'Trivia' && !qBlockReason(it) && it.date >= todayKey && it.date <= endKey && (floor === todayKey || it.date > floor));
+  const slots = qSlotsFor('Trivia', 16);
+  let changed = false;
+  its.forEach(it => {
+    const P = (it.themeName || '').trim(), prev = (L[it.date] || '').trim();
+    if (P === prev) return;
+    const pos = slots.indexOf(it.date); if (pos < 0) return;
+    const q = d.queue, idxs = q.map((x, i) => ((x.type || 'Other') === 'Trivia' ? i : -1)).filter(i => i >= 0);
+    const c = P ? publishedCategories.find(x => (x.type || '').split(',')[0].trim() === 'Trivia' && (x.name || '').trim().toLowerCase() === P.toLowerCase()) : null;
+    const entry = P ? (c ? { categoryId: c._id, categoryName: c.name, type: 'Trivia' } : { categoryId: null, categoryName: P, type: 'Trivia' }) : { empty: true, type: 'Trivia' };
+    const cur = pos < idxs.length ? q[idxs[pos]] : null;
+    if (cur && !cur.empty && (cur.categoryName || '').trim().toLowerCase() === P.toLowerCase()) return;
+    if (cur && cur.note && !entry.empty) entry.note = cur.note;
+    if (pos < idxs.length) q[idxs[pos]] = entry;
+    else { if (entry.empty) return; while (idxs.length < pos) { q.push({ empty: true, type: 'Trivia' }); idxs.push(q.length - 1); } q.push(entry); }
+    changed = true;
+  });
+  if (changed) { await saveCategoryQueue(); }
+  return changed;
 }
 
 // ── schedule model ──
@@ -4229,6 +4256,7 @@ async function loadQueueView() {
   await loadCategoryQueue();
   // Once the venue has arranged their queue, the queue is the source of truth — never rebuild it from the Planner.
   if (!categoryQueueDoc.engaged) qReconcileFromPlanner();
+  else { try { await qPullFromPlanner(); } catch (e) { console.warn('Planner pull failed:', e && e.message); } }
   renderCategoryQueueSection();
 }
 
