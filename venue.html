@@ -2165,7 +2165,9 @@ function mapLiveCategory(id, c, kind) {
     _id: (kind==='bingo'?'bingo:':'trivia:') + id,
     name: c.name || c.title || '(untitled)',
     altName: c.altName || '',   // the planner's Secondary Name — searchable here, never shown
-    type: kind === 'bingo' ? 'Bingo' : 'Trivia',
+    type: kind === 'bingo' ? 'Bingo' : (c.plannerTier === 'karaoke' ? 'Karaoke List' : 'Trivia'),
+    plannerTier: c.plannerTier || null,
+    karaokeSongs: Array.isArray(c.karaokeSongs) ? c.karaokeSongs : [],
     theme: vm.description || '',
     published: true,
     publishedTabs: [],
@@ -2529,6 +2531,14 @@ function nightVisibleNow(n) {
   return !!n.published;
 }
 // Empty state that tells the truth: "No matches" while searching, the normal "none published" message otherwise.
+
+// Safety net for every search box: if a browser clears/changes it without firing "input" (e.g. the little ✕ in Safari), run its handler anyway.
+['input','search','keyup','change'].forEach(ev => document.addEventListener(ev, e => {
+  const t = e.target; if (!t || t.tagName !== 'INPUT' || t.type !== 'search') return;
+  if (t.dataset.lastQ === t.value) return; t.dataset.lastQ = t.value;
+  if (ev === 'input') return;   // the inline oninput handler already runs for this one
+  const h = t.getAttribute('oninput'); if (h) { try { new Function(h).call(t); } catch (_) {} }
+}, true));
 function showEmpty(empty, q) {
   if (!empty) return;
   const h = empty.querySelector('h2');
@@ -2733,19 +2743,19 @@ function catTypeIcon(type) {
 // so a night with several same-type categories linked (e.g. "on-screen
 // trivia" + "blockbuster trivia") reads as OR options within one round,
 // rather than an undifferentiated pile of chips.
-const NIGHT_ROUND_ORDER = ['Trivia','Bingo','Karaoke','Sing-Along','Mini Games','Other'];
+const NIGHT_ROUND_ORDER = ['Trivia','Bingo','Karaoke List','Sing-Along','Mini Games','Other'];
 function nightRoundLabel(c) {
   if (isTrivia(c)) return 'Trivia';
   if (isBingo(c)) return 'Bingo';
-  if (isKaraoke(c)) return 'Karaoke';
+  if (isKaraoke(c)) return 'Karaoke List';
   if (isSingAlong(c)) return 'Sing-Along';
   if (isMiniGame(c)) return 'Mini Games';
   return 'Other';
 }
 function detailOptionCardHTML(c, roundLabel) {
-  const hasSongList = roundLabel === 'Karaoke' && Array.isArray(c.karaokeSongs) && c.karaokeSongs.length > 0;
+  const hasSongList = roundLabel === 'Karaoke List' && Array.isArray(c.karaokeSongs) && c.karaokeSongs.length > 0;
   const subBits = [];
-  if (roundLabel === 'Karaoke') {
+  if (roundLabel === 'Karaoke List') {
     subBits.push(hasSongList ? `Themed set — ${c.karaokeSongs.length} songs, then regular karaoke continues` : 'Regular karaoke');
   } else if (c.theme) {
     subBits.push(c.theme);
@@ -3530,6 +3540,7 @@ async function renderBrowse() {
   const rows = [
     ['Trivia', publishedCategories.filter(isTrivia).map(brCatCard)],
     ['Bingo', publishedCategories.filter(isBingo).map(brCatCard)],
+    ['Karaoke Lists', publishedCategories.filter(isKaraoke).map(brCatCard)],
     ['Mini Games', publishedCategories.filter(isMiniGame).map(brCatCard)],
     ['Themed Nights', publishedNights.filter(nightVisibleNow).map(brNightCard)],
     ['Sing-Alongs', publishedCategories.filter(isSingAlong).map(brCatCard)],
