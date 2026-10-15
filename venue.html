@@ -3012,7 +3012,15 @@ async function saveCategoryQueue() {
     }, { merge: true });
   } catch (e) { console.error('Could not save category queue:', e); }
   window.__plannerWriteBlocked = false;
-  qSyncPlanner().then(() => { if (window.__plannerWriteBlocked) qToast('Your queue is saved, but it could not update our schedule yet — please tell us.'); }).catch(e => console.error('Planner sync failed:', e));
+  // The server (Cloud Function) does the real Planner write; only warn if it hasn't confirmed after a while.
+  qSyncPlanner().then(() => {
+    setTimeout(async () => {
+      try {
+        const snap = await getDoc(doc(db, 'venueCategoryQueues', currentProfile.venueId)); const x = snap.exists() ? snap.data() : {};
+        if (x.plannerSyncAt && (x.plannerSyncAck || 0) < x.plannerSyncAt) qToast('Your queue is saved, but our schedule has not confirmed the update yet — please tell us if it still hasn\'t shown up soon.');
+      } catch (e) {}
+    }, 30000);
+  }).catch(e => console.error('Planner sync failed:', e));
 }
 
 function isInCategoryQueue(id) {
