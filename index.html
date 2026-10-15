@@ -2203,6 +2203,19 @@ function isSupersededOldCategory(c) {
   if (c._plannerMirror) return true;
   return liveCategoryNameSet.has(normCatName(c.name));
 }
+// If a category's banner link is dead, try its other saved image links before giving up (any <img> on the page).
+const __imgAlts = new Map();
+function regImgAlts(urls) {
+  const u = [...new Set((urls || []).filter(x => typeof x === 'string' && /^https?:/i.test(x)))];
+  if (u.length > 1) u.forEach(x => { if (!__imgAlts.has(x)) __imgAlts.set(x, u); });
+}
+document.addEventListener('error', e => {
+  const t = e.target; if (!t || t.tagName !== 'IMG') return;
+  const src = t.getAttribute('src'), list = __imgAlts.get(src); if (!list) return;
+  const tried = (t.dataset.tried || '').split('|').filter(Boolean); tried.push(src);
+  const next = list.find(x => !tried.includes(x)); if (!next) return;
+  t.dataset.tried = tried.join('|'); t.style.opacity = ''; t.src = next;
+}, true);
 function mapLiveCategory(id, c, kind){
   const vm = c.venueMenu || {};
   return {
@@ -2219,6 +2232,7 @@ function mapLiveCategory(id, c, kind){
     shows: Array.isArray(vm.shows) ? vm.shows : [],
     plannerTier: c.plannerTier || null,
     karaokeSongs: Array.isArray(c.karaokeSongs) ? c.karaokeSongs : [],
+    _alts: (regImgAlts([(c.images && c.images.banner), (c.images && c.images.l54), vm.bannerUrl, c.bgImage, c.image, c.squareImage, (c.images && c.images.square), (c.images && c.images.p45), vm.miniGameImage]), 0),
     bannerData: vm.bannerUrl || c.bgImage || c.squareImage || c.image || null,
     miniGameImage: (c.images && c.images.p45) || vm.miniGameImage || null,
     images: c.images || { banner: vm.bannerUrl || c.bgImage || c.image || null, p45: vm.miniGameImage || null, l54: null, square: c.squareImage || null }
