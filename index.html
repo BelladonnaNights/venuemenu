@@ -1525,7 +1525,7 @@
           </div>
           <div class="form-group">
             <label class="form-label">Type</label>
-            <input type="text" id="cat-type" placeholder="e.g. Trivia, Sing-Along, Book Trivia…" list="type-datalist" oninput="updateCatKaraokeVisibility()">
+            <input type="text" id="cat-type" placeholder="e.g. Trivia, Karaoke List, Sing-Along, Book Trivia…" list="type-datalist" oninput="updateCatKaraokeVisibility()">
             <datalist id="type-datalist"></datalist>
           </div>
         </div>
@@ -1690,7 +1690,14 @@
 
       <label class="form-label">Shows / Lineup (one per line)</label>
       <textarea class="field-input" id="live-vm-shows" rows="3" style="resize:vertical;line-height:1.5;font-family:var(--font);margin-bottom:0.3rem;"></textarea>
-      <div style="font-size:0.7rem;color:var(--text-dim);margin-bottom:0.3rem;">Banner image, name, and type are edited in <span id="live-vm-owner-label">Trivia Admin</span>.</div>
+      <div style="font-size:0.7rem;color:var(--text-dim);margin-bottom:0.9rem;">Name and type are edited in <span id="live-vm-owner-label">Trivia Admin</span>.</div>
+
+      <div class="form-label" style="margin-bottom:0.4rem;">Image links <span style="color:var(--text-dim);font-size:0.72rem;font-style:italic;font-family:'Crimson Text',serif;text-transform:none;letter-spacing:0;">— all four sizes save under this category's ID, and every app uses them</span></div>
+      <input type="text" class="field-input" id="live-img-banner" placeholder="Banner (wide) image URL" style="margin-bottom:6px" oninput="liveImgPreview()">
+      <input type="text" class="field-input" id="live-img-l54" placeholder="5:4 image URL" style="margin-bottom:6px" oninput="liveImgPreview()">
+      <input type="text" class="field-input" id="live-img-p45" placeholder="4:5 portrait image URL" style="margin-bottom:6px" oninput="liveImgPreview()">
+      <input type="text" class="field-input" id="live-img-square" placeholder="Square (1:1) image URL" style="margin-bottom:8px" oninput="liveImgPreview()">
+      <div id="live-img-previews" style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;"></div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeLiveCategoryInfo()">Cancel</button>
@@ -2224,7 +2231,7 @@ function mapLiveCategory(id, c, kind){
     _rawType: c.type || null, // the actual Trivia Admin type field ('music'|'trivia'|…), for the subtype label — `type` below is just the generic Trivia/Bingo pill
     name: c.name || c.title || '(untitled)',
     altName: c.altName || '',   // the planner's Secondary Name — searchable, never shown
-    type: kind === 'bingo' ? 'Bingo' : 'Trivia',
+    type: kind === 'bingo' ? 'Bingo' : (c.plannerTier === 'karaoke' ? 'Karaoke List' : 'Trivia'),
     theme: '',
     tags: '',
     description: vm.description || '',
@@ -2781,6 +2788,7 @@ function renderLibrary() {
   // The Library is the complete set: Firestore categories (minus superseded
   // docs) + every live Trivia and Bingo record, each once, by its own id.
   // Same suppression + same sources as the Planner's Theme Library.
+  const libQ = ((document.getElementById('search-input') || {}).value || '').toLowerCase().trim();
   let filtered = categories.filter(c => {
     if (isSupersededOldCategory(c)) return false;
     if (activeLibTypeFilters.size > 0) {
@@ -2788,12 +2796,19 @@ function renderLibrary() {
       if (!catTypes.some(t => activeLibTypeFilters.has(t))) return false;
     }
     if (!catMatchesSidebarFilters(c)) return false;
+    if (libQ && !(
+      (c.shows || []).some(x => String(x).toLowerCase().includes(libQ)) ||
+      (c.name || '').toLowerCase().includes(libQ) ||
+      (c.theme && c.theme.toLowerCase().includes(libQ)) ||
+      (c.type && c.type.toLowerCase().includes(libQ)) ||
+      (c.tags && String(c.tags).toLowerCase().includes(libQ)))) return false;
     return true;
   });
   // Live cats carry no sidebar-filter dimensions, so they hide while one is active.
   const liveAll = [...liveTriviaCats, ...liveBingoCats];
   const liveFiltered = hasSidebarFilters() ? [] : liveAll.filter(c =>
-    activeLibTypeFilters.size === 0 || activeLibTypeFilters.has(c.type));
+    (activeLibTypeFilters.size === 0 || activeLibTypeFilters.has(c.type)) &&
+    (!libQ || c.name.toLowerCase().includes(libQ) || (c.altName||'').toLowerCase().includes(libQ) || (c.shows||[]).some(x => String(x).toLowerCase().includes(libQ))));
 
   const items = filtered.map(c => ({ html: () => categoryCardHTML(c, categories.indexOf(c), ''), name: c.name || '' }))
     .concat(liveFiltered.map(c => ({ html: () => liveCategoryCardHTML(c), name: c.name || '' })));
@@ -2802,6 +2817,8 @@ function renderLibrary() {
 
   const nonSupersededTotal = categories.filter(c => !isSupersededOldCategory(c)).length + liveAll.length;
   document.getElementById('lib-results-meta').textContent = items.length + ' of ' + nonSupersededTotal + ' categories';
+  { const sr = document.getElementById('search-results'), sm = document.getElementById('search-results-meta'), lm = document.getElementById('lib-results-meta'), cg = document.getElementById('category-grid');
+    if (sr) { sr.style.display = 'none'; sr.innerHTML = ''; } if (sm) sm.style.display = 'none'; if (lm) lm.style.display = ''; if (cg) cg.style.display = ''; }
   document.getElementById('lib-empty').style.display = nonSupersededTotal === 0 ? 'block' : 'none';
   document.getElementById('category-grid').innerHTML = items.map(i => i.html()).join('');
 }
@@ -2903,7 +2920,20 @@ function openLiveCategoryInfo(kind, liveId) {
   document.getElementById('live-vm-show').checked = !!cat.venueMenuShow;
   document.getElementById('live-vm-description').value = cat.description || '';
   document.getElementById('live-vm-shows').value = (cat.shows || []).join('\n');
+  { const im = cat.images || {};
+    document.getElementById('live-img-banner').value = im.banner || cat.bannerData || '';
+    document.getElementById('live-img-l54').value = im.l54 || '';
+    document.getElementById('live-img-p45').value = im.p45 || cat.miniGameImage || '';
+    document.getElementById('live-img-square').value = im.square || '';
+    liveImgPreview(); }
   document.getElementById('live-cat-info-modal').classList.add('open');
+}
+function liveImgPreview() {
+  const defs = [['live-img-banner', 'Banner', '120px', '38px'], ['live-img-l54', '5:4', '60px', '48px'], ['live-img-p45', '4:5', '48px', '60px'], ['live-img-square', '1:1', '54px', '54px']];
+  document.getElementById('live-img-previews').innerHTML = defs.map(([id, lab, w, h]) => {
+    const u = (document.getElementById(id).value || '').trim();
+    return '<div style="text-align:center;font-size:0.62rem;color:var(--text-dim);">' + (/^https?:/i.test(u) ? '<img src="' + esc(u) + '" style="width:' + w + ';height:' + h + ';object-fit:cover;border-radius:4px;border:1px solid var(--border);display:block;margin-bottom:2px;" onerror="this.style.opacity=.15">' : '<div style="width:' + w + ';height:' + h + ';border:1px dashed var(--border);border-radius:4px;margin-bottom:2px;"></div>') + lab + '</div>';
+  }).join('');
 }
 function closeLiveCategoryInfo() {
   document.getElementById('live-cat-info-modal').classList.remove('open');
@@ -2920,6 +2950,18 @@ async function saveLiveCategoryEdit() {
     [`${path}/description`]: document.getElementById('live-vm-description').value.trim(),
     [`${path}/shows`]: document.getElementById('live-vm-shows').value.split('\n').map(s=>s.trim()).filter(Boolean)
   };
+  // The four image sizes live under the category's own ID; the older single-image fields are kept identical so every app agrees.
+  { const g = id => (document.getElementById(id).value || '').trim();
+    const imgs = { banner: g('live-img-banner') || null, p45: g('live-img-p45') || null, l54: g('live-img-l54') || null, square: g('live-img-square') || null };
+    if (Object.values(imgs).some(u => u && !/^https?:\/\//i.test(u))) { toast('Image links must start with https://', 'error'); return; }
+    const base = path.replace(/\/venueMenu$/, '');
+    updates[`${base}/images`] = imgs;
+    updates[`${base}/squareImage`] = imgs.square;
+    updates[`${path}/bannerUrl`] = imgs.banner;
+    updates[`${path}/miniGameImage`] = imgs.p45;
+    if (liveCatInfoKind === 'bingo') updates[`${base}/image`] = imgs.banner || '';
+    else updates[`${base}/bgImage`] = imgs.banner;
+  }
   try {
     await update(ref(rtdb), updates);
     toast('Saved.', 'success');
@@ -2934,50 +2976,17 @@ async function saveLiveCategoryEdit() {
 // ═══════════════════════════════════════════════
 // SEARCH
 // ═══════════════════════════════════════════════
-function runSearch() {
-  const q = document.getElementById('search-input').value.trim();
-  const searchResults = document.getElementById('search-results');
-  const searchMeta = document.getElementById('search-results-meta');
-  const categoryGrid = document.getElementById('category-grid');
-  const libMeta = document.getElementById('lib-results-meta');
+// The Library search no longer has its own results panel: it is just one more filter inside renderLibrary(),
+// so the search box, the type pills, the sidebar filters and every Clear button always agree with each other.
+function runSearch() { renderLibrary(); }
+// Safety net for every search box: if a browser clears/changes it without firing "input" (e.g. the little ✕ in Safari), run its handler anyway.
+['input','search','keyup','change'].forEach(ev => document.addEventListener(ev, e => {
+  const t = e.target; if (!t || t.tagName !== 'INPUT' || t.type !== 'search') return;
+  if (t.dataset.lastQ === t.value) return; t.dataset.lastQ = t.value;
+  if (ev === 'input') return;   // the inline oninput handler already runs for this one
+  const h = t.getAttribute('oninput'); if (h) { try { new Function(h).call(t); } catch (_) {} }
+}, true));
 
-  if (!q) {
-    searchResults.style.display = 'none';
-    searchMeta.style.display = 'none';
-    if (categoryGrid) categoryGrid.style.display = '';
-    if (libMeta) libMeta.style.display = '';
-    return;
-  }
-
-  if (categoryGrid) categoryGrid.style.display = 'none';
-  if (libMeta) libMeta.style.display = 'none';
-
-  const ql = q.toLowerCase();
-  // Search always includes bingo categories
-  const matches = categories.filter(c =>
-    !isSupersededOldCategory(c) && (
-    (c.shows || []).some(s => s.toLowerCase().includes(ql)) ||
-    c.name.toLowerCase().includes(ql) ||
-    (c.theme && c.theme.toLowerCase().includes(ql)) ||
-    (c.type && c.type.toLowerCase().includes(ql)) ||
-    (c.tags && c.tags.toLowerCase().includes(ql)))
-  );
-  const liveMatches = [...liveTriviaCats, ...liveBingoCats].filter(c =>
-    c.name.toLowerCase().includes(ql) || (c.altName||'').toLowerCase().includes(ql) || (c.shows||[]).some(s => s.toLowerCase().includes(ql))
-  );
-
-  const total = matches.length + liveMatches.length;
-  searchMeta.style.display = 'block';
-  searchMeta.textContent = total > 0
-    ? `${total} categor${total === 1 ? 'y' : 'ies'} matching "${q}"`
-    : `No categories found for "${q}"`;
-
-  searchResults.style.display = total > 0 ? 'grid' : 'none';
-  const merged = matches.map(c => ({ name: c.name || '', html: categoryCardHTML(c, categories.indexOf(c), q) }))
-    .concat(liveMatches.map(c => ({ name: c.name || '', html: liveCategoryCardHTML(c) })))
-    .sort((a,b) => a.name.localeCompare(b.name, undefined, {sensitivity:'base'}));
-  searchResults.innerHTML = merged.map(i => i.html).join('');
-}
 
 // ═══════════════════════════════════════════════
 // CATEGORY MODAL
@@ -3526,18 +3535,18 @@ function nightCatGroupLabel(c) {
   // Library) — so plannerTier has to be checked FIRST, before the
   // _liveKind/isTrivia() fallback would otherwise swallow every one of
   // them into "Trivia".
-  if (c.plannerTier === 'karaoke') return 'Karaoke';
+  if (c.plannerTier === 'karaoke') return 'Karaoke List';
   if (c.plannerTier === 'sing-along') return 'Sing-Along';
   if (c.plannerTier === 'mini-games') return 'Mini Games';
   if (c._liveKind === 'bingo' || isBingo(c)) return 'Bingo';
   if (c._liveKind === 'trivia' || isTrivia(c)) return 'Trivia';
-  if (isKaraoke(c)) return 'Karaoke';
+  if (isKaraoke(c)) return 'Karaoke List';
   if (isSingAlong(c)) return 'Sing-Along';
   if (isMiniGame(c)) return 'Mini Games';
   return 'Other';
 }
-const NIGHT_CAT_GROUP_ORDER = ['Trivia', 'Bingo', 'Karaoke', 'Sing-Along', 'Mini Games', 'Other'];
-const NIGHT_CAT_GROUP_ICON = { Trivia: '🧠', Bingo: '🎵', Karaoke: '🎤', 'Sing-Along': '🎶', 'Mini Games': '🎲', Other: '✦' };
+const NIGHT_CAT_GROUP_ORDER = ['Trivia', 'Bingo', 'Karaoke List', 'Sing-Along', 'Mini Games', 'Other'];
+const NIGHT_CAT_GROUP_ICON = { Trivia: '🧠', Bingo: '🎵', 'Karaoke List': '🎤', 'Sing-Along': '🎶', 'Mini Games': '🎲', Other: '✦' };
 
 function nightCatItemHTML(c, selectedIds) {
   const checked = selectedIds.includes(c.name);
@@ -6374,6 +6383,7 @@ window.deletePortalCollaborator = async function(id) {
 };
 
 Object.assign(window, {
+  liveImgPreview,
   toggleNavMenu, closeNavMenu,
   renderMovies, openMovieModal, addMovieLinkRow, closeMovieModal, saveMovie, deleteMovie, openMovieBulk, closeMovieBulk, saveMovieBulk,
   switchView, renderLibrary, runSearch, renderMiniGames, renderWayToPlay,
