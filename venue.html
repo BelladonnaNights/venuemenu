@@ -4256,7 +4256,7 @@ async function loadQueueView() {
   await loadCategoryQueue();
   // Once the venue has arranged their queue, the queue is the source of truth — never rebuild it from the Planner.
   if (!categoryQueueDoc.engaged) qReconcileFromPlanner();
-  else { try { await qPullFromPlanner(); } catch (e) { console.warn('Planner pull failed:', e && e.message); } }
+  else { try { if (!categoryQueueDoc.plannerSyncAt) { await qSyncPlanner(); } else await qPullFromPlanner(); } catch (e) { console.warn('Planner pull failed:', e && e.message); } }
   renderCategoryQueueSection();
 }
 
