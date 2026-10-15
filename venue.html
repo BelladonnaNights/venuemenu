@@ -877,7 +877,7 @@
   .br-scroller { display: flex; gap: 14px; overflow-x: auto; scroll-snap-type: x proximity; padding-bottom: 10px; scrollbar-width: thin; }
   .br-card { flex: 0 0 230px; scroll-snap-align: start; background: var(--surface2); border: 1px solid var(--border2); border-radius: 12px; overflow: hidden; cursor: pointer; display: flex; flex-direction: column; }
   .br-card:hover { border-color: var(--gold); }
-  .br-img { aspect-ratio: 5/4; background: var(--surface3); display: flex; align-items: center; justify-content: center; overflow: hidden; }
+  .br-img { aspect-ratio: 16/10; background: var(--surface3); display: flex; align-items: center; justify-content: center; overflow: hidden; }
   .br-img img { width: 100%; height: 100%; object-fit: cover; }
   .br-noimg { padding: 10px; text-align: center; font-family: var(--display); font-size: 1.3rem; color: var(--gold-light); }
   .br-name { font-family: var(--display); font-size: 1.35rem; letter-spacing: .03em; color: #fff; padding: 10px 12px 4px; line-height: 1.1; }
@@ -2559,7 +2559,7 @@ function renderCategoryGrid(gridId, emptyId, filterFn, starKind, clickable) {
   if (!filtered.length) { showEmpty(empty, q); grid.innerHTML=''; return; }
   empty.style.display='none';
   grid.innerHTML = filtered.map(c => {
-    const ratio = gridId === 'trivia-grid' ? '5/4' : '4/5';   // Trivia + Book Trivia match the Browse page's 5:4 images
+    const ratio = gridId === 'trivia-grid' ? '16/10' : '4/5';   // Trivia + Book Trivia match the Browse page's 16:10 images
     const img = catImg(c, gridId === 'trivia-grid' ? 'l54' : 'p45');
     const imgEl = img ? '<img class="night-card-img" src="' + img + '" alt="' + esc(c.name) + '" loading="lazy" style="aspect-ratio:' + ratio + ';">' : '<div class="night-card-img" style="aspect-ratio:' + ratio + ';display:flex;align-items:center;justify-content:center;background:var(--surface2);color:var(--text-dim);font-size:2rem;">\uD83C\uDFB5</div>';
     const star = starKind ? starBtnHtml(starKind, c._id) : '';
