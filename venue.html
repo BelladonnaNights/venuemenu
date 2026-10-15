@@ -3331,21 +3331,25 @@ function qOpenCalendar(delta) {
 async function qSyncPlanner() {
   if (!categoryQueueDoc || !queueTargets) return;
   const endKey = qWindowEnd();
+  const plan = { trivia: null, bingo: [] };
   // Trivia -> Planner gigs
   const tt = queueTargets.trivia;
   if (tt) {
     const rows = qGroupRows('Trivia').filter(r => r.kind === 'q' && r.date <= endKey && !r.it.empty);
     const assigned = {}; rows.forEach(r => { assigned[r.date] = r.it; });
     const base = 'trivia/planner/gigs/' + tt.pid + '/';
+    plan.trivia = { pid: tt.pid, set: {}, clear: [] };
     let cats = {}; try { const s = await get(ref(rtdb, 'trivia/categories')); cats = s.exists() ? s.val() : {}; } catch (e) {}
     const idByName = {}; Object.entries(cats).forEach(([id, c]) => { if (c && c.name) idByName[c.name.trim().toLowerCase()] = id; });
     const known = (queueUpcomingItems || []).filter(it => (it.kind || '') === 'Trivia' && it.date <= endKey);
     for (const it of known) {
       const a = assigned[it.date];
       if (a) {
+        plan.trivia.set[it.date] = { themeId: idByName[(a.categoryName || '').trim().toLowerCase()] || null, themeName: a.categoryName, note: a.note || null };
         await updateRtdb(base + it.date, { themeId: idByName[(a.categoryName || '').trim().toLowerCase()] || null, themeName: a.categoryName, status: 'planned', locked: true, fromQueue: true, venueNote: a.note || null });
         it.themeName = a.categoryName; it.fromQueue = true; it.planned = true;
       } else if ((it.fromQueue || (categoryQueueDoc.engaged && it.themeName)) && !queueNoPlay.has(it.date)) {
+        plan.trivia.clear.push(it.date);
         await updateRtdb(base + it.date, { themeId: null, themeName: null, locked: false, fromQueue: null, venueNote: null });
         it.themeName = ''; it.fromQueue = false; it.planned = false;
       }
@@ -3361,10 +3365,17 @@ async function qSyncPlanner() {
       const entry = (queueUpcomingItems || []).find(it => it.kind === 'Bingo' && it.date === r.date && it.entryKey);
       const cid = idByTitle[(r.it.categoryName || '').trim().toLowerCase()];
       if (!entry || !cid) continue;
+      plan.bingo.push({ entryKey: entry.entryKey, categoryId: cid, note: r.it.note || null });
       await updateRtdb('bingo/landing/schedule/' + entry.entryKey, { rounds: [cid], categoryIds: [cid], locked: true, fromQueue: true, venueNote: r.it.note || null });
       entry.fromQueue = true;
     }
   }
+  // Hand the same plan to the server too (Cloud Function syncVenueQueueToPlanner), which writes it with full permissions.
+  try {
+    if (currentProfile && currentProfile.venueId && (plan.trivia || plan.bingo.length)) {
+      await setDoc(doc(db, 'venueCategoryQueues', currentProfile.venueId), { plannerSync: JSON.parse(JSON.stringify(plan)), plannerSyncAt: Date.now() }, { merge: true });
+    }
+  } catch (e) { console.warn('Could not hand plan to server:', e && e.message); }
 }
 async function updateRtdb(path, obj) {
   try { await rtdbUpdate(ref(rtdb, path), obj); } catch (e) { console.warn('Planner write blocked:', path, e && e.message); window.__plannerWriteBlocked = true; }
