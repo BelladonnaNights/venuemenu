@@ -980,6 +980,7 @@
         <button class="nav-tab" id="nav-movies" onclick="navigateTo('movies')">Movies</button>
         <button class="nav-tab venue-only-nav" style="display:none;" id="nav-contract" onclick="navigateTo('contract')">Contract</button>
         <button class="nav-tab venue-only-nav" style="display:none;" id="nav-feedback" onclick="navigateTo('feedback')">Feedback</button>
+        <button class="nav-tab venue-only-nav" style="display:none;" id="nav-campaigns" onclick="navigateTo('campaigns')">Campaigns</button>
         <button class="nav-tab venue-only-nav" style="display:none;" id="nav-concurrent" onclick="navigateTo('concurrent')">Concurrent Event</button>
         <button class="nav-tab venue-only-nav" style="display:none;" id="nav-collaborators" onclick="navigateTo('collaborators')">Collaborators</button>
       </nav>
@@ -1580,6 +1581,15 @@
   </div>
 
   <!-- ═══ VENUE MODE: CONCURRENT EVENT NOTICE (ported from venue-portal.html) ═══ -->
+  <div class="view" id="view-campaigns">
+    <div class="desc-view">
+      <div class="desc-title">Campaign Nights</div>
+      <div class="desc-body" style="font-size:0.95rem;">Each month has a theme and each week a dress-up theme, with perks for guests who join in. Pick <b>one gig per week</b> to be your campaign night, or skip a week. Everything else on your schedule stays exactly as it is.</div>
+      <div class="vp-msg" id="vp-campaigns-msg"></div>
+      <div id="campaigns-list"><div class="vp-empty">Loading…</div></div>
+    </div>
+  </div>
+
   <div class="view" id="view-concurrent">
     <div class="desc-view">
       <div class="desc-title">Concurrent Event Notice</div>
@@ -2368,7 +2378,7 @@ function navigateTo(view, typeFilter) {
   window.scrollTo(0, 0);
   // Update nav tab active state
   document.querySelectorAll('#main-nav .nav-tab').forEach(t => t.classList.remove('active'));
-  const navMap = { menu:'nav-menu', themed:'nav-themed', singalongs:'nav-singalongs', movies:'nav-movies', queue:'nav-queue', browse:'nav-browse', contract:'nav-contract', feedback:'nav-feedback', concurrent:'nav-concurrent', collaborators:'nav-collaborators' };
+  const navMap = { menu:'nav-menu', themed:'nav-themed', singalongs:'nav-singalongs', movies:'nav-movies', queue:'nav-queue', browse:'nav-browse', contract:'nav-contract', feedback:'nav-feedback', concurrent:'nav-concurrent', campaigns:'nav-campaigns', collaborators:'nav-collaborators' };
   document.querySelectorAll('#top-links .top-link').forEach(b => b.classList.remove('active'));
   const topMap = { menu:'top-menu', queue:'top-queue', browse:'top-browse' };
   if (topMap[view]) document.getElementById(topMap[view])?.classList.add('active');
@@ -2390,6 +2400,7 @@ function navigateTo(view, typeFilter) {
   if (view === 'contract')      loadContractView();
   if (view === 'feedback')      loadFeedbackView();
   if (view === 'concurrent')    loadConcurrentView();
+  if (view === 'campaigns')     loadCampaignsView();
   if (view === 'collaborators') loadCollaboratorsView();
 }
 
@@ -4148,6 +4159,75 @@ window.submitVenueFeedback = async function() {
     vpMsg('vp-feedback-msg', 'Could not send: ' + e.message, 'error');
   }
 };
+
+
+// ── Campaign nights: the themes are made in Clio (Firestore "campaigns"); the venue only picks which ONE gig each week
+//    is its campaign night (Firestore "campaignPicks", one doc per venue per week) and who brings the prizes. ──
+let campMonths = {}, campMyPicks = {};
+function campKey(n) { return String(n||'').toLowerCase().replace(/^the\s+/,'').replace(/[^a-z0-9]/g,''); }
+function campAddDays(k, n) { const d = new Date(k + 'T12:00:00'); d.setDate(d.getDate() + n); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); }
+function campFmtDate(k) { return new Date(k + 'T12:00:00').toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' }); }
+function campFmtTime(t) { t = String(t||'').trim(); if (!t) return ''; const m = /^(\d{1,2}):(\d{2})$/.exec(t); if (!m) return t; const h = +m[1]; return ((h+11)%12+1) + (m[2]==='00'?'':':'+m[2]) + (h>=12?'pm':'am'); }
+async function loadCampaignsView() {
+  const box = document.getElementById('campaigns-list'); if (!box) return;
+  vpMsg('vp-campaigns-msg', '', '');
+  box.innerHTML = '<div class="vp-empty">Loading…</div>';
+  try {
+    await loadVenueUpcoming();
+    const [cs, ps] = await Promise.all([ getDocs(collection(db, 'campaigns')), getDocs(collection(db, 'campaignPicks')) ]);
+    campMonths = {}; cs.docs.forEach(d => campMonths[d.id] = d.data());
+    campMyPicks = {};
+    const mine = campKey(currentVenueRecord && currentVenueRecord.name);
+    ps.docs.forEach(d => { const x = d.data(); if (x && x.venueKey === mine) campMyPicks[x.weekStart] = Object.assign({ id: d.id }, x); });
+  } catch (e) { box.innerHTML = '<div class="vp-empty">Campaigns are not available right now.</div>'; console.warn('campaigns:', e && e.message); return; }
+  renderCampaignsView();
+}
+function renderCampaignsView() {
+  const box = document.getElementById('campaigns-list'); if (!box) return;
+  const today = new Date(); const tk = today.getFullYear() + '-' + String(today.getMonth()+1).padStart(2,'0') + '-' + String(today.getDate()).padStart(2,'0');
+  const weeks = [];
+  Object.entries(campMonths).forEach(([m, doc]) => (doc.weeks || []).forEach((w, i) => { if (w && w.start && w.name && campAddDays(w.start, 6) >= tk) weeks.push({ m, i, w, theme: doc.theme || '' }); }));
+  weeks.sort((a, b) => a.w.start.localeCompare(b.w.start));
+  const shown = weeks.slice(0, 8);
+  if (!shown.length) { box.innerHTML = '<div class="vp-empty">No campaign weeks are published yet. Check back soon.</div>'; return; }
+  let lastM = '', html = '';
+  shown.forEach(x => {
+    if (x.m !== lastM) { lastM = x.m; html += '<div class="vp-card" style="margin-bottom:0.7rem;"><div class="desc-title" style="font-size:1.2rem;">' + esc(new Date(x.m + '-15T12:00:00').toLocaleDateString('en-US', { month:'long', year:'numeric' })) + (x.theme ? ' · ' + esc(x.theme) : '') + '</div></div>'; }
+    const end = campAddDays(x.w.start, 6), pick = campMyPicks[x.w.start];
+    const gigs = (queueUpcomingItems || []).filter(g => g.date >= x.w.start && g.date <= end && !g.cancelled && !queueNoPlay.has(g.date));
+    const opts = gigs.map(g => '<label style="display:flex;gap:8px;align-items:center;margin:4px 0;cursor:pointer;"><input type="radio" name="cp-' + x.w.start + '" value="' + g.date + '"' + (pick && pick.date === g.date ? ' checked' : '') + ' onchange="campChoose(\'' + x.w.start + '\',\'' + x.m + '\',' + x.i + ')"> ' + esc(campFmtDate(g.date)) + ' · ' + esc(g.kind || 'Gig') + (g.time ? ' · ' + esc(campFmtTime(g.time)) : '') + '</label>').join('');
+    html += '<div class="vp-card" style="margin-bottom:0.7rem;"><div style="font-family:Cinzel,serif;font-size:0.7rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);">Week ' + (x.i + 1) + ' · ' + esc(campFmtDate(x.w.start)) + ' – ' + esc(campFmtDate(end)) + '</div>'
+      + '<div style="font-size:1.15rem;margin:4px 0;color:var(--gold-light, var(--gold));">' + esc(x.w.name) + '</div>'
+      + (x.w.desc ? '<div style="font-size:0.88rem;color:var(--text-muted);margin-bottom:6px;">' + esc(x.w.desc) + '</div>' : '')
+      + (x.w.perk ? '<div style="font-size:0.88rem;margin-bottom:6px;">🎁 ' + esc(x.w.perk) + '</div>' : '')
+      + (gigs.length ? '<div style="margin-top:8px;font-size:0.82rem;color:var(--text-muted);">Which gig is your campaign night?</div>' + opts
+        + '<label style="display:flex;gap:8px;align-items:center;margin:4px 0;cursor:pointer;"><input type="radio" name="cp-' + x.w.start + '" value=""' + (!pick ? ' checked' : '') + ' onchange="campChoose(\'' + x.w.start + '\',\'' + x.m + '\',' + x.i + ')"> Skip this week</label>'
+        : '<div style="font-size:0.85rem;color:var(--text-dim);margin-top:6px;">No gigs scheduled at your venue this week.</div>')
+      + (pick ? '<div class="vp-field" style="margin:10px 0 0;"><label>Prizes</label><select onchange="campPrizes(\'' + x.w.start + '\',this.value)"><option value="venue"' + (pick.prizes !== 'belladonna' ? ' selected' : '') + '>We will provide the prizes</option><option value="belladonna"' + (pick.prizes === 'belladonna' ? ' selected' : '') + '>Belladonna gets the prizes for us (+$50)</option></select></div>' : '')
+      + '</div>';
+  });
+  box.innerHTML = html;
+}
+window.campChoose = async function (weekStart, month, idx) {
+  const sel = document.querySelector('input[name="cp-' + weekStart + '"]:checked'); if (!sel) return;
+  const name = currentVenueRecord && currentVenueRecord.name; if (!name) return;
+  const id = campKey(name) + '_' + weekStart, doc_ = campMonths[month] || {}, w = (doc_.weeks || [])[idx] || {};
+  try {
+    if (!sel.value) { await setDoc(doc(db, 'campaignPicks', id), { venueKey: campKey(name), weekStart, removed: true, date: '', updatedAt: Date.now() }); delete campMyPicks[weekStart]; }
+    else {
+      const rec = { venueKey: campKey(name), venueName: name, date: sel.value, weekStart, month, week: idx + 1, weekName: w.name || '', theme: doc_.theme || '', prizes: (campMyPicks[weekStart] || {}).prizes || 'venue', by: 'venue', updatedAt: Date.now() };
+      await setDoc(doc(db, 'campaignPicks', id), rec); campMyPicks[weekStart] = Object.assign({ id }, rec);
+    }
+    vpMsg('vp-campaigns-msg', 'Saved.', 'ok');
+  } catch (e) { vpMsg('vp-campaigns-msg', 'Could not save: ' + e.message, 'error'); }
+  renderCampaignsView();
+};
+window.campPrizes = async function (weekStart, val) {
+  const p = campMyPicks[weekStart]; if (!p) return;
+  try { await updateDoc(doc(db, 'campaignPicks', p.id), { prizes: val, updatedAt: Date.now() }); p.prizes = val; vpMsg('vp-campaigns-msg', 'Saved.', 'ok'); }
+  catch (e) { vpMsg('vp-campaigns-msg', 'Could not save: ' + e.message, 'error'); }
+};
+window.loadCampaignsView = loadCampaignsView;
 
 function loadConcurrentView() {
   vpMsg('vp-concurrent-msg', '', '');
