@@ -1805,10 +1805,18 @@ window.setPreviewMode = function(mode) {
 
 async function resolveVenueRecord(profile){
   try{
+    const vid = (profile.venueId||'').trim().toLowerCase();
+    // The master venues list (RTDB venues/<venueId>) is the one list of who our venues are.
+    if(vid){
+      try{
+        const ms = await get(ref(rtdb, 'venues/' + vid));
+        if(ms.exists() && ms.val() && ms.val().name){ const m = ms.val(); return { name: m.name, venueId: m.id || vid, locationId: m.locationId || null, _master: true }; }
+      }catch(e){}
+    }
+    // Fallback: HQ's older Firestore list (also where the venue's sign-in email lives)
     const snap = await getDoc(doc(db, 'hq_data', 'venues-list'));
     if(!snap.exists()) return null;
     const list = JSON.parse(snap.data().value || '[]');
-    const vid = (profile.venueId||'').trim().toLowerCase();
     if(vid){
       const byId = list.find(v => (v.venueId||'').trim().toLowerCase() === vid);
       if(byId) return byId;
@@ -2667,7 +2675,7 @@ async function loadTriviaLikes() {
     const snap = await get(ref(rtdb, 'trivia/planner/venues'));
     const all = snap.exists() ? (snap.val() || {}) : {};
     const nm = qNormVenueName(currentVenueRecord.name);
-    const hit = Object.entries(all).find(([id, v]) => v && qNormVenueName(v.name) === nm);
+    const hit = Object.entries(all).find(([id, v]) => v && ((currentVenueRecord.venueId && v.venueId === currentVenueRecord.venueId) || qNormVenueName(v.name) === nm));
     if (!hit) return;
     tlVenueId = hit[0]; tlHeartOn = true;
     tlLiked = new Set(hit[1].likedCategoryIds || []);
@@ -4332,7 +4340,7 @@ async function loadVenueUpcoming() {
     const today = new Date(); today.setHours(0,0,0,0);
 
     // Trivia is a recurring weekly slot at this venue — project it 10 weeks out.
-    const triviaMatch = Object.entries(plannerVenues).find(([id,v]) => qNormVenueName(v.name) === vName);
+    const triviaMatch = Object.entries(plannerVenues).find(([id,v]) => (currentVenueRecord.venueId && v.venueId === currentVenueRecord.venueId) || qNormVenueName(v.name) === vName);
     if (triviaMatch) {
       const [pid, pv] = triviaMatch;
       queueTargets.trivia = { pid };
@@ -4353,7 +4361,7 @@ async function loadVenueUpcoming() {
     }
 
     // Bingo gigs are individually dated schedule entries.
-    const bingoMatch = Object.entries(bingoVenues).find(([id,v]) => qNormVenueName(v.name) === vName);
+    const bingoMatch = Object.entries(bingoVenues).find(([id,v]) => (currentVenueRecord.venueId && v.venueId === currentVenueRecord.venueId) || qNormVenueName(v.name) === vName);
     if (bingoMatch) {
       const [bid, bv] = bingoMatch;
       queueTargets.bingo = { bid };
