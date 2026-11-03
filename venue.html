@@ -836,13 +836,15 @@
 
   /* top bar: Main Menu / My Queue / Shop always visible */
   .top-links { display: flex; align-items: center; gap: 4px; }
+  #main-nav .nav-group { font-family: var(--cinzel); font-size: 9px; letter-spacing: .22em; text-transform: uppercase; color: var(--gold); opacity: .75; padding: 12px 14px 4px; }
+  #main-nav .nav-group:not(:first-child) { margin-top: 6px; border-top: 1px solid var(--border2); }
   .top-link { font-family: var(--cinzel); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--text-muted); background: none; border: 1px solid transparent;
     border-radius: 99px; padding: 9px 16px; cursor: pointer; white-space: nowrap; transition: all .2s; }
   .top-link:hover { color: var(--gold-light); border-color: var(--border2); }
   .top-link.active { color: var(--gold); border-color: var(--gold); background: var(--gold-dim); }
   .top-link.cart-btn { position: relative; width: auto; height: auto; display: inline-flex; align-items: center; gap: 6px; }
   .top-link .cart-count { position: static; transform: none; }
-  @media (max-width: 768px) { .top-links { order: 3; width: 100%; justify-content: flex-start; padding: 4px 0 8px; flex-wrap: wrap; } .top-link { padding: 7px 12px; font-size: 10px; } }
+  @media (max-width: 768px) { .top-link { padding: 7px 12px; font-size: 10px; } }
 
   /* My Queue: drag-and-drop list, dates stay put, categories move */
   .q-group-title { font-family: var(--cinzel); font-size: .8rem; letter-spacing: .22em; text-transform: uppercase; color: var(--gold); margin: 1.6rem 0 .6rem; }
@@ -965,21 +967,22 @@
     <span id="gateway-user-label" style="font-size:0.72rem;color:var(--text-dim);white-space:nowrap;"></span>
     <button class="sidebar-toggle-btn" onclick="gatewaySignOut()" style="white-space:nowrap;">Sign Out</button>
     <div class="top-links" id="top-links">
-      <button class="top-link active" id="top-menu" onclick="navigateTo('menu')">Main Menu</button>
-      <button class="top-link venue-only-nav" style="display:none;" id="top-queue" onclick="navigateTo('queue')">My Queue</button>
-      <button class="top-link venue-only-nav" style="display:none;" id="top-browse" onclick="navigateTo('browse')">Browse</button>
-      <button class="top-link cart-btn" id="cart-btn" onclick="openCart()">Cart <span class="cart-count" id="cart-count">0</span></button>
+      <button class="top-link cart-btn" id="cart-btn" onclick="openCart()">Wish List <span class="cart-count" id="cart-count">0</span></button>
     </div>
     <div class="nav-menu-wrap">
       <button class="burger-btn" id="burger-btn" onclick="toggleNavMenu(event)" aria-label="Menu" aria-expanded="false" title="Menu">
         <svg class="burger-ico" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false"><path d="M3 6h18M3 12h18M3 18h18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
       </button>
       <nav class="nav-tabs" id="main-nav">
+        <div class="nav-group">Home</div>
+        <button class="nav-tab active" id="nav-menu" onclick="navigateTo('menu')">Main Menu</button>
+        <div class="nav-group">Plan my nights</div>
         <button class="nav-tab venue-only-nav" style="display:none;" id="nav-queue" onclick="navigateTo('queue')">My Queue</button>
         <button class="nav-tab venue-only-nav" style="display:none;" id="nav-browse" onclick="navigateTo('browse')">Browse</button>
         <button class="nav-tab" id="nav-themed" onclick="navigateTo('themed')">Themed Nights</button>
         <button class="nav-tab" id="nav-singalongs" onclick="navigateTo('singalongs')">Sing-Alongs</button>
         <button class="nav-tab" id="nav-movies" onclick="navigateTo('movies')">Movies</button>
+        <div class="nav-group venue-only-nav" style="display:none;">My account</div>
         <button class="nav-tab venue-only-nav" style="display:none;" id="nav-contract" onclick="navigateTo('contract')">Contract</button>
         <button class="nav-tab venue-only-nav" style="display:none;" id="nav-feedback" onclick="navigateTo('feedback')">Feedback</button>
         <button class="nav-tab venue-only-nav" style="display:none;" id="nav-campaigns" onclick="navigateTo('campaigns')">Campaigns</button>
@@ -1264,7 +1267,7 @@
         <div class="desc-body">
           Music Bingo is Belladonna's signature twist on a classic — instead of numbers, guests race to mark off songs as we play them. It's fast, it's loud, and it keeps the whole room engaged from the first track to the last. We bring themed bingo cards, a full-service host, and a custom playlist built around whatever energy your venue wants to bring. From 90s throwbacks to country nights to holiday specials, every Music Bingo night is built to fill seats and drive sales at the bar.
         </div>
-        <button class="atc-btn" id="atc-bingo" onclick="addToCart('bingo', 'Music Bingo')" style="margin-top:0.75rem;">＋ Add to Cart</button>
+        <button class="atc-btn" id="atc-bingo" onclick="addToCart('bingo', 'Music Bingo')" style="margin-top:0.75rem;">＋ Add to Wish List</button>
       </div>
       <div class="also-see-rail" id="also-see-bingo">
         <div class="also-see-title">Also See</div>
@@ -1420,7 +1423,7 @@
         <div class="desc-body">
           Belladonna's hosted karaoke nights bring high energy, tight production, and a host who knows how to work a room. We handle the equipment, the song library, the hype, and the flow — all you have to do is keep the drinks coming. Whether it's a casual weeknight or a packed Saturday, our karaoke nights are built to drive traffic, extend dwell time, and keep guests coming back.
         </div>
-        <button class="atc-btn" id="atc-karaoke" onclick="addToCart('karaoke', 'Karaoke')" style="margin-top:0.75rem;">＋ Add to Cart</button>
+        <button class="atc-btn" id="atc-karaoke" onclick="addToCart('karaoke', 'Karaoke')" style="margin-top:0.75rem;">＋ Add to Wish List</button>
       </div>
       <div class="also-see-rail" id="also-see-karaoke">
         <div class="also-see-title">Also See</div>
@@ -1440,7 +1443,7 @@
       </div>
       <button class="desc-contact" onclick="window.location.href='mailto:contact@belladonnanights.com'">✦ Get In Touch</button>
     
-      <button class="atc-btn" id="atc-comedy" onclick="addToCart('comedy', 'Comedy Nights')" style="margin-top:0.75rem;">＋ Add to Cart</button></div>
+      <button class="atc-btn" id="atc-comedy" onclick="addToCart('comedy', 'Comedy Nights')" style="margin-top:0.75rem;">＋ Add to Wish List</button></div>
   </div>
 
   <!-- OPEN MICS -->
@@ -1455,7 +1458,7 @@
       </div>
       <button class="desc-contact" onclick="window.location.href='mailto:contact@belladonnanights.com'">✦ Get In Touch</button>
     
-      <button class="atc-btn" id="atc-openmic" onclick="addToCart('openmic', 'Open Mics')" style="margin-top:0.75rem;">＋ Add to Cart</button></div>
+      <button class="atc-btn" id="atc-openmic" onclick="addToCart('openmic', 'Open Mics')" style="margin-top:0.75rem;">＋ Add to Wish List</button></div>
   </div>
 
   <!-- PRIVATE PARTIES -->
@@ -1470,7 +1473,7 @@
       </div>
       <button class="desc-contact" onclick="window.location.href='mailto:contact@belladonnanights.com'">✦ Book a Private Event</button>
     
-      <button class="atc-btn" id="atc-private" onclick="addToCart('private', 'Private Parties')" style="margin-top:0.75rem;">＋ Add to Cart</button></div>
+      <button class="atc-btn" id="atc-private" onclick="addToCart('private', 'Private Parties')" style="margin-top:0.75rem;">＋ Add to Wish List</button></div>
   </div>
 
   <!-- HOLIDAY PARTIES -->
@@ -1485,7 +1488,7 @@
       </div>
       <button class="desc-contact" onclick="window.location.href='mailto:contact@belladonnanights.com'">✦ Plan Your Holiday Event</button>
     
-      <button class="atc-btn" id="atc-holiday" onclick="addToCart('holiday', 'Holiday Parties')" style="margin-top:0.75rem;">＋ Add to Cart</button></div>
+      <button class="atc-btn" id="atc-holiday" onclick="addToCart('holiday', 'Holiday Parties')" style="margin-top:0.75rem;">＋ Add to Wish List</button></div>
   </div>
 
   <!-- TICKETED EVENTS -->
@@ -1501,7 +1504,7 @@
       <button class="desc-contact" onclick="window.location.href='mailto:contact@belladonnanights.com'">✦ Discuss a Ticketed Event</button>
       <button class="desc-contact" onclick="window.open('https://www.belladonnanights.com/buytickets', '_blank')" style="margin-top:0.75rem;">✦ View Our Current Ticketed Events</button>
     
-      <button class="atc-btn" id="atc-ticketed" onclick="addToCart('ticketed', 'Ticketed Events')" style="margin-top:0.75rem;">＋ Add to Cart</button></div>
+      <button class="atc-btn" id="atc-ticketed" onclick="addToCart('ticketed', 'Ticketed Events')" style="margin-top:0.75rem;">＋ Add to Wish List</button></div>
   </div>
 
   <!-- ═══ VENUE MODE: COMING UP — confirmed Trivia/Bingo gigs at this venue
@@ -1523,7 +1526,7 @@
       <div class="desc-title" style="margin-top:2rem;">Your Pending Requests</div>
       <div class="vp-card">
         <div id="queue-pending-list"><div class="vp-empty">Nothing in your queue yet — add a Themed Night from the menu to get started.</div></div>
-        <button class="atc-btn" style="margin-top:0.5rem;" onclick="openCart()">Manage in Cart</button>
+        <button class="atc-btn" style="margin-top:0.5rem;" onclick="openCart()">Manage Wish List</button>
       </div>
     </div>
   </div>
@@ -1642,7 +1645,7 @@
 <!-- ═══ CART DRAWER ═══ -->
 <div id="cart-drawer" class="cart-drawer">
   <div class="cart-header">
-    <span class="cart-header-title">✦ Your Selections</span>
+    <span class="cart-header-title">✦ Your Wish List &amp; Requests</span>
     <button class="cart-close" onclick="closeCart()">✕</button>
   </div>
   <div class="cart-body" id="cart-body">
@@ -1682,7 +1685,7 @@
       <div style="font-family:'Cinzel',serif;font-size:1rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--text);margin-bottom:0.4rem;" id="seasonal-popup-name"></div>
       <div style="font-size:0.78rem;color:var(--gold-dim);margin-bottom:0.75rem;" id="seasonal-popup-date"></div>
       <div style="font-size:0.95rem;color:var(--text-muted);line-height:1.6;margin-bottom:1.25rem;" id="seasonal-popup-desc"></div>
-      <button class="atc-btn" id="seasonal-popup-atc" onclick="addSeasonalToCart()">＋ Add to Cart</button>
+      <button class="atc-btn" id="seasonal-popup-atc" onclick="addSeasonalToCart()">＋ Add to Wish List</button>
     </div>
   </div>
 </div>
@@ -2700,7 +2703,7 @@ window.toggleTriviaLike = async function (cid) {
   } catch (e) {
     if (on) tlLiked.delete(cid); else tlLiked.add(cid);
     renderTrivia();
-    alert('Could not save that — please try again.');
+    qToast('Could not save that. Please try again.');
   }
 };
 
@@ -3526,7 +3529,7 @@ function brMovieCard(m) {
   return '<div class="br-card"><div class="br-img">' + brCardImg(m.poster, m.title) + '</div><div class="br-name">' + esc(m.title) + (m.year ? ' <span class="br-yr">' + esc(String(m.year)) + '</span>' : '') + '</div><div class="br-btns"><button class="br-btn" onclick="brWish(\'movie\',\'' + m._id + '\')">Add to Wish List</button><button class="br-btn gold" onclick="brRequest(\'movie\',\'' + m._id + '\')">Request This Night</button></div></div>';
 }
 function brWish(kind, ref) { brAdd(kind, ref, 'later'); }
-function brRequest(kind, ref) { qToast('Pick your date in the cart, then send the request from there.'); brAdd(kind, ref, 'date'); }
+function brRequest(kind, ref) { qToast('Pick your date in your Wish List, then send the request from there.'); brAdd(kind, ref, 'date'); }
 function brAdd(kind, ref, bookingType) {
   let id = ref, k = kind;
   if (kind === 'night') { nightAddToCart(ref, bookingType); id = publishedNights[ref] && publishedNights[ref]._id; }
@@ -3553,7 +3556,7 @@ function brEvent(key) {
   const id = 'event:' + key + ':' + Date.now();
   addToCart(id, e.name, 0);
   cartMeta(id, { kind: key, premium: true, details: {} });
-  qToast('Pick your date in the cart, fill in the details, then send the request.');
+  qToast('Pick your date in your Wish List, fill in the details, then send the request.');
 }
 async function renderBrowse() {
   const el = document.getElementById('browse-rows'); if (!el) return;
@@ -3739,10 +3742,10 @@ function updateAllATCButtons() {
   document.querySelectorAll('[id^="atc-"]').forEach(btn => {
     const id = btn.id.replace('atc-', '');
     if (cartHas(id)) {
-      btn.textContent = '✓ In Cart';
+      btn.textContent = '✓ On Wish List';
       btn.classList.add('in-cart');
     } else {
-      btn.textContent = '＋ Add to Cart';
+      btn.textContent = '＋ Add to Wish List';
       btn.classList.remove('in-cart');
     }
   });
@@ -3750,9 +3753,9 @@ function updateAllATCButtons() {
   const satc = document.getElementById('seasonal-popup-atc');
   if (satc && popupSeasonalEvent) {
     if (cartHas(popupSeasonalEvent.id)) {
-      satc.textContent = '✓ In Cart'; satc.classList.add('in-cart');
+      satc.textContent = '✓ On Wish List'; satc.classList.add('in-cart');
     } else {
-      satc.textContent = '＋ Add to Cart'; satc.classList.remove('in-cart');
+      satc.textContent = '＋ Add to Wish List'; satc.classList.remove('in-cart');
     }
   }
 }
@@ -3948,7 +3951,7 @@ async function submitCart() {
   const email   = document.getElementById('co-email').value.trim();
   const phone   = document.getElementById('co-phone').value.trim();
   const notes   = document.getElementById('co-notes').value.trim();
-  if (!venue || !name || !email) { alert('Please fill in Venue Name, Contact Name, and Email.'); return; }
+  if (!venue || !name || !email) { qToast('Please fill in Venue Name, Contact Name, and Email.'); return; }
 
   const submitBtn = document.querySelector('.cart-checkout-btn[onclick="submitCart()"]');
   if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Sending…'; }
@@ -4000,7 +4003,7 @@ async function submitCart() {
 
   } catch(e) {
     console.error(e);
-    alert('Something went wrong. Please email contact@belladonnanights.com directly.');
+    qToast('Something went wrong. Please email contact@belladonnanights.com directly.');
     if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = '✦ Send Request'; }
   }
 }
@@ -4022,8 +4025,8 @@ function openSeasonalPopup(evId) {
   document.getElementById('seasonal-popup-desc').textContent = ev.desc || '';
 
   const atcBtn = document.getElementById('seasonal-popup-atc');
-  if (cartHas(ev.id)) { atcBtn.textContent = '✓ In Cart'; atcBtn.classList.add('in-cart'); }
-  else { atcBtn.textContent = '＋ Add to Cart'; atcBtn.classList.remove('in-cart'); }
+  if (cartHas(ev.id)) { atcBtn.textContent = '✓ On Wish List'; atcBtn.classList.add('in-cart'); }
+  else { atcBtn.textContent = '＋ Add to Wish List'; atcBtn.classList.remove('in-cart'); }
 
   document.getElementById('seasonal-popup-overlay').classList.add('open');
 }
@@ -4041,7 +4044,7 @@ function addSeasonalToCart() {
   if (!popupSeasonalEvent) return;
   addToCart(popupSeasonalEvent.id, popupSeasonalEvent.name);
   const atcBtn = document.getElementById('seasonal-popup-atc');
-  atcBtn.textContent = '✓ In Cart'; atcBtn.classList.add('in-cart');
+  atcBtn.textContent = '✓ On Wish List'; atcBtn.classList.add('in-cart');
 }
 
 
