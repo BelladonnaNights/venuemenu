@@ -980,6 +980,8 @@
     border: 1px solid var(--border2); border-radius: 12px; box-shadow: 0 14px 40px rgba(0,0,0,.65); max-height: calc(100vh - 100px); overflow-y: auto; }
   #main-nav.open { display: flex; }
   #main-nav .nav-tab { text-align: left; padding: 12px 14px; font-size: 11px; letter-spacing: .14em; border: none; border-radius: 8px; background: none; color: var(--text-muted); }
+  #main-nav .nav-group { font-family: var(--cinzel); font-size: 9px; letter-spacing: .22em; text-transform: uppercase; color: var(--gold); opacity: .75; padding: 12px 14px 4px; }
+  #main-nav .nav-group:not(:first-child) { margin-top: 6px; border-top: 1px solid var(--border2); }
   #main-nav .nav-tab:hover { background: var(--gold-dim); color: var(--gold-light); }
   #main-nav .nav-tab.active { background: var(--gold-dim); color: var(--gold); border: none; }
   @media (max-width: 768px) { .site-header { flex-direction: row; padding: 0.6rem 1rem; gap: 8px; flex-wrap: wrap; } }
@@ -1005,6 +1007,7 @@
         <svg class="burger-ico" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false"><path d="M3 6h18M3 12h18M3 18h18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
       </button>
     <nav class="nav-tabs" id="main-nav">
+      <div class="nav-group">Content</div>
       <button class="nav-tab active" onclick="closeNavMenu();switchView('library')">Library</button>
       <button class="nav-tab" onclick="closeNavMenu();switchView('trivia')">Trivia</button>
       <button class="nav-tab" onclick="closeNavMenu();switchView('bingo')">Bingo</button>
@@ -1014,12 +1017,14 @@
       <button class="nav-tab" onclick="closeNavMenu();switchView('waytoplay')">Ways to Play</button>
       <button class="nav-tab" onclick="closeNavMenu();switchView('battles')">Belladonna Battles</button>
       <button class="nav-tab" onclick="closeNavMenu();switchView('nights')">Themed Nights</button>
+      <button class="nav-tab" onclick="closeNavMenu();switchView('import')">Import</button>
+      <div class="nav-group">Planning</div>
       <button class="nav-tab" onclick="closeNavMenu();switchView('mainmenu')">Main Menu</button>
       <button class="nav-tab" onclick="closeNavMenu();switchView('seasonal')">Carousel Calendar</button>
-      <button class="nav-tab" onclick="closeNavMenu();switchView('bookings')">Bookings</button>
-      <button class="nav-tab" onclick="closeNavMenu();switchView('import')">Import</button>
-      <button class="nav-tab" onclick="closeNavMenu();switchView('feedback')">Feedback Inbox</button>
       <button class="nav-tab" onclick="closeNavMenu();switchView('portal')">Portal Content</button>
+      <div class="nav-group">Inbox</div>
+      <button class="nav-tab" onclick="closeNavMenu();switchView('bookings')">Bookings</button>
+      <button class="nav-tab" onclick="closeNavMenu();switchView('feedback')">Feedback Inbox</button>
     </nav>
 
     </div>
