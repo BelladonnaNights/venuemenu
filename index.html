@@ -1025,6 +1025,8 @@
       <div class="nav-group">Inbox</div>
       <button class="nav-tab" onclick="closeNavMenu();switchView('bookings')">Bookings</button>
       <button class="nav-tab" onclick="closeNavMenu();switchView('feedback')">Feedback Inbox</button>
+      <button class="nav-tab" onclick="closeNavMenu();openVenueEntries()">Venue Ideas</button>
+      <button class="nav-tab" onclick="closeNavMenu();switchView('shortcuts')">Venue Shortcuts</button>
     </nav>
 
     </div>
@@ -1470,6 +1472,13 @@
     <div id="fi-type-filters" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:0.75rem;"></div>
     <div id="fi-status-filters" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1.5rem;"></div>
     <div id="fi-rows"></div>
+  </div>
+
+  <!-- ═══ VENUE SHORTCUTS VIEW ═══ -->
+  <div class="view" id="view-shortcuts">
+    <div class="section-title">Venue Shortcuts</div>
+    <p style="color:var(--text-muted);font-size:0.9rem;margin-bottom:1.25rem;max-width:720px;">The quick buttons at the top of a venue's home page. By default they are worked out automatically from the gigs the venue has with us (trivia, bingo, karaoke, book trivia). Switch a venue to Custom to pick exactly which buttons they see, for example a venue that only does book trivia.</p>
+    <div id="sc-rows"><div class="empty-state"><p>Loading…</p></div></div>
   </div>
 
   <!-- ═══ PORTAL CONTENT VIEW (folded in from admin-portal-content.html) ═══ -->
@@ -2602,6 +2611,7 @@ function switchView(name) {
   if (name === 'battles') initBattlesPage();
   if (name === 'bookings') initBookingsTab();
   if (name === 'feedback') loadFeedbackInbox();
+  if (name === 'shortcuts') loadShortcutsAdmin();
   if (name === 'portal') loadPortalContent();
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
@@ -6190,13 +6200,61 @@ async function saveBattlesPage() {
 }
 
 // ═══════════════════════════════════════════════
+// VENUE SHORTCUTS — venueMenuConfig/venueShortcuts = { byVenue: { <venueId>: { mode:'custom', links:[...] } } }
+// ═══════════════════════════════════════════════
+const SC_LINKS = [['trivia','Trivia'],['booktrivia','Book Trivia'],['bingo','Music Bingo'],['karaoke','Karaoke'],['themed','Themed Nights'],['ideas','Suggest an idea']];
+let scDocData = { byVenue: {} }, scVenues = [];
+async function loadShortcutsAdmin() {
+  const box = document.getElementById('sc-rows');
+  try {
+    const [vs, ds] = await Promise.all([ get(ref(rtdb, 'venues')), getDoc(doc(db, 'venueMenuConfig', 'venueShortcuts')) ]);
+    const raw = vs.exists() ? (vs.val() || {}) : {};
+    scVenues = Object.entries(raw).map(([id, v]) => ({ id: (v && v.id) || id, name: (v && v.name) || id })).filter(v => v.name).sort((a, b) => a.name.localeCompare(b.name));
+    scDocData = ds.exists() ? (ds.data() || {}) : {};
+    scDocData.byVenue = scDocData.byVenue || {};
+    renderShortcutsAdmin();
+  } catch (e) { box.innerHTML = '<div class="empty-state"><p>Could not load: ' + esc(e.message) + '</p></div>'; }
+}
+function renderShortcutsAdmin() {
+  const box = document.getElementById('sc-rows');
+  if (!scVenues.length) { box.innerHTML = '<div class="empty-state"><p>No venues found.</p></div>'; return; }
+  box.innerHTML = scVenues.map((v, i) => {
+    const o = scDocData.byVenue[v.id];
+    const custom = !!(o && o.mode === 'custom');
+    const links = (o && o.links) || [];
+    return '<div class="card-sm" style="margin-bottom:0.6rem;">'
+      + '<div style="display:flex;gap:1rem;align-items:center;flex-wrap:wrap;">'
+      + '<span style="font-family:Cinzel,serif;font-size:0.8rem;color:var(--gold-light);min-width:180px;">' + esc(v.name) + '</span>'
+      + '<select id="sc-mode-' + i + '" onchange="scModeChange(' + i + ')"><option value="auto"' + (custom ? '' : ' selected') + '>Automatic from their gigs</option><option value="custom"' + (custom ? ' selected' : '') + '>Custom</option></select>'
+      + '<span id="sc-links-' + i + '" style="display:' + (custom ? 'inline-flex' : 'none') + ';gap:12px;flex-wrap:wrap;">'
+      + SC_LINKS.map(l => '<label style="font-size:0.82rem;display:inline-flex;gap:4px;align-items:center;"><input type="checkbox" class="sc-cb-' + i + '" value="' + l[0] + '"' + (links.includes(l[0]) ? ' checked' : '') + '>' + l[1] + '</label>').join('')
+      + '</span>'
+      + '<button class="btn btn-sm" onclick="scSave(' + i + ')">Save</button>'
+      + '</div></div>';
+  }).join('');
+}
+window.scModeChange = function(i) { document.getElementById('sc-links-' + i).style.display = document.getElementById('sc-mode-' + i).value === 'custom' ? 'inline-flex' : 'none'; };
+window.scSave = async function(i) {
+  const v = scVenues[i];
+  const mode = document.getElementById('sc-mode-' + i).value;
+  const links = [...document.querySelectorAll('.sc-cb-' + i)].filter(c => c.checked).map(c => c.value);
+  try {
+    const next = Object.assign({}, scDocData.byVenue);
+    if (mode === 'custom') next[v.id] = { mode: 'custom', links }; else delete next[v.id];
+    await setDoc(doc(db, 'venueMenuConfig', 'venueShortcuts'), { byVenue: next });
+    scDocData.byVenue = next;
+    toast(v.name + ': saved.');
+  } catch (e) { toast('Could not save: ' + e.message, 'error'); }
+};
+
+// ═══════════════════════════════════════════════
 // FEEDBACK INBOX (folded in from admin-feedback-inbox.html)
 // ═══════════════════════════════════════════════
 let fiAllItems = [];
 let fiTypeFilter = 'all';
 let fiStatusFilter = 'all';
 let fiLoaded = false;
-const FI_TYPE_LABELS = { question: 'Question', comment: 'Comment', complaint: 'Complaint', categoryRequest: 'Category Request', concurrent: 'Concurrent Event' };
+const FI_TYPE_LABELS = { question: 'Question', comment: 'Comment', complaint: 'Complaint', categoryRequest: 'Category Request', categoryEntry: 'Venue Idea', concurrent: 'Concurrent Event' };
 
 async function loadFeedbackInbox() {
   if (fiLoaded) { renderFiFilters(); renderFiRows(); return; }
@@ -6220,7 +6278,7 @@ async function loadFeedbackInbox() {
   }
 }
 function renderFiFilters() {
-  const types = ['all', 'question', 'comment', 'complaint', 'categoryRequest', 'concurrent'];
+  const types = ['all', 'question', 'comment', 'complaint', 'categoryRequest', 'categoryEntry', 'concurrent'];
   document.getElementById('fi-type-filters').innerHTML = types.map(t => {
     const count = t === 'all' ? fiAllItems.length : fiAllItems.filter(i => i.type === t).length;
     return `<button class="filter-dim-tab${fiTypeFilter===t?' active':''}" onclick="setFiTypeFilter('${t}')">${t==='all'?'All Types':esc(FI_TYPE_LABELS[t]||t)} <span style="opacity:0.7;">${count}</span></button>`;
@@ -6254,6 +6312,13 @@ function renderFiRows() {
         : `<span style="color:#D3944F;font-weight:600;">Delayed start${item.newTime ? ' — new time ' + esc(item.newTime) : ''}</span>`;
       body = esc(item.description || '');
       meta = `Event date: ${esc(item.date || '—')} · ${impactLabel}`;
+    } else if (item.type === 'categoryEntry') {
+      const dec = item.decision || 'pending';
+      body = `<div><b>${esc(item.entryName || '')}</b> <span class="badge badge-type">${esc(item.gameType || '')}</span> <span style="color:${dec==='approved'?'#7DC996':dec==='declined'?'#C0654F':'#D3944F'};font-weight:600;">${esc(dec)}</span></div>`
+        + (item.targetDate ? `<div style="font-size:0.85rem;color:var(--text-dim);">Wants it for ${esc(item.targetDate)}</div>` : '')
+        + (item.description ? `<div style="margin-top:0.4rem;white-space:pre-line;">${esc(item.description)}</div>` : '')
+        + (item.sampleQuestions ? `<div style="margin-top:0.4rem;white-space:pre-line;"><b>Sample questions:</b>\n${esc(item.sampleQuestions)}</div>` : '');
+      meta = [item.name, item.email].filter(Boolean).map(esc).join(' · ') || 'No contact info given';
     } else {
       body = esc(item.message || '');
       meta = [item.name, item.email].filter(Boolean).map(esc).join(' · ') || 'No contact info given';
@@ -6272,10 +6337,39 @@ function renderFiRows() {
         <button class="btn btn-sm${status==='new'?'':' btn-ghost'}" onclick="setFiStatus('${item.source}','${item.id}','new')">New</button>
         <button class="btn btn-sm${status==='read'?'':' btn-ghost'}" onclick="setFiStatus('${item.source}','${item.id}','read')">Read</button>
         <button class="btn btn-sm${status==='handled'?'':' btn-ghost'}" onclick="setFiStatus('${item.source}','${item.id}','handled')">Handled</button>
+        ${item.type === 'categoryEntry' ? `<span style="width:14px;"></span>
+        <button class="btn btn-sm" onclick="decideEntry('${item.id}','approved')">Approve</button>
+        <button class="btn btn-sm btn-ghost" onclick="decideEntry('${item.id}','declined')">Decline</button>
+        <button class="btn btn-sm btn-ghost" onclick="entryToCatalog('${item.id}')">Add to catalog</button>` : ''}
       </div>
     </div>`;
   }).join('');
 }
+window.openVenueEntries = function() { fiTypeFilter = 'categoryEntry'; fiStatusFilter = 'all'; switchView('feedback'); };
+window.decideEntry = async function(id, decision) {
+  try {
+    await updateDoc(doc(db, 'venueFeedback', id), { decision, status: 'read' });
+    const item = fiAllItems.find(i => i.source === 'venueFeedback' && i.id === id);
+    if (item) { item.decision = decision; if (!item.status || item.status === 'new') item.status = 'read'; }
+    renderFiFilters(); renderFiRows();
+    toast(decision === 'approved' ? 'Approved. Use Add to catalog to put it in the library.' : 'Declined.');
+  } catch (e) { toast('Could not save: ' + e.message, 'error'); }
+};
+window.entryToCatalog = async function(id) {
+  const item = fiAllItems.find(i => i.source === 'venueFeedback' && i.id === id);
+  if (!item) return;
+  switchView('library');
+  openAddCategoryModal();
+  document.getElementById('cat-name').value = item.entryName || '';
+  document.getElementById('cat-type').value = item.gameType || '';
+  updateCatKaraokeVisibility();
+  document.getElementById('cat-notes').value = [
+    'Suggested by ' + (item.venueName || 'a venue') + (item.targetDate ? ' for ' + item.targetDate : ''),
+    item.description || '',
+    item.sampleQuestions ? 'Sample questions:\n' + item.sampleQuestions : ''
+  ].filter(Boolean).join('\n\n');
+  if (item.decision !== 'approved') decideEntry(id, 'approved');
+};
 window.setFiStatus = async function(source, id, status) {
   try {
     await updateDoc(doc(db, source, id), { status });
