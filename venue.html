@@ -979,6 +979,8 @@
         <div class="nav-group">Plan my nights</div>
         <button class="nav-tab venue-only-nav" style="display:none;" id="nav-queue" onclick="navigateTo('queue')">My Queue</button>
         <button class="nav-tab venue-only-nav" style="display:none;" id="nav-browse" onclick="navigateTo('browse')">Browse</button>
+        <button class="nav-tab" id="nav-booktrivia" onclick="navigateTo('trivia','book trivia')">Book Trivia</button>
+        <button class="nav-tab venue-only-nav" style="display:none;" id="nav-ideas" onclick="navigateTo('ideas')">Suggest an Idea</button>
         <button class="nav-tab" id="nav-themed" onclick="navigateTo('themed')">Themed Nights</button>
         <button class="nav-tab" id="nav-singalongs" onclick="navigateTo('singalongs')">Sing-Alongs</button>
         <button class="nav-tab" id="nav-movies" onclick="navigateTo('movies')">Movies</button>
@@ -1026,7 +1028,7 @@
         <div class="menu-intro-eyebrow">Belladonna Audio Alchemies</div>
         <div class="menu-intro-title">The Menu</div>
         <div class="menu-intro-sub">Live entertainment crafted for your venue. Select a category to explore.</div>
-        <div class="venue-only-nav" style="display:none;margin-top:1.1rem;"><button type="button" class="queue-cta" onclick="navigateTo('queue')">My Queue</button></div>
+        <div class="venue-only-nav" style="display:none;margin-top:1.1rem;"><div id="venue-shortcuts" style="display:flex;gap:10px;flex-wrap:wrap;"><button type="button" class="queue-cta" onclick="navigateTo('queue')">My Queue</button></div></div>
       </div>
 
       <!-- COMING UP CAROUSEL — rendered by renderComingUp() -->
@@ -1554,6 +1556,27 @@
   </div>
 
   <!-- ═══ VENUE MODE: FEEDBACK (ported from venue-portal.html) ═══ -->
+  <div class="view" id="view-ideas">
+    <div class="desc-view">
+      <div class="desc-title">Suggest Your Own Idea</div>
+      <div class="desc-body" style="font-size:0.95rem;">Have a category you would like to run, like your own book trivia theme? Tell us about it and we will review it. Ideas can be picked for a date <b>6 to 8 weeks from today</b>. Anything closer than 6 weeks is already locked in, and anything further out is not open yet.</div>
+      <div class="vp-card">
+        <div class="vp-msg" id="vp-ideas-msg"></div>
+        <div class="vp-field"><label>Idea name</label><input type="text" id="vp-id-name"></div>
+        <div class="vp-field"><label>Game type</label>
+          <select id="vp-id-type"><option>Book Trivia</option><option>Trivia</option><option>Music Bingo</option><option>Karaoke</option><option>Other</option></select>
+        </div>
+        <div class="vp-field"><label>Date you would like it for</label><input type="date" id="vp-id-date"><div id="vp-id-range" style="font-size:0.78rem;color:var(--text-dim);margin-top:4px;"></div></div>
+        <div class="vp-field"><label>Describe the idea</label><textarea id="vp-id-desc"></textarea></div>
+        <div class="vp-field"><label>Sample questions (optional)</label><textarea id="vp-id-samples"></textarea></div>
+        <div class="vp-field"><label>Your name (optional)</label><input type="text" id="vp-id-name2"></div>
+        <div class="vp-field"><label>Email (optional)</label><input type="email" id="vp-id-email"></div>
+        <button class="desc-contact" onclick="submitVenueIdea()">✦ Send for approval</button>
+      </div>
+      <div class="desc-body" style="font-size:0.9rem;">Want ideas first? <a href="#" onclick="navigateTo('trivia','book trivia');return false;" style="color:var(--gold);">Browse our Book Trivia categories</a>.</div>
+    </div>
+  </div>
+
   <div class="view" id="view-feedback">
     <div class="desc-view">
       <div class="desc-title">Feedback</div>
@@ -1805,7 +1828,7 @@ window.setPreviewMode = function(mode) {
   if (currentView === 'themed') renderThemedNights();
   if (currentView === 'singalongs') renderSingAlongs();
   if (currentView === 'movies') renderMovies();
-  if (['contract','feedback','concurrent','collaborators','queue','browse'].includes(currentView) && effectiveMode() !== 'venue') navigateTo('menu');
+  if (['contract','feedback','concurrent','collaborators','queue','browse','ideas'].includes(currentView) && effectiveMode() !== 'venue') navigateTo('menu');
 };
 
 async function resolveVenueRecord(profile){
@@ -1852,6 +1875,7 @@ async function initIdentity(user){
   // means no mode-specific tabs show until Ahnna sets it, same as 'host'.
   applyModeVisibility();
   renderPreviewToggle();
+  try { renderVenueShortcuts(); } catch (e) { console.warn('shortcuts:', e && e.message); }
 }
 
 onAuthStateChanged(auth, user => {
@@ -2391,7 +2415,7 @@ function navigateTo(view, typeFilter) {
   window.scrollTo(0, 0);
   // Update nav tab active state
   document.querySelectorAll('#main-nav .nav-tab').forEach(t => t.classList.remove('active'));
-  const navMap = { menu:'nav-menu', themed:'nav-themed', singalongs:'nav-singalongs', movies:'nav-movies', queue:'nav-queue', browse:'nav-browse', contract:'nav-contract', feedback:'nav-feedback', concurrent:'nav-concurrent', campaigns:'nav-campaigns', collaborators:'nav-collaborators' };
+  const navMap = { menu:'nav-menu', themed:'nav-themed', singalongs:'nav-singalongs', movies:'nav-movies', queue:'nav-queue', browse:'nav-browse', contract:'nav-contract', feedback:'nav-feedback', ideas:'nav-ideas', concurrent:'nav-concurrent', campaigns:'nav-campaigns', collaborators:'nav-collaborators' };
   document.querySelectorAll('#top-links .top-link').forEach(b => b.classList.remove('active'));
   const topMap = { menu:'top-menu', queue:'top-queue', browse:'top-browse' };
   if (topMap[view]) document.getElementById(topMap[view])?.classList.add('active');
@@ -2412,6 +2436,7 @@ function navigateTo(view, typeFilter) {
   if (view === 'browse')        renderBrowse();
   if (view === 'contract')      loadContractView();
   if (view === 'feedback')      loadFeedbackView();
+  if (view === 'ideas')         loadIdeasView();
   if (view === 'concurrent')    loadConcurrentView();
   if (view === 'campaigns')     loadCampaignsView();
   if (view === 'collaborators') loadCollaboratorsView();
@@ -4150,6 +4175,87 @@ async function loadContractView() {
 function loadFeedbackView() {
   vpMsg('vp-feedback-msg', '', '');
 }
+// ── Home shortcuts: worked out from the venue's gigs, unless the admin set a custom list (venueMenuConfig/venueShortcuts) ──
+const SC_DEF = {
+  trivia:     { label: 'Trivia',          go: () => navigateTo('trivia') },
+  booktrivia: { label: 'Book Trivia',     go: () => navigateTo('trivia', 'book trivia') },
+  bingo:      { label: 'Music Bingo',     go: () => navigateTo('bingo') },
+  karaoke:    { label: 'Karaoke',         go: () => navigateTo('karaoke') },
+  themed:     { label: 'Themed Nights',   go: () => navigateTo('themed') },
+  ideas:      { label: 'Suggest an Idea', go: () => navigateTo('ideas') }
+};
+window.scGo = function(k) { if (SC_DEF[k]) SC_DEF[k].go(); };
+async function renderVenueShortcuts() {
+  const box = document.getElementById('venue-shortcuts');
+  if (!box || currentMode !== 'venue' && !canPreview()) return;
+  let keys = null;
+  try {
+    const sn = await getDoc(doc(db, 'venueMenuConfig', 'venueShortcuts'));
+    const by = sn.exists() ? ((sn.data() || {}).byVenue || {}) : {};
+    const mine = by[(currentProfile.venueId || '').trim()] || by[(currentVenueRecord && currentVenueRecord.venueId) || ''];
+    if (mine && mine.mode === 'custom' && Array.isArray(mine.links)) keys = mine.links.filter(k => SC_DEF[k]);
+  } catch (e) { console.warn('shortcut config:', e && e.message); }
+  if (!keys) {
+    keys = [];
+    try {
+      const items = await loadVenueUpcoming();
+      const kinds = new Set(items.map(i => String(i.kind || '').toLowerCase()));
+      const hasBook = items.some(i => /book/i.test(i.kind || '') || /book/i.test(i.themeName || ''));
+      if (hasBook) keys.push('booktrivia');
+      if (kinds.has('trivia')) keys.push('trivia');
+      if (kinds.has('bingo')) keys.push('bingo');
+      if (kinds.has('karaoke')) keys.push('karaoke');
+    } catch (e) {}
+    keys.push('ideas');
+  }
+  box.innerHTML = '<button type="button" class="queue-cta" onclick="navigateTo(\'queue\')">My Queue</button>'
+    + keys.map(k => '<button type="button" class="queue-cta" onclick="scGo(\'' + k + '\')">' + SC_DEF[k].label + '</button>').join('');
+}
+
+// ── Venue ideas: the venue suggests its own category; we approve it in the admin ──
+function ideaDateKey(offsetDays) { const d = new Date(); d.setHours(12, 0, 0, 0); d.setDate(d.getDate() + offsetDays); return qDateToKey(d); }
+function loadIdeasView() {
+  vpMsg('vp-ideas-msg', '', '');
+  const lo = ideaDateKey(42), hi = ideaDateKey(56);
+  const dt = document.getElementById('vp-id-date');
+  dt.min = lo; dt.max = hi;
+  document.getElementById('vp-id-range').textContent = 'Open dates: ' + campFmtDate(lo) + ' to ' + campFmtDate(hi) + '.';
+  const n = document.getElementById('vp-id-name2'); if (n && !n.value) n.value = (currentProfile && currentProfile.name) || '';
+  const em = document.getElementById('vp-id-email'); if (em && !em.value) em.value = (currentProfile && currentProfile.email) || '';
+}
+window.submitVenueIdea = async function() {
+  vpMsg('vp-ideas-msg', '', '');
+  const entryName = document.getElementById('vp-id-name').value.trim();
+  const gameType = document.getElementById('vp-id-type').value;
+  const targetDate = document.getElementById('vp-id-date').value;
+  const description = document.getElementById('vp-id-desc').value.trim();
+  const sampleQuestions = document.getElementById('vp-id-samples').value.trim();
+  if (!entryName) { vpMsg('vp-ideas-msg', 'Give your idea a name.', 'error'); return; }
+  if (!description) { vpMsg('vp-ideas-msg', 'Describe the idea first.', 'error'); return; }
+  if (!targetDate) { vpMsg('vp-ideas-msg', 'Pick a date.', 'error'); return; }
+  const lo = ideaDateKey(42), hi = ideaDateKey(56);
+  if (targetDate < lo) { vpMsg('vp-ideas-msg', 'That date is less than 6 weeks away, so it is locked. Pick ' + campFmtDate(lo) + ' or later.', 'error'); return; }
+  if (targetDate > hi) { vpMsg('vp-ideas-msg', 'That date is more than 8 weeks away and is not open yet. Pick ' + campFmtDate(hi) + ' or earlier.', 'error'); return; }
+  try {
+    await addDoc(collection(db, 'venueFeedback'), {
+      type: 'categoryEntry',
+      venueId: currentProfile.venueId || '',
+      venueName: (currentVenueRecord && currentVenueRecord.name) || currentProfile.name || '',
+      name: document.getElementById('vp-id-name2').value.trim(),
+      email: document.getElementById('vp-id-email').value.trim(),
+      entryName, gameType, targetDate, description, sampleQuestions,
+      message: entryName + ' (' + gameType + ') for ' + targetDate + ': ' + description,
+      decision: 'pending',
+      status: 'new',
+      createdAt: serverTimestamp()
+    });
+    ['vp-id-name','vp-id-desc','vp-id-samples','vp-id-date'].forEach(i => document.getElementById(i).value = '');
+    vpMsg('vp-ideas-msg', 'Sent. We will review it and let you know.', 'success');
+  } catch (e) {
+    vpMsg('vp-ideas-msg', 'Could not send: ' + e.message, 'error');
+  }
+};
+
 window.submitVenueFeedback = async function() {
   vpMsg('vp-feedback-msg', '', '');
   const type = document.getElementById('vp-fb-type').value;
