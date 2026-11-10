@@ -373,10 +373,11 @@
   .detail-actions .atc-btn { flex: 1; justify-content: center; min-width: 150px; }
 
   /* ── SCROLLBAR ── */
-  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar { width: 9px; height: 9px; }
   ::-webkit-scrollbar-track { background: var(--surface); }
-  ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
-  ::-webkit-scrollbar-thumb:hover { background: var(--gold-dim); }
+  html { scrollbar-color: #c9a84c #141210; scrollbar-width: thin; }
+  ::-webkit-scrollbar-thumb { background: linear-gradient(180deg,#f3d77a,#c9a84c 50%,#b98a26); border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: #f3d77a; }
 
 
   /* ── COMING UP CAROUSEL ── */
@@ -780,8 +781,6 @@
     .menu-page { padding: 1.5rem 1rem 3rem; }
     .menu-intro-title { font-size: 1.5rem; }
     .menu-card-grid { grid-template-columns: repeat(2, 1fr); gap: 0.75rem; }
-    .menu-card-grid.centered-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; justify-content: stretch; }
-    .menu-card-grid.centered-row .menu-card { width: auto; flex: none; min-width: 0; }
     .menu-card-body { padding: 0.65rem 0.75rem 0.85rem; }
     .menu-card-title { font-size: 0.78rem; }
     .menu-card-desc { font-size: 0.78rem; }
@@ -806,7 +805,7 @@
     --display: 'Bebas Neue', sans-serif; --cinzel: 'Cinzel', serif; --serif: 'EB Garamond', serif; --font: 'DM Sans', sans-serif;
   }
   body { font-family: var(--font); font-size: 15px; background-image: none; background: var(--ink); color: var(--text); }
-  ::-webkit-scrollbar-thumb { background: rgba(201,168,76,.2); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb { background: linear-gradient(180deg,#f3d77a,#c9a84c 50%,#b98a26); border-radius: 4px; }
   .site-header { padding: 0 2rem; min-height: 64px; background: rgba(8,8,8,.95); backdrop-filter: blur(16px); border-bottom: 1px solid var(--border); }
   .wordmark { font-family: var(--display); font-weight: 400; letter-spacing: .06em; text-transform: none; flex-direction: row; align-items: baseline; gap: .4em; }
   .wordmark-one { font-size: 24px; color: #fff; }
@@ -1353,7 +1352,6 @@
             <input type="search" autocomplete="off" class="search-input" id="movies-search" placeholder="Search movies…" oninput="renderMovies()">
           </div>
         </div>
-        <div style="font-size:0.95rem;color:var(--text-muted);margin:0.25rem 0 1rem;">Public-domain classics — free to screen, no licensing needed. Add a movie to your Wish List or request a date.</div>
         <div id="movies-grid" class="minigames-grid"></div>
         <div id="movies-empty" class="empty-state" style="display:none;"><h2>No Movies Published Yet</h2></div>
       </div>
@@ -2031,7 +2029,7 @@ function catTileHtml(c, onclickJs) {
   const nm = String(c.name || '');
   const m = nm.match(/^(.*?)(\s+bingo)$/i);
   const label = m ? esc(m[1]) + '<span class="ct-tail">' + esc(m[2]) + '</span>' : esc(nm);
-  const wb = (effectiveMode() === 'venue' && c._id) ? '<button class="br-btn gold ct-wish" onclick="event.stopPropagation();categoryAddToCart(\'' + c._id + '\',\'later\')">Add to Wish List</button>' : '';
+  const wb = (effectiveMode() === 'venue' && c._id) ? '<button class="br-btn gold ct-wish" onclick="event.stopPropagation();addCategoryToQueue(\'' + c._id + '\')">Add to Queue</button>' : '';
   return '<div class="cat-tile" onclick="' + onclickJs + '"><div>' + label + '</div>' + wb + '</div>';
 }
 async function loadSeasonalEvents() {
@@ -2766,7 +2764,7 @@ function renderCategoryGrid(gridId, emptyId, filterFn, starKind, clickable) {
     const singaBtns = (gridId === 'singa-grid' && effectiveMode() === 'venue')
       ? '<div class="br-btns" style="padding:8px 0 0;"><button class="br-btn gold" onclick="event.stopPropagation();brWish(\'cat\',\'' + c._id + '\')">Add to Wish List</button><button class="br-btn" onclick="event.stopPropagation();brRequest(\'cat\',\'' + c._id + '\')">Pick a Date</button></div>' : '';
     const singaPill = gridId === 'singa-grid' && brPill('singalong') ? '<div style="padding-top:8px;">' + brPill('singalong') + '</div>' : '';
-    const bingoBtns = (gridId === 'bingo-grid' && effectiveMode() === 'venue') ? '<div class="br-btns" style="padding:8px 0 0;"><button class="br-btn gold" onclick="event.stopPropagation();categoryAddToCart(\'' + c._id + '\',\'later\')">Add to Wish List</button></div>' : '';
+    const bingoBtns = (gridId === 'bingo-grid' && effectiveMode() === 'venue') ? '<div class="br-btns" style="padding:8px 0 0;"><button class="br-btn gold" onclick="event.stopPropagation();addCategoryToQueue(\'' + c._id + '\')">Add to Queue</button></div>' : '';
     return '<div class="night-card"' + click + '>' + imgEl + star + '<div class="night-card-body"><div class="night-name">' + esc(c.name) + '</div>' + singaPill + singaBtns + bingoBtns + '</div></div>';
   }).join('');
 }
@@ -2823,7 +2821,7 @@ function renderTrivia() {
       : '<div class="night-card-img" style="aspect-ratio:4/5;display:flex;align-items:center;justify-content:center;background:var(--surface2);color:var(--text-dim);font-size:2rem;">🧠</div>';
     const rid = String(c._id).replace(/^trivia:/,'');
     const heart = tlHeartOn ? '<button type="button" title="Like this category for our venue" onclick="event.stopPropagation();toggleTriviaLike(\'' + rid + '\')" style="position:absolute;top:8px;right:8px;z-index:3;width:34px;height:34px;border-radius:50%;border:1px solid rgba(255,255,255,.25);background:rgba(0,0,0,.6);color:' + (tlLiked.has(rid) ? '#e8456b' : '#fff') + ';font-size:18px;line-height:1;cursor:pointer;">' + (tlLiked.has(rid) ? '\u2665' : '\u2661') + '</button>' : '';
-    return '<div class="night-card" style="position:relative;" onclick="openCategoryDetail(\'' + c._id + '\')">' + heart + imgEl + '<div class="night-card-body"><div class="night-name">' + esc(c.name) + '</div>' + (effectiveMode() === 'venue' ? '<div class="br-btns" style="padding:8px 0 0;"><button class="br-btn gold" onclick="event.stopPropagation();categoryAddToCart(\'' + c._id + '\',\'later\')">Add to Wish List</button></div>' : '') + '</div></div>';
+    return '<div class="night-card" style="position:relative;" onclick="openCategoryDetail(\'' + c._id + '\')">' + heart + imgEl + '<div class="night-card-body"><div class="night-name">' + esc(c.name) + '</div>' + (effectiveMode() === 'venue' ? '<div class="br-btns" style="padding:8px 0 0;">' + (isBookTrivia(c) ? '<button class="br-btn gold" onclick="event.stopPropagation();categoryAddToCart(\'' + c._id + '\',\'later\')">Add to Wish List</button>' : '<button class="br-btn gold" onclick="event.stopPropagation();addCategoryToQueue(\'' + c._id + '\')">Add to Queue</button>') + '</div>' : '') + '</div></div>';
   }).join('');
 }
 
@@ -3093,7 +3091,7 @@ function openCategoryDetail(id) {
     let inQ = false; try { inQ = isInCategoryQueue(c._id); } catch (e) {}
     actionsEl.innerHTML = inQ
       ? '<button class="atc-btn in-cart" onclick="closeDetail();navigateTo(\'queue\')">✓ In Your Queue — View</button>'
-      : '<button class="atc-btn" onclick="categoryAddToCart(\'' + c._id + '\',\'later\')">Add to Wish List</button>' + '<button class="atc-btn" onclick="addCategoryToQueue(\'' + c._id + '\')">Add to Queue</button>';
+      : (isBookTrivia(c) ? '<button class="atc-btn" onclick="categoryAddToCart(\'' + c._id + '\',\'later\')">Add to Wish List</button>' : '') + '<button class="atc-btn" onclick="addCategoryToQueue(\'' + c._id + '\')">Add to Queue</button>';
   }
   document.getElementById('detail-overlay').classList.add('open');
 }
@@ -3184,15 +3182,18 @@ function bookTriviaAdd(c) {
   cartSave(); renderCartItems();
 }
 function bookTriviaRemove(i, j) { if (!cart[i] || !cart[i].picks) return; cart[i].picks.splice(j, 1); cartSave(); renderCartItems(); }
-function renderGigBanner(view, tf) {
+async function renderGigBanner(view, tf) {
   document.querySelectorAll('.gig-banner').forEach(e => e.remove());
   ensureViewToggle(view);
   if (effectiveMode() !== 'venue') return;
+  try { await loadVenueUpcoming(); } catch (e) {}
+  document.querySelectorAll('.gig-banner').forEach(e => e.remove());
+  const hasGig = k => (queueUpcomingItems || []).some(it => { const kd = String(it.kind || '').toLowerCase(); return k === 'bingo' ? kd.includes('bingo') : k === 'karaoke' ? kd.includes('karaoke') : k === 'booktrivia' ? kd.includes('book') : (kd.includes('trivia') && !kd.includes('book')); });
   let key = null, text = '', btn = '';
-  if (view === 'bingo')   { key = 'bingo';   text = 'Want us to run Music Bingo for you as a recurring gig?'; btn = 'Add weekly Bingo gig to Wish List'; }
-  if (view === 'trivia')  { if (String(tf || activeTriviaTypeFilter || '').toLowerCase() === 'book trivia') { key = 'booktrivia'; text = 'Add the Book Trivia categories you like with Add to Wish List. They go straight onto your Book Trivia request.'; btn = 'Schedule a Book Trivia gig'; } else { key = 'trivia'; text = 'Want us to run Trivia for you as a recurring gig?'; btn = 'Add weekly Trivia gig to Wish List'; } }
-  if (view === 'karaoke') { key = 'karaoke'; text = 'Want us to run Karaoke for you as a recurring gig?'; btn = 'Add weekly Karaoke gig to Wish List'; }
-  if (!key) return;
+  if (view === 'bingo')   { key = 'bingo';   text = 'Want us to run Music Bingo for you as a recurring gig?'; btn = 'Add Weekly Bingo Gig to Wish List'; }
+  if (view === 'trivia')  { if (String(tf || activeTriviaTypeFilter || '').toLowerCase() === 'book trivia') { key = 'booktrivia'; text = 'Add the Book Trivia categories you like with Add to Wish List. They go straight onto your Book Trivia request.'; btn = 'Schedule a Book Trivia Gig'; } else { key = 'trivia'; text = 'Want us to run Trivia for you as a recurring gig?'; btn = 'Add Weekly Trivia Gig to Wish List'; } }
+  if (view === 'karaoke') { key = 'karaoke'; text = 'Want us to run Karaoke for you as a recurring gig?'; btn = 'Add Weekly Karaoke Gig to Wish List'; }
+  if (!key || hasGig(key)) return;
   const v = document.getElementById('view-' + view); const back0 = v && v.querySelector('.back-btn'); if (!back0) return; const back = back0.closest('.back-row') || back0;
   const d = document.createElement('div'); d.className = 'gig-banner';
   d.innerHTML = '<span>' + text + '</span><button class="br-btn gold" onclick="gigRequest(\'' + key + '\')">' + btn + '</button>';
