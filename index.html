@@ -1478,6 +1478,7 @@
       <div style="font-family:Cinzel,serif;font-size:0.78rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--gold);margin-bottom:0.6rem;">Trivia &amp; Bingo categories</div>
       <label style="display:flex;gap:10px;align-items:flex-start;margin-bottom:0.7rem;cursor:pointer;"><input type="radio" name="set-catstyle" value="cards" onchange="setCatStyle(this.value)" style="margin-top:4px;"><span>Image cards <span style="color:var(--text-dim);">(4:5 pictures with the name)</span></span></label>
       <label style="display:flex;gap:10px;align-items:flex-start;cursor:pointer;"><input type="radio" name="set-catstyle" value="tiles" onchange="setCatStyle(this.value)" style="margin-top:4px;"><span>Black &amp; gold name tiles <span style="color:var(--text-dim);">(like the Bingo app: black tile, gold lettering, no pictures)</span></span></label>
+      <div id="set-catstyle-msg" style="margin-top:0.8rem;font-size:0.85rem;"></div>
     </div>
   </div>
 
@@ -5188,7 +5189,7 @@ async function saveMainMenu() {
   mmReadFieldsIntoData();
 
   try {
-    await setDoc(doc(db, 'venueMenuConfig', 'mainMenu'), mmData);
+    await setDoc(doc(db, 'venueMenuConfig', 'mainMenu'), mmData, { merge: true });
     toast('Menu saved!', 'success');
     mmRenderPreview();
   } catch(e) {
@@ -5547,12 +5548,13 @@ const _origSwitchView = switchView;
 // ── SETTINGS (venueMenuConfig/displaySettings) ──
 async function loadSettingsView() {
   let st = 'cards';
-  try { const d = await getDoc(doc(db, 'venueMenuConfig', 'displaySettings')); st = (d.exists() && d.data().catStyle) || 'cards'; } catch (e) {}
+  try { const d = await getDoc(doc(db, 'venueMenuConfig', 'mainMenu')); st = (d.exists() && d.data().catStyle) || 'cards'; } catch (e) {}
   document.querySelectorAll('input[name="set-catstyle"]').forEach(r => r.checked = r.value === st);
 }
 async function setCatStyle(val) {
-  try { await setDoc(doc(db, 'venueMenuConfig', 'displaySettings'), { catStyle: val }, { merge: true }); toast('Saved', 'success'); }
-  catch (e) { toast('Save failed: ' + e.message, 'error'); }
+  const msg = document.getElementById('set-catstyle-msg');
+  try { await setDoc(doc(db, 'venueMenuConfig', 'mainMenu'), { catStyle: val }, { merge: true }); if (typeof mmData === 'object' && mmData) mmData.catStyle = val; toast('Saved', 'success'); if (msg) { msg.style.color = '#7DC996'; msg.textContent = 'Saved ✓'; } }
+  catch (e) { toast('Save failed: ' + e.message, 'error'); if (msg) { msg.style.color = '#C0654F'; msg.textContent = 'Could not save: ' + e.message; } }
 }
 
 // ═══════════════════════════════════════════════════════
@@ -5562,10 +5564,10 @@ async function setCatStyle(val) {
 let carPicks = [], carPicksLoaded = false;
 async function loadCarPicks() {
   if (carPicksLoaded) return;
-  try { const snap = await getDoc(doc(db, 'venueMenuConfig', 'carouselPicks')); carPicks = snap.exists() ? (snap.data().picks || []) : []; carPicksLoaded = true; }
+  try { const snap = await getDoc(doc(db, 'venueMenuConfig', 'mainMenu')); carPicks = snap.exists() ? (snap.data().carouselPicks || []) : []; carPicksLoaded = true; }
   catch (e) { carPicks = []; }
 }
-async function persistCarPicks() { await setDoc(doc(db, 'venueMenuConfig', 'carouselPicks'), { picks: carPicks }); }
+async function persistCarPicks() { await setDoc(doc(db, 'venueMenuConfig', 'mainMenu'), { carouselPicks: carPicks }, { merge: true }); if (typeof mmData === 'object' && mmData) mmData.carouselPicks = carPicks; }
 function carBtn(type, ref) {
   return `<button class="btn btn-sm btn-ghost" style="margin-top:6px;" onclick="event.stopPropagation();carouselAdd('${type}','${String(ref).replace(/'/g, "\\'")}')">+ Carousel</button>`;
 }
@@ -6737,6 +6739,21 @@ if (window.ResizeObserver) {
   setTimeout(syncHeaderHeight, 500);
 }
 syncHeaderHeight();
+</script>
+
+<script>
+// Make the gold "Venue Menu" line exactly as wide as "Belladonna".
+(function () {
+  function fit(a, b) {
+    var x = document.querySelector(a), y = document.querySelector(b); if (!x || !y) return;
+    x.style.display = y.style.display = 'inline-block'; y.style.fontSize = '';
+    var wx = x.getBoundingClientRect().width, wy = y.getBoundingClientRect().width;
+    if (wx && wy) y.style.fontSize = (parseFloat(getComputedStyle(y).fontSize) * wx / wy) + 'px';
+  }
+  function run() { fit('.logo-word-one', '.logo-word-two'); }
+  window.addEventListener('load', run); window.addEventListener('resize', run);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(run);
+})();
 </script>
 </body>
 </html>
