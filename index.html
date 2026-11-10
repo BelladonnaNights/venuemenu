@@ -961,6 +961,7 @@
   .cat-banner-wrap { width: 100%; aspect-ratio: 16/4; overflow: hidden; position: relative; background: linear-gradient(135deg, var(--surface2), var(--surface3)); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: center; margin: 0 !important; border-radius: 0 !important; }
   .cat-banner-wrap img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
   .cat-banner-wrap span { font-family: var(--display); font-size: 18px; letter-spacing: .12em; color: var(--text-dim); opacity: 1 !important; }
+  .cp-in { background: linear-gradient(180deg,#fff2b8 0%,#f3d77a 18%,#d9b04a 48%,#b98a26 52%,#e6c363 80%,#f7e08f 100%) !important; color: #2b1d02 !important; border-color: #8a6414 !important; font-weight: 700; }
   #trivia-grid .cat-banner-wrap, #bingo-grid .cat-banner-wrap { aspect-ratio: 4/5 !important; }
   .cat-body { padding: 11px 14px 13px; }
   .category-card-header { margin-bottom: 5px; }
@@ -1023,11 +1024,11 @@
       <div class="nav-group">Planning</div>
       <button class="nav-tab" onclick="closeNavMenu();switchView('mainmenu')">Main Menu</button>
       <button class="nav-tab" onclick="closeNavMenu();switchView('seasonal')">Carousel Calendar</button>
-      <button class="nav-tab" onclick="closeNavMenu();switchView('carpicks')">Carousel Picks</button>
-      <button class="nav-tab" onclick="closeNavMenu();switchView('portal')">Portal Content</button>
+      <button class="nav-tab" onclick="closeNavMenu();switchView('contracts')">Contracts</button>
+      <button class="nav-tab" onclick="closeNavMenu();switchView('collaborators')">Collaborators</button>
       <div class="nav-group">Inbox</div>
       <button class="nav-tab" onclick="closeNavMenu();switchView('bookings')">Bookings</button>
-      <button class="nav-tab" onclick="closeNavMenu();switchView('feedback')">Feedback Inbox</button>
+      <button class="nav-tab" onclick="closeNavMenu();openFeedbackInbox()">Feedback Inbox</button>
       <button class="nav-tab" onclick="closeNavMenu();openVenueEntries()">Venue Ideas</button>
       <button class="nav-tab" onclick="closeNavMenu();switchView('shortcuts')">Venue Shortcuts</button>
       <button class="nav-tab" onclick="closeNavMenu();switchView('settings')">Settings</button>
@@ -1110,6 +1111,12 @@
       <button class="btn btn-sm btn-ghost" onclick="toggleSortAZ('trivia')" id="trivia-az-btn">A–Z</button>
       <button class="btn btn-sm" onclick="openAddCategoryModal()">+ Add Trivia</button>
     </div>
+    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:0.9rem;">
+      <span style="font-family:Cinzel,serif;font-size:0.62rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-dim);">Venue menu look</span>
+      <label style="display:flex;align-items:center;gap:8px;font-size:0.8rem;color:var(--text-dim);">Size <input type="range" class="cat-size-range" min="140" max="360" step="10" oninput="setCatSize(this.value)" style="width:160px;accent-color:var(--gold);"></label>
+      <div style="display:flex;gap:6px;"><button type="button" class="btn btn-sm cat-sty-btn" data-sty="cards" onclick="setCatStyle('cards')">Images</button><button type="button" class="btn btn-sm cat-sty-btn" data-sty="tiles" onclick="setCatStyle('tiles')">Black &amp; Gold</button></div>
+      <span class="cat-ctl-msg" style="font-size:0.78rem;color:var(--text-dim);">Same for Trivia and Bingo. Saved automatically.</span>
+    </div>
     <div style="display:flex; gap:6px; margin-bottom:0.6rem; flex-wrap:wrap;" id="trivia-tier-pills">
       <button class="filter-chip active" onclick="setTriviaTierFilter('', event)">All</button>
       <button class="filter-chip" onclick="setTriviaTierFilter('evergreen-topic', event)">Evergreen Trivia</button>
@@ -1134,6 +1141,12 @@
       </div>
       <button class="btn btn-sm btn-ghost" onclick="toggleSortAZ('bingo')" id="bingo-az-btn">A–Z</button>
       <button class="btn btn-sm" onclick="openAddCategoryModal()">+ Add Bingo</button>
+    </div>
+    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:0.9rem;">
+      <span style="font-family:Cinzel,serif;font-size:0.62rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-dim);">Venue menu look</span>
+      <label style="display:flex;align-items:center;gap:8px;font-size:0.8rem;color:var(--text-dim);">Size <input type="range" class="cat-size-range" min="140" max="360" step="10" oninput="setCatSize(this.value)" style="width:160px;accent-color:var(--gold);"></label>
+      <div style="display:flex;gap:6px;"><button type="button" class="btn btn-sm cat-sty-btn" data-sty="cards" onclick="setCatStyle('cards')">Images</button><button type="button" class="btn btn-sm cat-sty-btn" data-sty="tiles" onclick="setCatStyle('tiles')">Black &amp; Gold</button></div>
+      <span class="cat-ctl-msg" style="font-size:0.78rem;color:var(--text-dim);">Same for Trivia and Bingo. Saved automatically.</span>
     </div>
     <div id="bingo-grid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:1.25rem;"></div>
     <div id="bingo-empty" class="empty-state" style="display:none;">
@@ -1454,6 +1467,11 @@
 
   <!-- ═══ SEASONAL EVENTS VIEW ═══ -->
   <div class="view" id="view-seasonal">
+    <div style="display:flex;gap:8px;margin-bottom:1.25rem;">
+      <button class="filter-chip active" id="car-pill-cal" onclick="carTab('cal')">Calendar</button>
+      <button class="filter-chip" id="car-pill-picks" onclick="carTab('picks')">Picks</button>
+    </div>
+    <div id="car-pane-cal">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;flex-wrap:wrap;gap:1rem;">
       <div>
         <div class="section-title" style="margin-bottom:0.25rem;">Carousel Calendar</div>
@@ -1468,6 +1486,15 @@
       <div style="font-family:Cinzel,serif;font-size:0.85rem;letter-spacing:0.15em;text-transform:uppercase;margin-bottom:0.5rem;">No Events Yet</div>
       <p style="font-size:0.9rem;">Add your first event to start building the rolling calendar.</p>
     </div>
+    </div>
+  <!-- ═══ CAROUSEL PICKS PANE (a pill inside the Carousel tab) ═══ -->
+  <div id="car-pane-picks" style="display:none;">
+    <div style="margin-bottom:1.5rem;">
+      <p style="color:var(--text-muted);font-size:0.9rem;">Themed nights, sing-alongs, trivia, bingo, mini games and movies you sent here with the <b>+ Carousel</b> button. Choose when each one shows in the <em>Coming Up</em> carousel on the venue menu. These are kept separate from the Carousel Calendar.</p>
+    </div>
+    <div id="carpicks-list"></div>
+    <div id="carpicks-empty" style="display:none;text-align:center;padding:4rem 2rem;color:var(--text-dim);">Nothing here yet. Click <b>+ Carousel</b> on any card to send a copy.</div>
+  </div>
   </div>
 
   <!-- ═══ SETTINGS VIEW ═══ -->
@@ -1482,20 +1509,10 @@
     </div>
   </div>
 
-  <!-- ═══ CAROUSEL PICKS VIEW ═══ -->
-  <div class="view" id="view-carpicks">
-    <div style="margin-bottom:1.5rem;">
-      <div class="section-title" style="margin-bottom:0.25rem;">Carousel Picks</div>
-      <p style="color:var(--text-muted);font-size:0.9rem;">Themed nights, sing-alongs, trivia, bingo, mini games and movies you sent here with the <b>+ Carousel</b> button. Choose when each one shows in the <em>Coming Up</em> carousel on the venue menu. These are kept separate from the Carousel Calendar.</p>
-    </div>
-    <div id="carpicks-list"></div>
-    <div id="carpicks-empty" style="display:none;text-align:center;padding:4rem 2rem;color:var(--text-dim);">Nothing here yet. Click <b>+ Carousel</b> on any card to send a copy.</div>
-  </div>
-
   <!-- ═══ FEEDBACK INBOX VIEW (folded in from admin-feedback-inbox.html) ═══ -->
   <div class="view" id="view-feedback">
-    <div class="section-title">Feedback Inbox</div>
-    <p style="color:var(--text-muted);font-size:0.9rem;margin-bottom:1.25rem;max-width:720px;">Everything venues submit through the Venue Portal — questions, comments, complaints, category requests, and concurrent event notices — in one place.</p>
+    <div class="section-title" id="fi-title">Feedback Inbox</div>
+    <p id="fi-intro" style="color:var(--text-muted);font-size:0.9rem;margin-bottom:1.25rem;max-width:720px;">Everything venues submit through the Venue Portal — questions, comments, complaints, category requests, and concurrent event notices — in one place.</p>
     <div id="fi-type-filters" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:0.75rem;"></div>
     <div id="fi-status-filters" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1.5rem;"></div>
     <div id="fi-rows"></div>
@@ -1509,9 +1526,9 @@
   </div>
 
   <!-- ═══ PORTAL CONTENT VIEW (folded in from admin-portal-content.html) ═══ -->
-  <div class="view" id="view-portal">
-    <div class="section-title">Portal Content</div>
-    <p style="color:var(--text-muted);font-size:0.9rem;margin-bottom:1.25rem;max-width:720px;">The contract text and collaborators directory shown to venues in the Venue Portal.</p>
+  <div class="view" id="view-contracts">
+    <div class="section-title">Contracts</div>
+    <p style="color:var(--text-muted);font-size:0.9rem;margin-bottom:1.25rem;max-width:720px;">The contract shown to venues in the Venue Portal.</p>
 
     <div class="section-title" style="font-size:0.68rem;">Contract PDF</div>
     <div class="card" style="margin-bottom:2rem;">
@@ -1523,7 +1540,11 @@
       <button class="btn" id="pc-contract-save-btn" onclick="savePortalContract()" disabled>Save Contract</button>
     </div>
 
-    <div class="section-title" style="font-size:0.68rem;">Collaborators</div>
+  </div>
+
+  <div class="view" id="view-collaborators">
+    <div class="section-title">Collaborators</div>
+    <p style="color:var(--text-muted);font-size:0.9rem;margin-bottom:1.25rem;max-width:720px;">The collaborators directory shown to venues in the Venue Portal.</p>
     <div class="card" style="margin-bottom:1.5rem;">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.9rem;margin-bottom:1rem;">
         <div class="form-group">
@@ -2065,6 +2086,7 @@
           <div style="display:flex;gap:8px;margin-bottom:0.75rem;">
             <button id="se-type-month-btn" class="btn btn-sm" onclick="setSeasonalDateType('month')" style="flex:1;">📅 Month / Season</button>
             <button id="se-type-exact-btn" class="btn btn-sm btn-ghost" onclick="setSeasonalDateType('exact')" style="flex:1;">📌 Exact Date</button>
+            <button id="se-type-range-btn" class="btn btn-sm btn-ghost" onclick="setSeasonalDateType('range')" style="flex:1;">↔ Date Range</button>
           </div>
 
           <!-- Month-only fields -->
@@ -2087,6 +2109,17 @@
               </div>
             </div>
             <p style="color:var(--text-dim);font-size:0.82rem;font-style:italic;margin-top:0.25rem;">Shows in carousel: 2 weeks before this month starts through 1 week before month ends. If a day is set, shows 1 month before that day.</p>
+          </div>
+
+          <!-- Range fields -->
+          <div id="se-range-fields" style="display:none;">
+            <div class="form-row">
+              <div class="form-group"><label class="form-label">From</label>
+                <div style="display:flex;gap:6px;"><select id="se-rs-m"><option value="1">January</option><option value="2">February</option><option value="3">March</option><option value="4">April</option><option value="5">May</option><option value="6">June</option><option value="7">July</option><option value="8">August</option><option value="9">September</option><option value="10">October</option><option value="11">November</option><option value="12">December</option></select><input type="number" id="se-rs-d" min="1" max="31" style="width:80px;"></div></div>
+              <div class="form-group"><label class="form-label">To</label>
+                <div style="display:flex;gap:6px;"><select id="se-re-m"><option value="1">January</option><option value="2">February</option><option value="3">March</option><option value="4">April</option><option value="5">May</option><option value="6">June</option><option value="7">July</option><option value="8">August</option><option value="9">September</option><option value="10">October</option><option value="11">November</option><option value="12">December</option></select><input type="number" id="se-re-d" min="1" max="31" style="width:80px;"></div></div>
+            </div>
+            <p style="color:var(--text-dim);font-size:0.82rem;font-style:italic;margin-top:0.25rem;">Shows in the carousel from the first date through the second date, every year.</p>
           </div>
 
           <!-- Exact date fields -->
@@ -2413,6 +2446,8 @@ async function loadData() {
   renderLibrary();
   // Load seasonal events in background (non-blocking)
   loadSeasonalEvents().catch(()=>{});
+  loadCatDisplay();
+  loadCarPicks().then(carRerenderCards);
 }
 
 async function compressBanner(dataUrl, maxW=800, quality=0.7) {
@@ -2637,14 +2672,13 @@ function switchView(name) {
   if (name === 'library' && !SHOW_LIBRARY) name = 'trivia';
   if (name === 'mainmenu' && !mmData) loadMainMenu();
   if (name === 'seasonal') renderSeasonalAdmin();
-  if (name === 'carpicks') renderCarPicks();
   if (name === 'settings') loadSettingsView();
   if (name === 'waytoplay') renderWayToPlay();
   if (name === 'battles') initBattlesPage();
   if (name === 'bookings') initBookingsTab();
   if (name === 'feedback') loadFeedbackInbox();
   if (name === 'shortcuts') loadShortcutsAdmin();
-  if (name === 'portal') loadPortalContent();
+  if (name === 'contracts' || name === 'collaborators') loadPortalContent();
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
   document.getElementById('view-' + name).classList.add('active');
@@ -5545,23 +5579,55 @@ const _origSwitchView = switchView;
 
 
 
-// ── SETTINGS (venueMenuConfig/displaySettings) ──
-async function loadSettingsView() {
-  let st = 'cards';
-  try { const d = await getDoc(doc(db, 'venueMenuConfig', 'mainMenu')); st = (d.exists() && d.data().catStyle) || 'cards'; } catch (e) {}
-  document.querySelectorAll('input[name="set-catstyle"]').forEach(r => r.checked = r.value === st);
+// ── VENUE MENU LOOK: card size + Images / Black & Gold. Saved in venueMenuConfig/mainMenu (catSize, catStyle) and read by venue.html ──
+let catSize = 200, catStyleVal = 'cards', catSaveTimer = null;
+function paintCatControls() {
+  document.querySelectorAll('.cat-size-range').forEach(r => { r.value = catSize; });
+  document.querySelectorAll('.cat-sty-btn').forEach(b => b.classList.toggle('btn-ghost', b.dataset.sty !== catStyleVal));
+  document.querySelectorAll('input[name="set-catstyle"]').forEach(r => r.checked = r.value === catStyleVal);
+  ['trivia-grid', 'bingo-grid'].forEach(id => { const g = document.getElementById(id); if (g) g.style.setProperty('grid-template-columns', 'repeat(auto-fill, minmax(' + Math.round(catSize * 1.4) + 'px, 1fr))', 'important'); });
 }
-async function setCatStyle(val) {
-  const msg = document.getElementById('set-catstyle-msg');
-  try { await setDoc(doc(db, 'venueMenuConfig', 'mainMenu'), { catStyle: val }, { merge: true }); if (typeof mmData === 'object' && mmData) mmData.catStyle = val; toast('Saved', 'success'); if (msg) { msg.style.color = '#7DC996'; msg.textContent = 'Saved ✓'; } }
-  catch (e) { toast('Save failed: ' + e.message, 'error'); if (msg) { msg.style.color = '#C0654F'; msg.textContent = 'Could not save: ' + e.message; } }
+async function loadCatDisplay() {
+  try { const d = await getDoc(doc(db, 'venueMenuConfig', 'mainMenu')); if (d.exists()) { catSize = Number(d.data().catSize) || 200; catStyleVal = d.data().catStyle || 'cards'; } } catch (e) {}
+  paintCatControls();
 }
+async function saveCatDisplay() {
+  const msgs = document.querySelectorAll('.cat-ctl-msg, #set-catstyle-msg');
+  try {
+    await setDoc(doc(db, 'venueMenuConfig', 'mainMenu'), { catSize, catStyle: catStyleVal }, { merge: true });
+    if (typeof mmData === 'object' && mmData) { mmData.catSize = catSize; mmData.catStyle = catStyleVal; }
+    msgs.forEach(m => { m.style.color = '#7DC996'; m.textContent = 'Saved ✓'; });
+  } catch (e) { toast('Save failed: ' + e.message, 'error'); msgs.forEach(m => { m.style.color = '#C0654F'; m.textContent = 'Could not save: ' + e.message; }); }
+}
+function setCatSize(val) { catSize = Number(val) || 200; paintCatControls(); clearTimeout(catSaveTimer); catSaveTimer = setTimeout(saveCatDisplay, 500); }
+function setCatStyle(val) { catStyleVal = val; paintCatControls(); saveCatDisplay(); }
+async function loadSettingsView() { await loadCatDisplay(); }
 
 // ═══════════════════════════════════════════════════════
 // CAROUSEL PICKS — copies of menu items scheduled into the venue "Coming Up" carousel.
 // Stored in Firestore venueMenuConfig/carouselPicks → { picks: [...] }, same shape as seasonal events.
 // ═══════════════════════════════════════════════════════
 let carPicks = [], carPicksLoaded = false;
+function carTab(which) {
+  document.getElementById('car-pane-cal').style.display = which === 'cal' ? '' : 'none';
+  document.getElementById('car-pane-picks').style.display = which === 'picks' ? '' : 'none';
+  document.getElementById('car-pill-cal').classList.toggle('active', which === 'cal');
+  document.getElementById('car-pill-picks').classList.toggle('active', which === 'picks');
+  if (which === 'picks') renderCarPicks();
+}
+function carGoPicks() { switchView('seasonal'); carTab('picks'); }
+function carSrcName(type, ref) {
+  try {
+    if (type === 'cat') { const c = categories[Number(ref)]; return c ? c.name : ''; }
+    if (type === 'live') { const [k, id] = ref.split(':'); const c = (k === 'bingo' ? liveBingoCats : liveTriviaCats).find(x => x._liveId === id); return c ? c.name : ''; }
+    if (type === 'movie') { const m = movies[ref]; return m ? (m.title || '') : ''; }
+    if (type === 'night') { const n = nights[Number(ref)]; return n ? n.name : ''; }
+  } catch (e) {}
+  return '';
+}
+function carRerenderCards() {
+  ['renderTrivia', 'renderBingo', 'renderSingAlongs', 'renderMiniGames', 'renderMovies', 'renderNights'].forEach(fn => { try { if (typeof window[fn] === 'function') window[fn](); else if (typeof eval(fn) === 'function') eval(fn)(); } catch (e) {} });
+}
 async function loadCarPicks() {
   if (carPicksLoaded) return;
   try { const snap = await getDoc(doc(db, 'venueMenuConfig', 'mainMenu')); carPicks = snap.exists() ? (snap.data().carouselPicks || []) : []; carPicksLoaded = true; }
@@ -5569,6 +5635,8 @@ async function loadCarPicks() {
 }
 async function persistCarPicks() { await setDoc(doc(db, 'venueMenuConfig', 'mainMenu'), { carouselPicks: carPicks }, { merge: true }); if (typeof mmData === 'object' && mmData) mmData.carouselPicks = carPicks; }
 function carBtn(type, ref) {
+  const nm = carSrcName(type, ref);
+  if (nm && carPicks.some(p => p.srcType === type && p.name === nm)) return `<button class="btn btn-sm cp-in" style="margin-top:6px;" onclick="event.stopPropagation();carGoPicks()">✓ In Carousel Picks</button>`;
   return `<button class="btn btn-sm btn-ghost" style="margin-top:6px;" onclick="event.stopPropagation();carouselAdd('${type}','${String(ref).replace(/'/g, "\\'")}')">+ Carousel</button>`;
 }
 async function carouselAdd(type, ref) {
@@ -5581,7 +5649,8 @@ async function carouselAdd(type, ref) {
   if (!name) return;
   if (carPicks.some(p => p.srcType === type && p.name === name)) { toast('Already in Carousel Picks', 'error'); return; }
   carPicks.push({ id: 'cp_' + Date.now(), name, image, desc, srcType: type, mode: 'off', dateType: 'month', month: new Date().getMonth() + 1, day: null, exactDate: '', recurring: true, alwaysOn: true, alwaysOff: true });
-  try { await persistCarPicks(); toast('Sent to Carousel Picks', 'success'); } catch (e) { toast('Save failed: ' + e.message, 'error'); }
+  try { await persistCarPicks(); toast('Sent to Carousel Picks', 'success'); } catch (e) { carPicks.pop(); toast('Save failed: ' + e.message, 'error'); }
+  carRerenderCards();
 }
 async function renderCarPicks() {
   await loadCarPicks();
@@ -5599,10 +5668,12 @@ async function renderCarPicks() {
           <option value="off"${m === 'off' ? ' selected' : ''}>Not showing</option>
           <option value="always"${m === 'always' ? ' selected' : ''}>Always showing</option>
           <option value="yearly"${m === 'yearly' ? ' selected' : ''}>Every year</option>
+          <option value="range"${m === 'range' ? ' selected' : ''}>From a date to a date, every year</option>
           <option value="once"${m === 'once' ? ' selected' : ''}>One date only</option></select>
+          ${m === 'range' ? `<select onchange="carSet(${i},'rStartM',this.value)">${mo(p.rStartM || 1)}</select><input type="number" min="1" max="31" value="${p.rStartD || 1}" style="width:70px;" onchange="carSet(${i},'rStartD',this.value)"><span>to</span><select onchange="carSet(${i},'rEndM',this.value)">${mo(p.rEndM || 1)}</select><input type="number" min="1" max="31" value="${p.rEndD || 28}" style="width:70px;" onchange="carSet(${i},'rEndD',this.value)">` : ''}
           ${m === 'yearly' ? `<select onchange="carSet(${i},'month',this.value)">${mo(p.month)}</select><input type="number" min="1" max="31" placeholder="Day (optional)" value="${p.day || ''}" style="width:130px;" onchange="carSet(${i},'day',this.value)">` : ''}
           ${m === 'once' ? `<input type="date" value="${esc(p.exactDate || '')}" onchange="carSet(${i},'exactDate',this.value)">` : ''}`)}
-        <div style="font-size:0.78rem;color:var(--text-dim);margin-top:6px;">${m === 'yearly' ? (p.day ? 'Shows 30 days before, every year.' : 'Shows from 2 weeks before the month starts until the last week of the month, every year.') : m === 'once' ? 'Shows 30 days before the date.' : m === 'always' ? 'Stays in the carousel all year.' : 'Hidden from the carousel.'}</div>
+        <div style="font-size:0.78rem;color:var(--text-dim);margin-top:6px;">${m === 'yearly' ? (p.day ? 'Shows 30 days before, every year.' : 'Shows from 2 weeks before the month starts until the last week of the month, every year.') : m === 'range' ? 'Shows every year from the first date through the second.' : m === 'once' ? 'Shows 30 days before the date.' : m === 'always' ? 'Stays in the carousel all year.' : 'Hidden from the carousel.'}</div>
       </div>
       <button class="btn btn-sm btn-ghost" onclick="carRemove(${i})">Remove</button>
     </div>`;
@@ -5613,8 +5684,10 @@ async function carSet(i, key, val) {
   if (key === 'mode') {
     p.mode = val;
     p.alwaysOn = val === 'off' || val === 'always'; p.alwaysOff = val === 'off';
-    p.dateType = val === 'once' ? 'exact' : 'month'; p.recurring = val !== 'once';
-  } else if (key === 'month') p.month = Number(val);
+    p.dateType = val === 'once' ? 'exact' : (val === 'range' ? 'range' : 'month'); p.recurring = val !== 'once';
+    if (val === 'range') { p.rStartM = p.rStartM || p.month || 1; p.rStartD = p.rStartD || 1; p.rEndM = p.rEndM || p.rStartM; p.rEndD = p.rEndD || 28; }
+  } else if (['rStartM', 'rStartD', 'rEndM', 'rEndD'].includes(key)) p[key] = Number(val) || 1;
+  else if (key === 'month') p.month = Number(val);
   else if (key === 'day') p.day = val ? Number(val) : null;
   else p[key] = val;
   renderCarPicks();
@@ -5622,7 +5695,7 @@ async function carSet(i, key, val) {
 }
 async function carRemove(i) {
   if (!confirm('Remove this from Carousel Picks?')) return;
-  carPicks.splice(i, 1); renderCarPicks();
+  carPicks.splice(i, 1); renderCarPicks(); carRerenderCards();
   try { await persistCarPicks(); } catch (e) { toast('Save failed: ' + e.message, 'error'); }
 }
 
@@ -5660,6 +5733,10 @@ async function persistSeasonalEvents() {
 function seIsActive(ev) {
   if (ev.alwaysOn) return !ev.alwaysOff; // year-round override
   const now = new Date();
+  if (ev.dateType === 'range') {
+    const v = (now.getMonth() + 1) * 100 + now.getDate(), a = ev.rStartM * 100 + ev.rStartD, b = ev.rEndM * 100 + ev.rEndD;
+    return a <= b ? (v >= a && v <= b) : (v >= a || v <= b);
+  }
   const today = { y: now.getFullYear(), m: now.getMonth()+1, d: now.getDate() };
 
   if (ev.dateType === 'exact') {
@@ -5720,6 +5797,8 @@ function renderSeasonalAdmin() {
     let m;
     if (ev.dateType === 'exact') {
       m = ev.exactDate ? Number(ev.exactDate.split('-')[1]) : 0;
+    } else if (ev.dateType === 'range') {
+      m = Number(ev.rStartM) || 0;
     } else {
       m = Number(ev.month) || 0;
     }
@@ -5752,7 +5831,9 @@ function renderSeasonalAdmin() {
       const oneTime = !ev.recurring
         ? '<span style="background:rgba(139,100,30,0.15);border:1px solid rgba(139,100,30,0.35);color:#C9A84C;padding:1px 8px;border-radius:3px;font-size:0.65rem;font-family:Cinzel,serif;letter-spacing:0.08em;text-transform:uppercase;">One-Time</span>'
         : '';
-      const dateStr = ev.dateType === 'exact'
+      const dateStr = ev.dateType === 'range'
+        ? MONTH_NAMES[ev.rStartM] + ' ' + ev.rStartD + ' – ' + MONTH_NAMES[ev.rEndM] + ' ' + ev.rEndD + ' (every year)'
+        : ev.dateType === 'exact'
         ? ev.exactDate
         : (ev.day ? MONTH_NAMES[Number(ev.month)] + ' ' + ev.day : MONTH_NAMES[Number(ev.month)]);
 
@@ -5781,6 +5862,8 @@ function setSeasonalDateType(type) {
   seCurrentDateType = type;
   document.getElementById('se-month-fields').style.display = type === 'month' ? '' : 'none';
   document.getElementById('se-exact-fields').style.display = type === 'exact' ? '' : 'none';
+  document.getElementById('se-range-fields').style.display = type === 'range' ? '' : 'none';
+  document.getElementById('se-type-range-btn').className = 'btn btn-sm' + (type === 'range' ? '' : ' btn-ghost');
   document.getElementById('se-type-month-btn').className = 'btn btn-sm' + (type === 'month' ? '' : ' btn-ghost');
   document.getElementById('se-type-exact-btn').className = 'btn btn-sm' + (type === 'exact' ? '' : ' btn-ghost');
 }
@@ -5806,6 +5889,9 @@ function openSeasonalModal(id) {
   if (dtype === 'month') {
     document.getElementById('se-month').value = ev ? (ev.month || 1) : new Date().getMonth()+1;
     document.getElementById('se-day').value   = ev ? (ev.day || '') : '';
+  } else if (dtype === 'range') {
+    document.getElementById('se-rs-m').value = ev.rStartM || 1; document.getElementById('se-rs-d').value = ev.rStartD || '';
+    document.getElementById('se-re-m').value = ev.rEndM || 1;   document.getElementById('se-re-d').value = ev.rEndD || '';
   } else {
     document.getElementById('se-exact-date').value = ev ? (ev.exactDate || '') : '';
   }
@@ -5843,6 +5929,10 @@ async function saveSeasonalEvent() {
     ev.month = Number(document.getElementById('se-month').value);
     const dayVal = document.getElementById('se-day').value.trim();
     ev.day = dayVal ? Number(dayVal) : null;
+  } else if (seCurrentDateType === 'range') {
+    ev.rStartM = Number(document.getElementById('se-rs-m').value); ev.rStartD = Number(document.getElementById('se-rs-d').value) || 1;
+    ev.rEndM = Number(document.getElementById('se-re-m').value);   ev.rEndD = Number(document.getElementById('se-re-d').value) || 28;
+    ev.recurring = true;
   } else {
     ev.exactDate = document.getElementById('se-exact-date').value;
   }
@@ -6430,6 +6520,8 @@ window.scSave = async function(i) {
 let fiAllItems = [];
 let fiTypeFilter = 'all';
 let fiStatusFilter = 'all';
+let fiMode = 'inbox';
+function fiBase() { return fiAllItems.filter(i => fiMode === 'ideas' ? i.type === 'categoryEntry' : i.type !== 'categoryEntry'); }
 let fiLoaded = false;
 const FI_TYPE_LABELS = { question: 'Question', comment: 'Comment', complaint: 'Complaint', categoryRequest: 'Category Request', categoryEntry: 'Venue Idea', concurrent: 'Concurrent Event' };
 
@@ -6455,14 +6547,17 @@ async function loadFeedbackInbox() {
   }
 }
 function renderFiFilters() {
-  const types = ['all', 'question', 'comment', 'complaint', 'categoryRequest', 'categoryEntry', 'concurrent'];
+  const types = fiMode === 'ideas' ? [] : ['all', 'question', 'comment', 'complaint', 'categoryRequest', 'concurrent'];
+  const base = fiBase();
+  const tt = document.getElementById('fi-title'); if (tt) tt.textContent = fiMode === 'ideas' ? 'Venue Ideas' : 'Feedback Inbox';
+  const ti = document.getElementById('fi-intro'); if (ti) ti.style.display = fiMode === 'ideas' ? 'none' : '';
   document.getElementById('fi-type-filters').innerHTML = types.map(t => {
-    const count = t === 'all' ? fiAllItems.length : fiAllItems.filter(i => i.type === t).length;
+    const count = t === 'all' ? base.length : base.filter(i => i.type === t).length;
     return `<button class="filter-dim-tab${fiTypeFilter===t?' active':''}" onclick="setFiTypeFilter('${t}')">${t==='all'?'All Types':esc(FI_TYPE_LABELS[t]||t)} <span style="opacity:0.7;">${count}</span></button>`;
   }).join('');
   const statuses = ['all', 'new', 'read', 'handled'];
   document.getElementById('fi-status-filters').innerHTML = statuses.map(s => {
-    const count = s === 'all' ? fiAllItems.length : fiAllItems.filter(i => (i.status||'new') === s).length;
+    const count = s === 'all' ? base.length : base.filter(i => (i.status||'new') === s).length;
     return `<button class="filter-dim-tab${fiStatusFilter===s?' active':''}" onclick="setFiStatusFilter('${s}')">${s==='all'?'All Statuses':s.charAt(0).toUpperCase()+s.slice(1)} <span style="opacity:0.7;">${count}</span></button>`;
   }).join('');
 }
@@ -6473,8 +6568,8 @@ function fiFmtDate(ts) {
   return ts.toDate().toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
 }
 function renderFiRows() {
-  const filtered = fiAllItems.filter(i =>
-    (fiTypeFilter === 'all' || i.type === fiTypeFilter) &&
+  const filtered = fiBase().filter(i =>
+    (fiMode === 'ideas' || fiTypeFilter === 'all' || i.type === fiTypeFilter) &&
     (fiStatusFilter === 'all' || (i.status || 'new') === fiStatusFilter)
   );
   const container = document.getElementById('fi-rows');
@@ -6522,7 +6617,11 @@ function renderFiRows() {
     </div>`;
   }).join('');
 }
-window.openVenueEntries = function() { fiTypeFilter = 'categoryEntry'; fiStatusFilter = 'all'; switchView('feedback'); };
+window.openVenueEntries = function() {
+  fiMode = 'ideas'; fiTypeFilter = 'all'; fiStatusFilter = 'all'; switchView('feedback');
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.toggle('active', t.textContent.trim() === 'Venue Ideas'));
+};
+window.openFeedbackInbox = function() { fiMode = 'inbox'; fiTypeFilter = 'all'; fiStatusFilter = 'all'; switchView('feedback'); };
 window.decideEntry = async function(id, decision) {
   try {
     await updateDoc(doc(db, 'venueFeedback', id), { decision, status: 'read' });
@@ -6660,6 +6759,7 @@ window.deletePortalCollaborator = async function(id) {
 };
 
 Object.assign(window, {
+  carTab, carGoPicks, setCatSize, setCatStyle, closeCategoryDetail, openNightFromCat, openCategoryDetail, carouselAdd, carSet, carRemove,
   liveImgPreview,
   toggleNavMenu, closeNavMenu,
   renderMovies, openMovieModal, addMovieLinkRow, closeMovieModal, saveMovie, deleteMovie, openMovieBulk, closeMovieBulk, saveMovieBulk,
