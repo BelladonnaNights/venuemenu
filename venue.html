@@ -903,12 +903,14 @@
   .q-daterow em { color: var(--text-dim); font-size: .85rem; }
   .br-intro { color: var(--text-muted); margin: -.2rem 0 1.4rem; }
   .br-row { margin-bottom: 2.2rem; }
-  .br-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: .7rem; }
+  .br-head { display: flex; flex-wrap: nowrap; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: .7rem; }
+  .br-head h3 { min-width: 0; }
+  .br-arrows { display: flex; align-items: center; flex: 0 0 auto; }
   .br-seeall { width:auto !important; border-radius:999px !important; padding:0 .9rem !important; font-size:.72rem !important; letter-spacing:.12em; text-transform:uppercase; margin-right:.4rem; }
   .br-head h3 { font-family: var(--cinzel); color: var(--gold); letter-spacing: .16em; text-transform: uppercase; font-size: .95rem; margin: 0; }
   .br-arrows button { background: var(--surface3); border: 1px solid var(--border2); color: var(--gold); width: 34px; height: 34px; border-radius: 50%; cursor: pointer; font-size: 1.1rem; margin-left: 6px; }
   .br-scroller { display: flex; gap: 14px; overflow-x: auto; scroll-snap-type: x proximity; padding-bottom: 10px; scrollbar-width: thin; }
-  .br-card { flex: 0 0 230px; scroll-snap-align: start; background: var(--surface2); border: 1px solid var(--border2); border-radius: 12px; overflow: hidden; cursor: pointer; display: flex; flex-direction: column; }
+  .br-card { flex: 0 0 200px; scroll-snap-align: start; background: var(--surface2); border: 1px solid var(--border2); border-radius: 12px; overflow: hidden; cursor: pointer; display: flex; flex-direction: column; }
   .br-card:hover { border-color: var(--gold); }
   .br-img { aspect-ratio: 4/5; background: var(--surface3); display: flex; align-items: center; justify-content: center; overflow: hidden; }
   .br-img img { width: 100%; height: 100%; object-fit: cover; }
@@ -920,7 +922,7 @@
   .br-btn.gold, .br-pill { background: linear-gradient(180deg,#fff2b8 0%,#f3d77a 18%,#d9b04a 48%,#b98a26 52%,#e6c363 80%,#f7e08f 100%); border-color: #8a6414; color: #2b1d02; font-weight: 700; text-shadow: 0 1px 0 rgba(255,244,196,.7); box-shadow: inset 0 1px 0 rgba(255,255,255,.75), inset 0 -1px 2px rgba(110,72,6,.45), 0 1px 4px rgba(0,0,0,.4), 0 0 8px rgba(226,184,72,.25); }
   .br-btn.gold:hover { filter: brightness(1.08) saturate(1.1); }
   .br-btn.done { border-color: var(--gold); color: var(--gold); }
-  @media (max-width: 768px) { .br-card { flex-basis: 190px; } }
+  @media (max-width: 768px) { .br-card { flex-basis: 160px; } .br-name { font-size: 1.15rem; } .br-head h3 { font-size: .8rem; letter-spacing: .1em; } .br-arrows button { width: 30px; height: 30px; margin-left: 4px; } .br-seeall { height: 30px !important; padding: 0 .7rem !important; font-size: .62rem !important; } }
   .br-pill { display: inline-block; margin-left: 8px; vertical-align: middle; font-family: var(--cinzel); font-size: .55rem; letter-spacing: .1em; text-transform: uppercase; border-radius: 10px; padding: 2px 8px; border: 1px solid #8a6414; }
   .br-blurb { padding: 0 12px; color: var(--text-muted); font-size: .85rem; line-height: 1.4; }
   .cart-premium { margin-top: .6rem; padding: .5rem .7rem; border: 1px solid var(--gold); border-radius: 6px; color: var(--gold-light); font-size: .8rem; }
@@ -1988,6 +1990,7 @@ const MONTH_NAMES_V = ['','January','February','March','April','May','June',
                        'July','August','September','October','November','December'];
 
 let catStyle = 'cards';
+let eventImages = {};
 function effCatStyle() { let o = null; try { o = localStorage.getItem('belladonna_catview'); } catch (e) {} return o || catStyle; }
 function toggleCatView(view) {
   const next = effCatStyle() === 'tiles' ? 'cards' : 'tiles';
@@ -2023,7 +2026,7 @@ function applyCatSize(grid) {
   document.querySelectorAll('.cat-sty-btn').forEach(b => b.classList.toggle('active', b.dataset.sty === catStyle));
 }
 async function loadDisplaySettings() {
-  try { const d = await getDoc(doc(db, 'venueMenuConfig', 'mainMenu')); if (d.exists()) { catStyle = d.data().catStyle || 'cards'; catSize = Number(d.data().catSize) || 200; } } catch (e) {}
+  try { const d = await getDoc(doc(db, 'venueMenuConfig', 'mainMenu')); if (d.exists()) { catStyle = d.data().catStyle || 'cards'; catSize = Number(d.data().catSize) || 200; eventImages = d.data().eventImages || {}; } } catch (e) {}
 }
 function catTileHtml(c, onclickJs) {
   const nm = String(c.name || '');
@@ -3168,6 +3171,17 @@ const GIG_DEFS = {
   karaoke:    { name: 'Weekly Karaoke Gig',     kind: 'gig-karaoke' },
   booktrivia: { name: 'Book Trivia Gig',        kind: 'booktrivia' }
 };
+function venueHasGig(k) {
+  return (queueUpcomingItems || []).some(it => { const kd = String(it.kind || '').toLowerCase(); return k === 'bingo' ? kd.includes('bingo') : k === 'karaoke' ? kd.includes('karaoke') : k === 'booktrivia' ? kd.includes('book') : (kd.includes('trivia') && !kd.includes('book')); });
+}
+function cartGigOffer(item) {
+  if (!item.noGig) return '';
+  const d = GIG_DEFS[item.noGig]; if (!d) return '';
+  const has = cartHas('gig:' + item.noGig);
+  return '<div class="cart-note" style="margin-top:.5rem;">You don\'t have a weekly ' + item.noGig + ' gig with us yet, so this category is here on your Wish List instead of a queue.</div>'
+    + (has ? '<div style="font-size:.8rem;color:var(--gold);margin-top:.4rem;">✓ Weekly ' + item.noGig + ' gig is on your Wish List</div>'
+           : '<button class="br-btn gold" style="margin-top:.4rem;" onclick="gigRequest(\'' + item.noGig + '\')">Add a Weekly Recurring ' + item.noGig.charAt(0).toUpperCase() + item.noGig.slice(1) + ' Gig</button>');
+}
 function gigRequest(key) {
   const d = GIG_DEFS[key]; if (!d) return;
   const id = 'gig:' + key;
@@ -3188,7 +3202,7 @@ async function renderGigBanner(view, tf) {
   if (effectiveMode() !== 'venue') return;
   try { await loadVenueUpcoming(); } catch (e) {}
   document.querySelectorAll('.gig-banner').forEach(e => e.remove());
-  const hasGig = k => (queueUpcomingItems || []).some(it => { const kd = String(it.kind || '').toLowerCase(); return k === 'bingo' ? kd.includes('bingo') : k === 'karaoke' ? kd.includes('karaoke') : k === 'booktrivia' ? kd.includes('book') : (kd.includes('trivia') && !kd.includes('book')); });
+  const hasGig = venueHasGig;
   let key = null, text = '', btn = '';
   if (view === 'bingo')   { key = 'bingo';   text = 'Want us to run Music Bingo for you as a recurring gig?'; btn = 'Add Weekly Bingo Gig to Wish List'; }
   if (view === 'trivia')  { if (String(tf || activeTriviaTypeFilter || '').toLowerCase() === 'book trivia') { key = 'booktrivia'; text = 'Add the Book Trivia categories you like with Add to Wish List. They go straight onto your Book Trivia request.'; btn = 'Schedule a Book Trivia Gig'; } else { key = 'trivia'; text = 'Want us to run Trivia for you as a recurring gig?'; btn = 'Add Weekly Trivia Gig to Wish List'; } }
@@ -3306,6 +3320,16 @@ async function qUndo() {
 async function addCategoryToQueue(id) {
   const c = publishedCategories.find(x => x._id === id);
   if (!c) return;
+  const gk = isBingo(c) ? 'bingo' : (!isBookTrivia(c) && isTrivia(c) ? 'trivia' : null);
+  if (gk) {
+    try { await loadVenueUpcoming(); } catch (e) {}
+    if (!venueHasGig(gk)) {
+      categoryAddToCart(id, 'later');
+      cartMeta(id, { noGig: gk });
+      qToast('Added to your Wish List. You don\'t have a weekly ' + gk + ' gig yet. Open your Wish List to add one.');
+      return;
+    }
+  }
   await loadCategoryQueue();
   if (!isInCategoryQueue(id)) {
     qSnap();
@@ -3765,7 +3789,7 @@ const BR_EVENTS = [
   { key: 'battle',   name: 'Belladonna Battles — 4-Week Series', blurb: 'Four weeks of head-to-head play with brackets at your venue.', fields: ['game', 'time'] }
 ];
 function brEventCard(e) {
-  return '<div class="br-card br-event"><div class="br-img"><div class="br-noimg">' + esc(e.name) + '</div></div><div class="br-name">' + esc(e.name) + brPill(e.key) + '</div><div class="br-blurb">' + esc(e.blurb) + '</div><div class="br-btns"><button class="br-btn gold" onclick="brEvent(\'' + e.key + '\')">Request This</button></div></div>';
+  return '<div class="br-card br-event"><div class="br-img">' + (eventImages[e.key] ? '<img src="' + esc(eventImages[e.key]) + '" alt="' + esc(e.name) + '" loading="lazy">' : '<div class="br-noimg">' + esc(e.name) + '</div>') + '</div><div class="br-name">' + esc(e.name) + brPill(e.key) + '</div><div class="br-blurb">' + esc(e.blurb) + '</div><div class="br-btns"><button class="br-btn gold" onclick="brEvent(\'' + e.key + '\')">Request This</button></div></div>';
 }
 function brEvent(key) {
   const e = BR_EVENTS.find(x => x.key === key); if (!e) return;
@@ -3793,7 +3817,16 @@ async function renderBrowse() {
   ].filter(r => r[1].length);
   const SEE_ALL = { 'Trivia':'trivia', 'Bingo':'bingo', 'Mini Games':'minigames', 'Themed Nights':'themed', 'Sing-Alongs':'singalongs', 'Belladonna Battles':'battles', 'Movies':'movies', 'Plan an Event':'' };
   el.innerHTML = rows.length ? rows.map(([title, cards], i) => '<section class="br-row"><div class="br-head"><h3>' + esc(title) + '</h3><div class="br-arrows">' + (SEE_ALL[title] ? '<button class="br-seeall" onclick="navigateTo(\'' + SEE_ALL[title] + '\')">See all</button>' : '') + '<button onclick="brScroll(' + i + ',-1)" aria-label="Scroll left">‹</button><button onclick="brScroll(' + i + ',1)" aria-label="Scroll right">›</button></div></div><div class="br-scroller" id="br-scroll-' + i + '">' + cards.join('') + '</div></section>').join('') : '<div class="vp-empty">Nothing to browse yet.</div>';
+  setTimeout(brFixArrows, 60); setTimeout(brFixArrows, 800);
 }
+function brFixArrows() {
+  document.querySelectorAll('.br-scroller').forEach(sc => {
+    const arrows = sc.parentElement.querySelectorAll('.br-arrows button:not(.br-seeall)');
+    const need = sc.scrollWidth > sc.clientWidth + 4;
+    arrows.forEach(b => { b.style.display = need ? '' : 'none'; });
+  });
+}
+window.addEventListener('resize', () => { try { brFixArrows(); } catch (e) {} });
 function brScroll(i, dir) { const s = document.getElementById('br-scroll-' + i); if (s) s.scrollBy({ left: dir * s.clientWidth * 0.85, behavior: 'smooth' }); }
 
 // "Pick a date": choose which of your upcoming dates this category takes
@@ -4085,6 +4118,7 @@ function renderCartItems() {
       + (item.bookingType === 'date' ? dateSel : '')
       + (item.bookingType === 'weekly' ? weekSel : '')
       + cartExtrasHtml(item, i)
+      + cartGigOffer(item)
       + queueNote
       + saveLaterSel
       + '</div></div>';
