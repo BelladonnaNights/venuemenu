@@ -29,7 +29,7 @@
     position: sticky; top: 0; z-index: 200;
   }
   .header-left { display: flex; align-items: center; gap: 14px; }
-  .logo-img { width: 44px; height: 44px; object-fit: contain; }
+  .logo-img { width: 58px; height: 58px; object-fit: contain; }
   .wordmark { font-family: 'Cinzel', serif; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; display: flex; flex-direction: column; line-height: 1.2; }
   .wordmark-one { color: #FFFFFF; font-size: 1.6rem; }
   .wordmark-two { color: var(--gold); font-size: 1.1rem; }
@@ -780,6 +780,8 @@
     .menu-page { padding: 1.5rem 1rem 3rem; }
     .menu-intro-title { font-size: 1.5rem; }
     .menu-card-grid { grid-template-columns: repeat(2, 1fr); gap: 0.75rem; }
+    .menu-card-grid.centered-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; justify-content: stretch; }
+    .menu-card-grid.centered-row .menu-card { width: auto; flex: none; min-width: 0; }
     .menu-card-body { padding: 0.65rem 0.75rem 0.85rem; }
     .menu-card-title { font-size: 0.78rem; }
     .menu-card-desc { font-size: 0.78rem; }
@@ -848,9 +850,11 @@
   @media (max-width: 768px) {
     .site-header { padding: 0.5rem 0.6rem !important; gap: 4px 6px !important; flex-wrap: wrap; position: sticky; top: 0; }
     .header-left { gap: 6px !important; min-width: 0; flex: 1 1 auto; order: 1; }
-    .logo-img { width: 30px !important; height: 30px !important; }
-    .wordmark-one { font-size: 14px !important; } .wordmark-two { font-size: 10px !important; }
-    .hdr-right { order: 2; gap: 4px !important; flex: 0 0 auto; flex-wrap: nowrap; }
+    .logo-img { width: 46px !important; height: 46px !important; }
+    .wordmark-one { font-size: 19px !important; } .wordmark-two { font-size: 13px !important; }
+    .hdr-right { display: contents; }
+    .nav-menu-wrap { order: 2; margin-left: auto; position: relative; }
+    .hdr-actions { order: 3; flex: 1 0 100%; justify-content: flex-end; gap: 4px !important; }
     .hdr-right .sidebar-toggle-btn { padding: 0.4rem 0.45rem !important; font-size: 0.52rem !important; }
     .hdr-right .top-links { display:flex; gap:2px; }
     .hdr-right .top-link { padding: 6px 7px !important; font-size: 8.5px !important; letter-spacing: .06em !important; }
@@ -974,6 +978,10 @@
   .q-toast.show { opacity: 1; transform: translateX(-50%); }
   @media (max-width: 768px) { .qc-cell { min-height: 58px; } .qc-chip { font-size: .55rem; } }
   @media (max-width: 768px) { .q-name { font-size: 1.45rem; } .q-date { font-size: .85rem; } }
+  .cart-howto { font-size: .68rem; line-height: 1.45; color: var(--text-dim); padding: 0 0 .7rem; margin-bottom: .6rem; border-bottom: 1px solid var(--border); }
+  .gig-banner { margin: 0 0 1.1rem; padding: .8rem 1rem; border: 1px solid var(--border-strong); border-radius: 10px; background: rgba(201,168,76,.05); display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .gig-banner span { font-size: .82rem; color: var(--text-muted); line-height: 1.4; flex: 1 1 220px; }
+  .cart-theme { margin-top: .5rem; }
 </style>
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 </head>
@@ -991,11 +999,12 @@
   </div>
   <span id="gateway-user-label" class="hdr-user"></span>
   <div class="hdr-right" style="display:flex;align-items:center;gap:0.75rem;">
-    <span id="preview-mode-toggle" style="display:none;align-items:center;white-space:nowrap;"></span>
+    <div class="hdr-actions" style="display:flex;align-items:center;gap:0.75rem;">
     <button class="sidebar-toggle-btn" onclick="gatewaySignOut()" style="white-space:nowrap;">Sign Out</button>
     <div class="top-links" id="top-links">
       <button class="top-link venue-only-nav" style="display:none;" id="top-queue" onclick="navigateTo('queue')">My Queue</button>
       <button class="top-link cart-btn" id="cart-btn" onclick="openCart()">Wish List <span class="cart-count" id="cart-count">0</span></button>
+    </div>
     </div>
     <div class="nav-menu-wrap">
       <button class="burger-btn" id="burger-btn" onclick="toggleNavMenu(event)" aria-label="Menu" aria-expanded="false" title="Menu">
@@ -1006,11 +1015,13 @@
         <div class="nav-group">Plan my nights</div>
         <button class="nav-tab venue-only-nav" style="display:none;" id="nav-queue" onclick="navigateTo('queue')">My Queue</button>
         <button class="nav-tab venue-only-nav" style="display:none;" id="nav-browse" onclick="navigateTo('browse')">Browse</button>
+        <button class="nav-tab" id="nav-trivia" onclick="navigateTo('trivia')">Trivia</button>
+        <button class="nav-tab" id="nav-bingo" onclick="navigateTo('bingo')">Bingo</button>
         <button class="nav-tab" id="nav-booktrivia" onclick="navigateTo('trivia','book trivia')">Book Trivia</button>
-        <button class="nav-tab venue-only-nav" style="display:none;" id="nav-ideas" onclick="navigateTo('ideas')">Suggest an Idea</button>
         <button class="nav-tab" id="nav-themed" onclick="navigateTo('themed')">Themed Nights</button>
         <button class="nav-tab" id="nav-singalongs" onclick="navigateTo('singalongs')">Sing-Alongs</button>
         <button class="nav-tab" id="nav-movies" onclick="navigateTo('movies')">Movies</button>
+        <button class="nav-tab venue-only-nav" style="display:none;" id="nav-ideas" onclick="navigateTo('ideas')">Suggest an Idea</button>
         <div class="nav-group venue-only-nav" style="display:none;">My account</div>
         <button class="nav-tab venue-only-nav" style="display:none;" id="nav-contract" onclick="navigateTo('contract')">Contract</button>
         <button class="nav-tab venue-only-nav" style="display:none;" id="nav-feedback" onclick="navigateTo('feedback')">Feedback</button>
@@ -1021,6 +1032,7 @@
     </div>
   </div>
 </header>
+<div id="admin-preview-bar" style="display:flex;justify-content:flex-end;padding:0 1rem;"><span id="preview-mode-toggle" style="display:none;align-items:center;white-space:nowrap;"></span></div>
 
 <!-- ═══ MOBILE SIDEBAR BACKDROP ═══ -->
 <div id="mobile-sidebar-backdrop" onclick="closeFilterSidebar()" style="display:none;position:fixed;inset:0;z-index:499;background:rgba(0,0,0,0.45);"></div>
@@ -1701,6 +1713,7 @@
     <button class="cart-close" onclick="closeCart()">✕</button>
   </div>
   <div class="cart-body" id="cart-body">
+    <div class="cart-howto">Add what you'd like to do here, then send it to us. We'll schedule it, or review it for approval. Want a category in the recurring gig you already have with us? Add it to your Queue instead.</div>
     <div class="cart-empty" id="cart-empty">Nothing added yet.<br>Browse the menu and tap ＋ to add.</div>
     <div id="cart-items"></div>
   </div>
@@ -2492,7 +2505,7 @@ function navigateTo(view, typeFilter) {
   window.scrollTo(0, 0);
   // Update nav tab active state
   document.querySelectorAll('#main-nav .nav-tab').forEach(t => t.classList.remove('active'));
-  const navMap = { menu:'nav-menu', themed:'nav-themed', singalongs:'nav-singalongs', movies:'nav-movies', queue:'nav-queue', browse:'nav-browse', contract:'nav-contract', feedback:'nav-feedback', ideas:'nav-ideas', concurrent:'nav-concurrent', campaigns:'nav-campaigns', collaborators:'nav-collaborators' };
+  const navMap = { menu:'nav-menu', trivia:'nav-trivia', bingo:'nav-bingo', themed:'nav-themed', singalongs:'nav-singalongs', movies:'nav-movies', queue:'nav-queue', browse:'nav-browse', contract:'nav-contract', feedback:'nav-feedback', ideas:'nav-ideas', concurrent:'nav-concurrent', campaigns:'nav-campaigns', collaborators:'nav-collaborators' };
   document.querySelectorAll('#top-links .top-link').forEach(b => b.classList.remove('active'));
   const topMap = { menu:'top-menu', queue:'top-queue', browse:'top-browse' };
   if (topMap[view]) document.getElementById(topMap[view])?.classList.add('active');
@@ -2517,6 +2530,7 @@ function navigateTo(view, typeFilter) {
   if (view === 'concurrent')    loadConcurrentView();
   if (view === 'campaigns')     loadCampaignsView();
   if (view === 'collaborators') loadCollaboratorsView();
+  setTimeout(() => renderGigBanner(view), 0);
 }
 
 // ── FILTER SIDEBAR ──
@@ -2778,7 +2792,7 @@ function renderTrivia() {
       : '<div class="night-card-img" style="aspect-ratio:4/5;display:flex;align-items:center;justify-content:center;background:var(--surface2);color:var(--text-dim);font-size:2rem;">🧠</div>';
     const rid = String(c._id).replace(/^trivia:/,'');
     const heart = tlHeartOn ? '<button type="button" title="Like this category for our venue" onclick="event.stopPropagation();toggleTriviaLike(\'' + rid + '\')" style="position:absolute;top:8px;right:8px;z-index:3;width:34px;height:34px;border-radius:50%;border:1px solid rgba(255,255,255,.25);background:rgba(0,0,0,.6);color:' + (tlLiked.has(rid) ? '#e8456b' : '#fff') + ';font-size:18px;line-height:1;cursor:pointer;">' + (tlLiked.has(rid) ? '\u2665' : '\u2661') + '</button>' : '';
-    return '<div class="night-card" style="position:relative;" onclick="openCategoryDetail(\'' + c._id + '\')">' + heart + imgEl + '<div class="night-card-body"><div class="night-name">' + esc(c.name) + '</div>' + '</div></div>';
+    return '<div class="night-card" style="position:relative;" onclick="openCategoryDetail(\'' + c._id + '\')">' + heart + imgEl + '<div class="night-card-body"><div class="night-name">' + esc(c.name) + '</div>' + (isBookTrivia(c) && effectiveMode() === 'venue' ? '<div class="br-btns" style="padding:8px 0 0;"><button class="br-btn gold" onclick="event.stopPropagation();categoryAddToCart(\'' + c._id + '\',\'later\')">Add to Wish List</button></div>' : '') + '</div></div>';
   }).join('');
 }
 
@@ -3047,7 +3061,7 @@ function openCategoryDetail(id) {
   } else {
     actionsEl.innerHTML = isInCategoryQueue(c._id)
       ? '<button class="atc-btn in-cart" onclick="closeDetail();navigateTo(\'queue\')">✓ In Your Queue — View</button>'
-      : '<button class="atc-btn" onclick="addCategoryToQueue(\'' + c._id + '\')">Add to Queue</button>';
+      : (isBookTrivia(c) ? '<button class="atc-btn" onclick="categoryAddToCart(\'' + c._id + '\',\'later\')">Add to Wish List</button>' : '') + '<button class="atc-btn" onclick="addCategoryToQueue(\'' + c._id + '\')">Add to Queue</button>';
   }
   document.getElementById('detail-overlay').classList.add('open');
 }
@@ -3118,9 +3132,43 @@ function movieAddToCart(id, bookingType) {
   closeDetail();
 }
 
+const GIG_DEFS = {
+  bingo:      { name: 'Weekly Music Bingo Gig', kind: 'gig-bingo' },
+  trivia:     { name: 'Weekly Trivia Gig',      kind: 'gig-trivia' },
+  karaoke:    { name: 'Weekly Karaoke Gig',     kind: 'gig-karaoke' },
+  booktrivia: { name: 'Book Trivia Gig',        kind: 'booktrivia' }
+};
+function gigRequest(key) {
+  const d = GIG_DEFS[key]; if (!d) return;
+  const id = 'gig:' + key;
+  if (!cartHas(id)) { addToCart(id, d.name, 0); cartMeta(id, { kind: d.kind, bookingType: 'weekly' }); } else openCart();
+}
+function isBookTrivia(c) { return (c.type || '').toLowerCase().split(',').map(t => t.trim()).includes('book trivia'); }
+function bookTriviaAdd(c) {
+  gigRequest('booktrivia');
+  const i = cartItemIdx('gig:booktrivia'); if (i < 0) return;
+  cart[i].picks = cart[i].picks || [];
+  if (!cart[i].picks.includes(c.name)) cart[i].picks.push(c.name);
+  cartSave(); renderCartItems();
+}
+function bookTriviaRemove(i, j) { if (!cart[i] || !cart[i].picks) return; cart[i].picks.splice(j, 1); cartSave(); renderCartItems(); }
+function renderGigBanner(view) {
+  document.querySelectorAll('.gig-banner').forEach(e => e.remove());
+  if (effectiveMode() !== 'venue') return;
+  let key = null, text = '', btn = '';
+  if (view === 'bingo')   { key = 'bingo';   text = 'Want us to run Music Bingo for you as a recurring gig?'; btn = 'Request a weekly Bingo gig'; }
+  if (view === 'trivia')  { if (activeTriviaTypeFilter === 'book trivia') { key = 'booktrivia'; text = 'Add the Book Trivia categories you like with Add to Wish List. They go straight onto your Book Trivia request.'; btn = 'Schedule a Book Trivia gig'; } else { key = 'trivia'; text = 'Want us to run Trivia for you as a recurring gig?'; btn = 'Request a weekly Trivia gig'; } }
+  if (view === 'karaoke') { key = 'karaoke'; text = 'Want us to run Karaoke for you as a recurring gig?'; btn = 'Request a weekly Karaoke gig'; }
+  if (!key) return;
+  const v = document.getElementById('view-' + view); const back = v && v.querySelector('.back-btn'); if (!back) return;
+  const d = document.createElement('div'); d.className = 'gig-banner';
+  d.innerHTML = '<span>' + text + '</span><button class="br-btn gold" onclick="gigRequest(\'' + key + '\')">' + btn + '</button>';
+  back.insertAdjacentElement('afterend', d);
+}
 function categoryAddToCart(id, bookingType) {
   const c = publishedCategories.find(x => x._id === id);
   if (!c) return;
+  if (isBookTrivia(c)) { bookTriviaAdd(c); closeDetail(); return; }
   if (!cartHas(c._id)) addToCart(c._id, c.name, c.addonPrice || 0); else openCart();
   const idx = cartItemIdx(c._id);
   if (idx >= 0) setBookingType(idx, bookingType);
@@ -3677,7 +3725,7 @@ function brAdd(kind, ref, bookingType) {
 }
 // Events a venue can ask for that aren't on the menu as a single category
 const BR_EVENTS = [
-  { key: 'party',    name: 'Private Party',      blurb: 'A private event at your venue — birthday, corporate, anything.', fields: ['time', 'guests'] },
+  { key: 'party',    name: 'Private Party',      blurb: 'A private event at your venue — birthday, corporate, anything.', fields: ['occasion', 'time', 'guests'] },
   { key: 'holiday',  name: 'Holiday Party',      blurb: 'A themed holiday night with a Belladonna host.', fields: ['time', 'guests'] },
   { key: 'ticketed', name: 'Ticketed Event',     blurb: 'A special event guests buy tickets for.', fields: ['time', 'guests', 'ticket'] },
   { key: 'battle',   name: 'Belladonna Battles — 4-Week Series', blurb: 'Four weeks of head-to-head play with brackets at your venue.', fields: ['game', 'time'] }
@@ -3695,14 +3743,17 @@ function brEvent(key) {
 async function renderBrowse() {
   const el = document.getElementById('browse-rows'); if (!el) return;
   try { await loadVenueUpcoming(); await loadCategoryQueue(); } catch (e) {}
+  // Only categories that are published (same rule as the tabs); Trivia row matches the Trivia tab exactly.
+  const pubCats = publishedCategories.filter(c => c.published || (c.publishedTabs||[]).length > 0);
+  const plainTrivia = c => (c.type||'').toLowerCase().split(',').map(t=>t.trim()).some(t => t === 'trivia' || t === 'full trivia');
   const rows = [
-    ['Trivia', publishedCategories.filter(isTrivia).map(brCatCard)],
-    ['Bingo', publishedCategories.filter(isBingo).map(brCatCard)],
-    ['Karaoke Lists', publishedCategories.filter(isKaraoke).map(brCatCard)],
-    ['Mini Games', publishedCategories.filter(isMiniGame).map(brCatCard)],
+    ['Trivia', pubCats.filter(c => isTrivia(c) && plainTrivia(c)).map(brCatCard)],
+    ['Bingo', pubCats.filter(isBingo).map(brCatCard)],
+    ['Karaoke Lists', pubCats.filter(isKaraoke).map(brCatCard)],
+    ['Mini Games', pubCats.filter(isMiniGame).map(brCatCard)],
     ['Themed Nights', publishedNights.filter(nightVisibleNow).map(brNightCard)],
-    ['Sing-Alongs', publishedCategories.filter(isSingAlong).map(brCatCard)],
-    ['Belladonna Battles', publishedCategories.filter(isBattles).map(brCatCard)],
+    ['Sing-Alongs', pubCats.filter(isSingAlong).map(brCatCard)],
+    ['Belladonna Battles', pubCats.filter(isBattles).map(brCatCard)],
     ['Plan an Event', BR_EVENTS.map(brEventCard)],
     ['Movies', publishedMovies.map(brMovieCard)]
   ].filter(r => r[1].length);
@@ -3824,6 +3875,9 @@ const CART_FIELD_DEFS = {
   time:   { label: 'Start time (and end, if you know it)', ph: 'e.g. 7pm – 10pm', type: 'text' },
   guests: { label: 'About how many guests?', ph: 'e.g. 40', type: 'text' },
   ticket: { label: 'Ticket price and who sells the tickets', ph: 'e.g. $15 — sold by the venue', type: 'text' },
+  theme:  { label: 'Your own theme idea (goes to us for approval)', ph: '', type: 'text' },
+  occasion: { label: 'What is the occasion?', ph: '', type: 'text' },
+  picks:  { label: 'Book trivia categories wanted', ph: '', type: 'text' },
   game:   { label: 'Which game?', ph: 'Bingo, Trivia, Karaoke…', type: 'text' }
 };
 function cartWeeklyNotice(item) {
@@ -3839,10 +3893,26 @@ function cartWeeklyNotice(item) {
   if (!hits.length) return '';
   return '<div class="cart-conflict">You already have a recurring gig on that day (' + hits.join('; ') + '). If this is at the same time as your recurring gig, this request replaces it on those days if approved.</div>';
 }
+function cartThemeKind(item) {
+  return ['booktrivia', 'singalong', 'night', 'holiday', 'party'].includes(item.kind) || publishedNights.some(n => n._id === item.id) || publishedCategories.some(c => c._id === item.id && isSingAlong(c));
+}
+function cartPreExtras(item, i) {
+  let h = '';
+  if (item.kind === 'booktrivia') {
+    const pk = item.picks || [];
+    h += '<div class="cart-note">' + (pk.length ? 'Book trivia categories you picked:' : 'Tap Add to Wish List on any Book Trivia category and it lands here.') + '</div>';
+    h += pk.map((n, j) => '<div style="display:flex;justify-content:space-between;gap:8px;font-size:.82rem;color:var(--gold);padding:2px 0;"><span>' + esc(n) + '</span><button class="cart-item-remove" onclick="bookTriviaRemove(' + i + ',' + j + ')" title="Remove">✕</button></div>').join('');
+  }
+  if (cartThemeKind(item)) {
+    h += '<div class="cart-theme"><label class="cart-flabel">Have your own theme in mind? (optional)</label><input class="cart-finput" type="text" value="' + esc((item.details && item.details.theme) || '') + '" oninput="cartField(' + i + ',\'theme\',this.value)"><div class="cart-note">Anything you type here is sent to us for approval.</div></div>';
+  }
+  return h;
+}
 function cartExtrasHtml(item, i) {
   const wn = cartWeeklyNotice(item);
-  if (!item.premium) return wn;
-  let h = '<div class="cart-premium">$ This costs extra. We will confirm the price when we approve it.</div>';
+  const pre = cartPreExtras(item, i);
+  if (!item.premium) return pre + wn;
+  let h = pre + '<div class="cart-premium">$ This costs extra. We will confirm the price when we approve it.</div>';
   const ev = (typeof BR_EVENTS !== 'undefined') ? BR_EVENTS.find(x => x.key === item.kind) : null;
   if (ev) {
     h += ev.fields.map(f => { const d = CART_FIELD_DEFS[f]; return '<label class="cart-flabel">' + d.label + '</label><input class="cart-finput" type="text" placeholder="' + d.ph + '" value="' + esc((item.details && item.details[f]) || '') + '" oninput="cartField(' + i + ',\'' + f + '\',this.value)">'; }).join('');
@@ -4113,7 +4183,8 @@ async function submitCart() {
     if (item.bookingType === 'weekly') scheduling = 'Weekly Gig — ' + (item.weekdays.length ? 'Every ' + item.weekdays.map(i=>WEEKDAYS[i]).join(' & ') : 'Days TBD');
     if (item.bookingType === 'later')  scheduling = 'Save for Later';
     if (item.bookingType === 'queue')  scheduling = 'Scheduling Queue (no date picked yet — find us an opening)';
-    const det = item.details || {};
+    const det = Object.assign({}, item.details || {});
+    if (item.picks && item.picks.length) det.picks = item.picks.join(', ');
     const detailText = Object.entries(det).filter(([k, v]) => v).map(([k, v]) => ((CART_FIELD_DEFS[k] || {}).label || k).split(' (')[0] + ': ' + v).join(' · ');
     return {
       name: item.name + (item.price ? ' (+$' + item.price.toFixed(2) + ' add-on)' : ''), scheduling,
@@ -4248,7 +4319,7 @@ async function loadBattlesPageContent() {
 Object.assign(window, {
   ideaReasonChanged,
   renderMovies, openMovieDetail, movieAddToCart,
-  navigateTo, toggleNavMenu, closeNavMenu, renderComingUp, toggleFilterSidebar, closeFilterSidebar,
+  navigateTo, gigRequest, bookTriviaRemove, toggleNavGroup, toggleNavMenu, closeNavMenu, renderComingUp, toggleFilterSidebar, closeFilterSidebar,
   openCart, closeCart, addToCart, removeFromCart, setBookingType, selectDate, calNav, toggleWeekday,
   showCheckoutForm, hideCheckoutForm, submitCart,
   openSeasonalPopup, closeSeasonalPopup, closeSeasonalPopupDirect, addSeasonalToCart,
