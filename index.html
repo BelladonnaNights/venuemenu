@@ -960,6 +960,7 @@
   .cat-banner-wrap { width: 100%; aspect-ratio: 16/4; overflow: hidden; position: relative; background: linear-gradient(135deg, var(--surface2), var(--surface3)); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: center; margin: 0 !important; border-radius: 0 !important; }
   .cat-banner-wrap img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
   .cat-banner-wrap span { font-family: var(--display); font-size: 18px; letter-spacing: .12em; color: var(--text-dim); opacity: 1 !important; }
+  #trivia-grid .cat-banner-wrap, #bingo-grid .cat-banner-wrap { aspect-ratio: 4/5 !important; }
   .cat-body { padding: 11px 14px 13px; }
   .category-card-header { margin-bottom: 5px; }
   .category-card-name { font-family: var(--cinzel); font-size: 13px; font-weight: 600; letter-spacing: .07em; color: var(--text); line-height: 1.35; }
@@ -1008,8 +1009,9 @@
       </button>
     <nav class="nav-tabs" id="main-nav">
       <div class="nav-group">Content</div>
-      <button class="nav-tab active" onclick="closeNavMenu();switchView('library')">Library</button>
-      <button class="nav-tab" onclick="closeNavMenu();switchView('trivia')">Trivia</button>
+      <!-- Library is hidden for now. To bring it back: delete style="display:none" on this button, and set SHOW_LIBRARY to true in the script. -->
+      <button class="nav-tab" id="nav-library-tab" style="display:none" onclick="closeNavMenu();switchView('library')">Library</button>
+      <button class="nav-tab active" onclick="closeNavMenu();switchView('trivia')">Trivia</button>
       <button class="nav-tab" onclick="closeNavMenu();switchView('bingo')">Bingo</button>
       <button class="nav-tab" onclick="closeNavMenu();switchView('singalongs')">Sing-Alongs</button>
       <button class="nav-tab" onclick="closeNavMenu();switchView('movies')">Movies</button>
@@ -1021,6 +1023,7 @@
       <div class="nav-group">Planning</div>
       <button class="nav-tab" onclick="closeNavMenu();switchView('mainmenu')">Main Menu</button>
       <button class="nav-tab" onclick="closeNavMenu();switchView('seasonal')">Carousel Calendar</button>
+      <button class="nav-tab" onclick="closeNavMenu();switchView('carpicks')">Carousel Picks</button>
       <button class="nav-tab" onclick="closeNavMenu();switchView('portal')">Portal Content</button>
       <div class="nav-group">Inbox</div>
       <button class="nav-tab" onclick="closeNavMenu();switchView('bookings')">Bookings</button>
@@ -1046,7 +1049,7 @@
 <main class="main" id="main-content">
 
   <!-- ═══ LIBRARY VIEW ═══ -->
-  <div class="view active" id="view-library">
+  <div class="view" id="view-library">
     <div style="display:flex; align-items:center; gap:8px; margin-bottom:0.75rem; flex-wrap:wrap;">
       <button class="sidebar-toggle-btn" id="lib-filter-toggle" onclick="toggleSidebar('library')">⧉ Filters</button>
       <div style="flex:1; position:relative;">
@@ -1095,7 +1098,7 @@
   </div>
 
   <!-- ═══ TRIVIA VIEW ═══ -->
-  <div class="view" id="view-trivia">
+  <div class="view active" id="view-trivia">
     <div style="display:flex; align-items:center; gap:8px; margin-bottom:0.75rem; flex-wrap:wrap;">
       <button class="sidebar-toggle-btn" id="trivia-filter-toggle" onclick="toggleSidebar('trivia')">⧉ Filters</button>
       <div style="flex:1; position:relative;">
@@ -1464,6 +1467,16 @@
       <div style="font-family:Cinzel,serif;font-size:0.85rem;letter-spacing:0.15em;text-transform:uppercase;margin-bottom:0.5rem;">No Events Yet</div>
       <p style="font-size:0.9rem;">Add your first event to start building the rolling calendar.</p>
     </div>
+  </div>
+
+  <!-- ═══ CAROUSEL PICKS VIEW ═══ -->
+  <div class="view" id="view-carpicks">
+    <div style="margin-bottom:1.5rem;">
+      <div class="section-title" style="margin-bottom:0.25rem;">Carousel Picks</div>
+      <p style="color:var(--text-muted);font-size:0.9rem;">Themed nights, sing-alongs, trivia, bingo, mini games and movies you sent here with the <b>+ Carousel</b> button. Choose when each one shows in the <em>Coming Up</em> carousel on the venue menu. These are kept separate from the Carousel Calendar.</p>
+    </div>
+    <div id="carpicks-list"></div>
+    <div id="carpicks-empty" style="display:none;text-align:center;padding:4rem 2rem;color:var(--text-dim);">Nothing here yet. Click <b>+ Carousel</b> on any card to send a copy.</div>
   </div>
 
   <!-- ═══ FEEDBACK INBOX VIEW (folded in from admin-feedback-inbox.html) ═══ -->
@@ -2510,6 +2523,7 @@ async function renderMovies() {
     return `<div class="category-card" style="padding:0;overflow:hidden;cursor:pointer;" onclick="openMovieModal('${m.id}')">${img}
       <div style="padding:0.8rem 1rem 1rem;">
         <div class="category-card-name" style="margin-bottom:0.3rem;">${esc(m.title || '(untitled)')}</div>
+        ${carBtn('movie',m.id)}
         ${meta ? `<div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:0.4rem;">${esc(meta)}</div>` : ''}
         ${m.notes ? `<div style="font-size:0.78rem;color:var(--text-dim);font-style:italic;margin-bottom:0.4rem;">${esc(m.notes)}</div>` : ''}
         ${movieLinksOf(m).length ? `<div style="font-size:0.75rem;margin-bottom:0.4rem;">${movieLinksOf(m).map((l, i) => `<a href="${esc(l.url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="color:var(--gold);margin-right:8px;">${esc(l.label || ('Link ' + (i + 1)))} ↗</a>`).join('')}</div>` : ''}
@@ -2605,9 +2619,12 @@ function closeNavMenu(){
   if(nav) nav.classList.remove('open'); if(b) b.setAttribute('aria-expanded','false');
 }
 document.addEventListener('click', e=>{ if(!e.target.closest('.nav-menu-wrap')) closeNavMenu(); });
+const SHOW_LIBRARY = false;
 function switchView(name) {
+  if (name === 'library' && !SHOW_LIBRARY) name = 'trivia';
   if (name === 'mainmenu' && !mmData) loadMainMenu();
   if (name === 'seasonal') renderSeasonalAdmin();
+  if (name === 'carpicks') renderCarPicks();
   if (name === 'waytoplay') renderWayToPlay();
   if (name === 'battles') initBattlesPage();
   if (name === 'bookings') initBookingsTab();
@@ -2709,7 +2726,7 @@ function renderBingo() {
   if (q) liveItems = liveItems.filter(c => c.name.toLowerCase().includes(q) || (c.altName||'').toLowerCase().includes(q));
   empty.style.display = (items.length === 0 && liveItems.length === 0) ? 'block' : 'none';
   grid.innerHTML = items.map(c => {
-    const miniSrc = c.bgImage || c.miniGameImage || c.bannerData || null;
+    const miniSrc = c.miniGameImage || (c.images && c.images.p45) || c.bgImage || c.bannerData || null;
     const bannerHtml = miniSrc
       ? `<div class="cat-banner-wrap"><img src="${miniSrc}" alt=""></div>`
       : `<div class="cat-banner-wrap"><span>${esc(c.name)}</span></div>`;
@@ -2718,7 +2735,7 @@ function renderBingo() {
       ${bannerHtml}
       <div class="cat-body">
         <div class="category-card-name" style="margin-bottom:0.4rem;">${esc(c.name)}</div>
-        ${c.theme ? `<div style="font-size:0.78rem;font-weight:700;color:var(--text);margin-bottom:0.4rem;">${esc(c.theme)}</div>` : ''}
+        ${carBtn('cat',idx)}
       </div>
     </div>`;
   }).join('') + liveItems.map(liveCategoryCardHTML).join('');
@@ -2754,7 +2771,7 @@ function renderMiniGames() {
       ${bannerHtml}
       <div style="padding:1rem 1.1rem 1.1rem;">
         <div class="category-card-name" style="margin-bottom:0.4rem;">${esc(c.name)}</div>
-        ${c.theme ? `<div style="font-size:0.78rem; font-weight:700; color:var(--text); margin-bottom:0.4rem;">${esc(c.theme)}</div>` : ''}
+        ${carBtn('cat',idx)}
         ${tagsArray(c.tags).map(t=>t.trim()).filter(Boolean).length ? `<div style="display:flex;gap:5px;flex-wrap:wrap;">${tagsArray(c.tags).map(t=>t.trim()).filter(Boolean).map(t=>`<span class="badge" style="background:rgba(60,80,100,0.2);color:#9BB8D4;border:1px solid rgba(100,140,180,0.2);font-size:0.65rem;">${esc(t)}</span>`).join('')}</div>` : ''}
       </div>
     </div>`;
@@ -2878,7 +2895,6 @@ function openCategoryDetail(idx) {
     </div>
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:1.25rem;">
       ${c.type ? `<span class="badge badge-type">${esc(c.type)}</span>` : ''}
-      ${c.theme ? `<strong style="font-size:0.9rem;">${esc(c.theme)}</strong>` : ''}
       ${tags.map(t => `<span class="badge" style="background:rgba(60,80,100,0.2);color:#9BB8D4;border:1px solid rgba(100,140,180,0.2);font-size:0.72rem;">${esc(t)}</span>`).join('')}
       <button class="btn btn-sm btn-ghost" style="margin-left:auto;" onclick="editCategory(${idx})">Edit</button>
     </div>
@@ -2954,8 +2970,9 @@ function liveCategoryCardHTML(cat) {
   // Same 16:4 letterbox shape Trivia/Bingo Admin display their own banner
   // at (.cat-banner there) — mapLiveCategory already reads bgImage as the
   // banner source, this just makes it look the same size here as it does there.
-  const bannerHtml = cat.bannerData
-    ? `<div class="cat-banner-wrap"><img src="${cat.bannerData}" alt=""></div>`
+  const liveSrc = cat.miniGameImage || cat.bannerData;
+  const bannerHtml = liveSrc
+    ? `<div class="cat-banner-wrap"><img src="${liveSrc}" alt=""></div>`
     : `<div class="cat-banner-wrap"><span>${esc(cat.name)}</span></div>`;
   const ownerLabel = cat._liveKind === 'bingo' ? 'Bingo Admin' : 'Trivia Admin';
   return `<div class="category-card">
@@ -2964,14 +2981,13 @@ function liveCategoryCardHTML(cat) {
     <div class="category-card-name" style="margin-bottom:0.35rem;">${esc(cat.name)}</div>
     <div style="display:flex; flex-direction:column; align-items:flex-start; gap:5px; margin-bottom:0.5rem;">
       <span style="font-family:'Cinzel',serif;font-size:0.55rem;letter-spacing:0.1em;text-transform:uppercase;background:rgba(201,168,76,0.15);border:1px solid rgba(201,168,76,0.4);color:var(--gold);padding:2px 7px;border-radius:3px;white-space:nowrap;">Live · ${ownerLabel}</span>
-      <span class="badge badge-type">${esc(cat.type)}</span>
       ${!cat.venueMenuShow
         ? `<span style="font-family:'Cinzel',serif;font-size:0.55rem;letter-spacing:0.1em;text-transform:uppercase;background:rgba(120,120,120,0.15);border:1px solid rgba(150,150,150,0.35);color:var(--text-dim);padding:2px 7px;border-radius:3px;white-space:nowrap;">Not Published</span>`
         : ''}
     </div>
-    ${cat.description ? `<div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:0.6rem;line-height:1.4;">${esc(cat.description)}</div>` : ''}
     <div class="category-card-actions">
       <button class="btn btn-sm btn-ghost" onclick="openLiveCategoryInfo('${cat._liveKind}','${cat._liveId}')">Edit</button>
+      ${carBtn('live',cat._liveKind + ':' + cat._liveId)}
     </div>
     </div>
   </div>`;
@@ -3409,6 +3425,7 @@ function renderNights() {
       <div class="night-card-footer" onclick="event.stopPropagation()">
         <span title="Drag to reorder" style="cursor:grab; color:var(--text-dim); font-size:1.1rem; user-select:none; padding:0.1rem 0.3rem;" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='var(--text-dim)'">⠿</span>
         <button class="btn btn-sm btn-ghost" onclick="editNight(${i})">Edit</button>
+        ${carBtn('night',i)}
       </div>
     </div>`;
   }).join('');
@@ -4566,7 +4583,7 @@ function renderTrivia() {
     // Trivia's own banner (bgImage, uploaded in Trivia Admin) takes priority
     // here — same 16:4 letterbox shape Trivia Admin shows it at, not the
     // portrait crop Mini Games/Sing-Alongs cards use.
-    const miniSrc = c.bgImage || c.miniGameImage || c.bannerData || null;
+    const miniSrc = c.miniGameImage || (c.images && c.images.p45) || c.bgImage || c.bannerData || null;
     const bannerHtml = miniSrc
       ? `<div class="cat-banner-wrap"><img src="${miniSrc}" alt=""></div>`
       : `<div class="cat-banner-wrap"><span>${esc(c.name)}</span></div>`;
@@ -4575,8 +4592,7 @@ function renderTrivia() {
       ${bannerHtml}
       <div class="cat-body">
         <div class="category-card-name" style="margin-bottom:0.4rem;">${esc(c.name)}</div>
-        ${c.theme ? `<div style="font-size:0.78rem;font-weight:700;color:var(--text);margin-bottom:0.4rem;">${esc(c.theme)}</div>` : ''}
-        ${tagsArray(c.tags).map(t=>t.trim()).filter(Boolean).length ? `<div style="display:flex;gap:5px;flex-wrap:wrap;">${tagsArray(c.tags).map(t=>t.trim()).filter(Boolean).map(t=>`<span class="badge" style="background:rgba(60,80,100,0.2);color:#9BB8D4;border:1px solid rgba(100,140,180,0.2);font-size:0.65rem;">${esc(t)}</span>`).join('')}</div>` : ''}
+        ${carBtn('cat',idx)}
       </div>
     </div>`;
   }).join('') + liveItems.map(liveCategoryCardHTML).join('');
@@ -4731,9 +4747,7 @@ function renderSingAlongs() {
       ${bannerHtml}
       <div style="padding:1rem 1.1rem 1.1rem;">
         <div class="category-card-name" style="margin-bottom:0.4rem;">${esc(c.name)}</div>
-        ${c.theme ? `<div style="font-size:0.78rem;font-weight:700;color:var(--text);margin-bottom:0.4rem;">${esc(c.theme)}</div>` : ''}
-        ${(c.shows||[]).length ? `<div style="font-size:0.85rem;color:var(--text-muted);line-height:1.6;margin-bottom:0.5rem;">${(c.shows||[]).map(s=>esc(s)).join('<br>')}</div>` : ''}
-        ${tagsArray(c.tags).map(t=>t.trim()).filter(Boolean).length ? `<div style="display:flex;gap:5px;flex-wrap:wrap;">${tagsArray(c.tags).map(t=>t.trim()).filter(Boolean).map(t=>`<span class="badge" style="background:rgba(60,80,100,0.2);color:#9BB8D4;border:1px solid rgba(100,140,180,0.2);font-size:0.65rem;">${esc(t)}</span>`).join('')}</div>` : ''}
+        ${carBtn('cat',idx)}
       </div>
     </div>`;
   }).join('');
@@ -5515,6 +5529,76 @@ function mmUpdateImagePreview(prefix) {
 const _origSwitchView = switchView;
 // Hook into switchView to load main menu data
 
+
+
+// ═══════════════════════════════════════════════════════
+// CAROUSEL PICKS — copies of menu items scheduled into the venue "Coming Up" carousel.
+// Stored in Firestore venueMenuConfig/carouselPicks → { picks: [...] }, same shape as seasonal events.
+// ═══════════════════════════════════════════════════════
+let carPicks = [], carPicksLoaded = false;
+async function loadCarPicks() {
+  if (carPicksLoaded) return;
+  try { const snap = await getDoc(doc(db, 'venueMenuConfig', 'carouselPicks')); carPicks = snap.exists() ? (snap.data().picks || []) : []; carPicksLoaded = true; }
+  catch (e) { carPicks = []; }
+}
+async function persistCarPicks() { await setDoc(doc(db, 'venueMenuConfig', 'carouselPicks'), { picks: carPicks }); }
+function carBtn(type, ref) {
+  return `<button class="btn btn-sm btn-ghost" style="margin-top:6px;" onclick="event.stopPropagation();carouselAdd('${type}','${String(ref).replace(/'/g, "\\'")}')">+ Carousel</button>`;
+}
+async function carouselAdd(type, ref) {
+  await loadCarPicks();
+  let name = '', image = '', desc = '';
+  if (type === 'cat') { const c = categories[Number(ref)]; if (!c) return; name = c.name; image = c.miniGameImage || (c.images && c.images.p45) || c.bannerData || c.bgImage || ''; desc = c.description || ''; }
+  else if (type === 'live') { const [k, id] = ref.split(':'); const c = (k === 'bingo' ? liveBingoCats : liveTriviaCats).find(x => x._liveId === id); if (!c) return; name = c.name; image = c.miniGameImage || c.bannerData || ''; desc = c.description || ''; }
+  else if (type === 'movie') { const m = movies[ref]; if (!m) return; name = m.title || ''; image = m.poster || ''; desc = m.desc || ''; }
+  else if (type === 'night') { const n = nights[Number(ref)]; if (!n) return; name = n.name; image = n.bannerData || ''; desc = n.description || ''; }
+  if (!name) return;
+  if (carPicks.some(p => p.srcType === type && p.name === name)) { toast('Already in Carousel Picks', 'error'); return; }
+  carPicks.push({ id: 'cp_' + Date.now(), name, image, desc, srcType: type, mode: 'off', dateType: 'month', month: new Date().getMonth() + 1, day: null, exactDate: '', recurring: true, alwaysOn: true, alwaysOff: true });
+  try { await persistCarPicks(); toast('Sent to Carousel Picks', 'success'); } catch (e) { toast('Save failed: ' + e.message, 'error'); }
+}
+async function renderCarPicks() {
+  await loadCarPicks();
+  const box = document.getElementById('carpicks-list'), empty = document.getElementById('carpicks-empty');
+  empty.style.display = carPicks.length ? 'none' : 'block';
+  const mo = (v) => MONTH_NAMES.slice(1).map((n, i) => `<option value="${i + 1}"${Number(v) === i + 1 ? ' selected' : ''}>${n}</option>`).join('');
+  box.innerHTML = carPicks.map((p, i) => {
+    const m = p.mode || 'off';
+    const row = (extra) => `<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px;">${extra}</div>`;
+    return `<div style="display:flex;gap:14px;padding:0.8rem 0;border-bottom:1px solid var(--border);align-items:flex-start;">
+      <div style="width:60px;aspect-ratio:4/5;background:var(--surface2);border-radius:4px;overflow:hidden;flex-shrink:0;">${p.image ? `<img src="${esc(p.image)}" style="width:100%;height:100%;object-fit:cover;" alt="">` : ''}</div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-family:Cinzel,serif;font-size:0.85rem;letter-spacing:0.06em;text-transform:uppercase;">${esc(p.name)}</div>
+        ${row(`<select onchange="carSet(${i},'mode',this.value)">
+          <option value="off"${m === 'off' ? ' selected' : ''}>Not showing</option>
+          <option value="always"${m === 'always' ? ' selected' : ''}>Always showing</option>
+          <option value="yearly"${m === 'yearly' ? ' selected' : ''}>Every year</option>
+          <option value="once"${m === 'once' ? ' selected' : ''}>One date only</option></select>
+          ${m === 'yearly' ? `<select onchange="carSet(${i},'month',this.value)">${mo(p.month)}</select><input type="number" min="1" max="31" placeholder="Day (optional)" value="${p.day || ''}" style="width:130px;" onchange="carSet(${i},'day',this.value)">` : ''}
+          ${m === 'once' ? `<input type="date" value="${esc(p.exactDate || '')}" onchange="carSet(${i},'exactDate',this.value)">` : ''}`)}
+        <div style="font-size:0.78rem;color:var(--text-dim);margin-top:6px;">${m === 'yearly' ? (p.day ? 'Shows 30 days before, every year.' : 'Shows from 2 weeks before the month starts until the last week of the month, every year.') : m === 'once' ? 'Shows 30 days before the date.' : m === 'always' ? 'Stays in the carousel all year.' : 'Hidden from the carousel.'}</div>
+      </div>
+      <button class="btn btn-sm btn-ghost" onclick="carRemove(${i})">Remove</button>
+    </div>`;
+  }).join('');
+}
+async function carSet(i, key, val) {
+  const p = carPicks[i]; if (!p) return;
+  if (key === 'mode') {
+    p.mode = val;
+    p.alwaysOn = val === 'off' || val === 'always'; p.alwaysOff = val === 'off';
+    p.dateType = val === 'once' ? 'exact' : 'month'; p.recurring = val !== 'once';
+  } else if (key === 'month') p.month = Number(val);
+  else if (key === 'day') p.day = val ? Number(val) : null;
+  else p[key] = val;
+  renderCarPicks();
+  try { await persistCarPicks(); } catch (e) { toast('Save failed: ' + e.message, 'error'); }
+}
+async function carRemove(i) {
+  if (!confirm('Remove this from Carousel Picks?')) return;
+  carPicks.splice(i, 1); renderCarPicks();
+  try { await persistCarPicks(); } catch (e) { toast('Save failed: ' + e.message, 'error'); }
+}
 
 // ═══════════════════════════════════════════════════════
 // SEASONAL EVENTS
@@ -6425,7 +6509,6 @@ window.decideEntry = async function(id, decision) {
 window.entryToCatalog = async function(id) {
   const item = fiAllItems.find(i => i.source === 'venueFeedback' && i.id === id);
   if (!item) return;
-  switchView('library');
   openAddCategoryModal();
   document.getElementById('cat-name').value = item.entryName || '';
   document.getElementById('cat-type').value = item.gameType || '';
