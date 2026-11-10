@@ -676,6 +676,8 @@
   .night-cat-count { font-size: 0.85rem; color: var(--text-muted); }
   .night-card-footer {
     display: flex;
+    flex-wrap: wrap;
+    align-items: center;
     gap: 6px;
     padding: 0.75rem 1.3rem 1.2rem;
     border-top: 1px solid var(--border);
@@ -1059,7 +1061,7 @@
         <input type="search" autocomplete="off" id="search-input" placeholder="Search shows, artists, titles, themes…" oninput="runSearch()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:4px;padding:0.6rem 0.9rem 0.6rem 2.4rem;font-family:'Crimson Text',serif;font-size:16px;width:100%;outline:none;">
       </div>
       <div id="lib-type-pills" style="display:flex;gap:5px;flex-wrap:wrap;align-items:center;"></div>
-      <button class="btn btn-sm btn-ghost" onclick="toggleSortAZ('library')" id="library-az-btn">A–Z</button>
+      <button class="btn btn-sm btn-ghost" onclick="toggleSortAZ('library')" id="library-az-btn">Published first</button>
       <button class="btn btn-sm" onclick="openAddCategoryModal()">+ Add</button>
     </div>
     <div id="search-results-meta" class="results-meta" style="display:none;"></div>
@@ -1085,7 +1087,7 @@
           <input type="search" autocomplete="off" id="night-search-input" placeholder="Search themed nights…" oninput="renderNights()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:4px;padding:0.6rem 0.9rem 0.6rem 2.4rem;font-family:'Crimson Text',serif;font-size:16px;width:100%;outline:none;">
         </div>
         <button class="btn btn-sm btn-ghost" onclick="openNightTagsModal()">Manage Filters</button>
-        <button class="btn btn-sm btn-ghost" onclick="toggleSortAZ('nights')" id="nights-az-btn">A–Z</button>
+        <button class="btn btn-sm btn-ghost" onclick="toggleSortAZ('nights')" id="nights-az-btn">Published first</button>
         <button class="btn btn-sm" onclick="openNewNightModal()">+ New Themed Night</button>
       </div>
       <div id="active-filters-bar-nights" class="active-filters-bar"></div>
@@ -1108,7 +1110,7 @@
         <input type="search" autocomplete="off" id="trivia-search-input" placeholder="Search trivia…" oninput="renderTrivia()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:4px;padding:0.6rem 0.9rem 0.6rem 2.4rem;font-family:'Crimson Text',serif;font-size:16px;width:100%;outline:none;">
       </div>
       <button class="btn btn-sm btn-ghost" onclick="openTriviaTagsModal()">Manage Filters</button>
-      <button class="btn btn-sm btn-ghost" onclick="toggleSortAZ('trivia')" id="trivia-az-btn">A–Z</button>
+      <button class="btn btn-sm btn-ghost" onclick="toggleSortAZ('trivia')" id="trivia-az-btn">Published first</button>
       <button class="btn btn-sm" onclick="openAddCategoryModal()">+ Add Trivia</button>
     </div>
     <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:0.9rem;">
@@ -1139,7 +1141,7 @@
         <span style="position:absolute;left:0.75rem;top:50%;transform:translateY(-50%);color:var(--text-dim);pointer-events:none;">🔍</span>
         <input type="search" autocomplete="off" id="bingo-search-input" placeholder="Search bingo…" oninput="renderBingo()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:4px;padding:0.6rem 0.9rem 0.6rem 2.4rem;font-family:'Crimson Text',serif;font-size:16px;width:100%;outline:none;">
       </div>
-      <button class="btn btn-sm btn-ghost" onclick="toggleSortAZ('bingo')" id="bingo-az-btn">A–Z</button>
+      <button class="btn btn-sm btn-ghost" onclick="toggleSortAZ('bingo')" id="bingo-az-btn">Published first</button>
       <button class="btn btn-sm" onclick="openAddCategoryModal()">+ Add Bingo</button>
     </div>
     <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:0.9rem;">
@@ -1165,7 +1167,7 @@
         <input type="search" autocomplete="off" id="mini-search-input" placeholder="Search mini games…" oninput="renderMiniGames()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:4px;padding:0.6rem 0.9rem 0.6rem 2.4rem;font-family:'Crimson Text',serif;font-size:16px;width:100%;outline:none;">
       </div>
       <button class="btn btn-sm btn-ghost" onclick="openMiniTagsModal()">Manage Filters</button>
-      <button class="btn btn-sm btn-ghost" onclick="toggleSortAZ('minigames')" id="minigames-az-btn">A–Z</button>
+      <button class="btn btn-sm btn-ghost" onclick="toggleSortAZ('minigames')" id="minigames-az-btn">Published first</button>
       <button class="btn btn-sm" onclick="openAddCategoryModal()">+ Add Mini Game</button>
     </div>
     <div id="active-filters-bar-mini" class="active-filters-bar"></div>
@@ -1205,7 +1207,7 @@
         <input type="search" autocomplete="off" id="singa-search-input" placeholder="Search sing-alongs…" oninput="renderSingAlongs()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:4px;padding:0.6rem 0.9rem 0.6rem 2.4rem;font-family:'Crimson Text',serif;font-size:16px;width:100%;outline:none;">
       </div>
       <button class="btn btn-sm btn-ghost" onclick="openSingaTagsModal()">Manage Filters</button>
-      <button class="btn btn-sm btn-ghost" onclick="toggleSortAZ('singalongs')" id="singalongs-az-btn">A–Z</button>
+      <button class="btn btn-sm btn-ghost" onclick="toggleSortAZ('singalongs')" id="singalongs-az-btn">Published first</button>
       <button class="btn btn-sm" onclick="openAddCategoryModal()">+ Add Sing-Along</button>
     </div>
     <div id="active-filters-bar-singa" class="active-filters-bar"></div>
@@ -1490,7 +1492,7 @@
   <!-- ═══ CAROUSEL PICKS PANE (a pill inside the Carousel tab) ═══ -->
   <div id="car-pane-picks" style="display:none;">
     <div style="margin-bottom:1.5rem;">
-      <p style="color:var(--text-muted);font-size:0.9rem;">Themed nights, sing-alongs, trivia, bingo, mini games and movies you sent here with the <b>+ Carousel</b> button. Choose when each one shows in the <em>Coming Up</em> carousel on the venue menu. These are kept separate from the Carousel Calendar.</p>
+      <p style="color:var(--text-muted);font-size:0.9rem;">Themed nights, sing-alongs, trivia, bingo, mini games and movies you sent here with the <b>+ Carousel</b> button. Click <b>Edit</b> on one to set when it shows in the <em>Coming Up</em> carousel on the venue menu. These are kept separate from the Calendar pill.</p>
     </div>
     <div id="carpicks-list"></div>
     <div id="carpicks-empty" style="display:none;text-align:center;padding:4rem 2rem;color:var(--text-dim);">Nothing here yet. Click <b>+ Carousel</b> on any card to send a copy.</div>
@@ -1506,6 +1508,7 @@
       <label style="display:flex;gap:10px;align-items:flex-start;margin-bottom:0.7rem;cursor:pointer;"><input type="radio" name="set-catstyle" value="cards" onchange="setCatStyle(this.value)" style="margin-top:4px;"><span>Image cards <span style="color:var(--text-dim);">(4:5 pictures with the name)</span></span></label>
       <label style="display:flex;gap:10px;align-items:flex-start;cursor:pointer;"><input type="radio" name="set-catstyle" value="tiles" onchange="setCatStyle(this.value)" style="margin-top:4px;"><span>Black &amp; gold name tiles <span style="color:var(--text-dim);">(like the Bingo app: black tile, gold lettering, no pictures)</span></span></label>
       <div id="set-catstyle-msg" style="margin-top:0.8rem;font-size:0.85rem;"></div>
+      <div style="margin-top:1rem;font-size:0.72rem;color:var(--text-dim);">index.html version: 2026-11-10 b (if you do not see "Venue menu look" at the top of the Trivia and Bingo tabs, this is an older copy)</div>
     </div>
   </div>
 
@@ -1723,6 +1726,7 @@
       </div>
     </div>
     <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm car-modal-btn" id="car-modal-cat" onclick="carFromModal('cat')" style="display:none;">+ Carousel</button>
       <button class="btn btn-danger btn-sm" id="cat-modal-delete-btn" onclick="deleteCategoryFromModal()" style="display:none; margin-right:auto;">Delete Category</button>
       <button class="btn btn-ghost" onclick="closeCatModal()">Cancel</button>
       <button class="btn" onclick="saveCategoryFromModal()">Save Category</button>
@@ -1764,6 +1768,7 @@
       <div id="live-img-previews" style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;"></div>
     </div>
     <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm car-modal-btn" id="car-modal-live" onclick="carFromModal('live')" style="display:none;">+ Carousel</button>
       <button class="btn btn-ghost" onclick="closeLiveCategoryInfo()">Cancel</button>
       <button class="btn" onclick="saveLiveCategoryEdit()">Save Changes</button>
     </div>
@@ -1875,6 +1880,7 @@
       </div>
     </div>
     <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm car-modal-btn" id="car-modal-night" onclick="carFromModal('night')" style="display:none;">+ Carousel</button>
       <button class="btn btn-danger btn-sm" id="night-modal-delete-btn" onclick="deleteNightFromModal()" style="display:none; margin-right:auto;">Delete Night</button>
       <button class="btn btn-ghost" onclick="closeNightModal()">Cancel</button>
       <button class="btn" onclick="saveNight()">Save Night</button>
@@ -1986,6 +1992,7 @@
       <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-top:0.5rem;"><input type="checkbox" id="mv-published" style="accent-color:var(--gold);width:15px;height:15px;"> Show on Venue Menu</label>
     </div>
     <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm car-modal-btn" id="car-modal-movie" onclick="carFromModal('movie')" style="display:none;">+ Carousel</button>
       <button class="btn btn-danger" id="mv-delete-btn" onclick="deleteMovie()" style="margin-right:auto;display:none;">Delete</button>
       <button class="btn btn-ghost" onclick="closeMovieModal()">Cancel</button>
       <button class="btn" onclick="saveMovie()">Save</button>
@@ -2752,16 +2759,27 @@ function updateCatKaraokeVisibility() {
 }
 // -- Shared A–Z sort toggle, usable on every tab's grid --
 let sortAZState = {};
+let pubFirstState = {};
+function isPubItem(p) { return !!(p && (p.published || p.publishedHost || (p.publishedTabs && p.publishedTabs.length) || p.venueMenuShow)); }
+// Everything is always A–Z. "Published first" is a toggle that floats what is on the venue menu to the top (still A–Z inside each group).
 function toggleSortAZ(tabKey){
-  sortAZState[tabKey] = !sortAZState[tabKey];
+  pubFirstState[tabKey] = !pubFirstState[tabKey];
   const btn = document.getElementById(tabKey+'-az-btn');
-  if(btn) btn.style.color = sortAZState[tabKey] ? 'var(--gold)' : '';
+  if(btn) { btn.classList.toggle('btn-ghost', !pubFirstState[tabKey]); btn.style.color = pubFirstState[tabKey] ? 'var(--gold)' : ''; }
   const renderFns = { library: renderLibrary, trivia: renderTrivia, bingo: renderBingo, minigames: renderMiniGames, singalongs: renderSingAlongs, nights: renderNights };
   if(renderFns[tabKey]) renderFns[tabKey]();
 }
 function maybeSortAZ(list, tabKey, nameField){
-  if(!sortAZState[tabKey]) return list;
-  return [...list].sort((a,b)=>(a[nameField||'name']||'').localeCompare(b[nameField||'name']||''));
+  const f = nameField || 'name';
+  const out = [...list].sort((a,b)=>String(a[f]||'').localeCompare(String(b[f]||''), undefined, {sensitivity:'base'}));
+  if (!pubFirstState[tabKey]) return out;
+  return [...out.filter(isPubItem), ...out.filter(x => !isPubItem(x))];
+}
+function mergeSorted(tabKey, items, htmlA, liveItems, htmlB) {
+  const rows = items.map((c, i) => ({ c, h: htmlA[i] })).concat(liveItems.map((c, i) => ({ c, h: htmlB[i] })));
+  rows.sort((x, y) => String(x.c.name || '').localeCompare(String(y.c.name || ''), undefined, {sensitivity:'base'}));
+  const out = pubFirstState[tabKey] ? [...rows.filter(x => isPubItem(x.c)), ...rows.filter(x => !isPubItem(x.c))] : rows;
+  return out.map(x => x.h).join('');
 }
 function renderBingo() {
   const grid = document.getElementById('bingo-grid');
@@ -2773,7 +2791,7 @@ function renderBingo() {
   let liveItems = liveBingoCats;
   if (q) liveItems = liveItems.filter(c => c.name.toLowerCase().includes(q) || (c.altName||'').toLowerCase().includes(q));
   empty.style.display = (items.length === 0 && liveItems.length === 0) ? 'block' : 'none';
-  grid.innerHTML = items.map(c => {
+  const htmlA = items.map(c => {
     const miniSrc = c.miniGameImage || (c.images && c.images.p45) || c.bgImage || c.bannerData || null;
     const bannerHtml = miniSrc
       ? `<div class="cat-banner-wrap"><img src="${miniSrc}" alt=""></div>`
@@ -2786,7 +2804,8 @@ function renderBingo() {
         ${carBtn('cat',idx)}
       </div>
     </div>`;
-  }).join('') + liveItems.map(liveCategoryCardHTML).join('');
+  });
+  grid.innerHTML = mergeSorted('bingo', items, htmlA, liveItems, liveItems.map(liveCategoryCardHTML));
 }
 
 function renderMiniGames() {
@@ -3462,13 +3481,12 @@ function renderNights() {
         ${bannerImg}
       </div>
       <div class="night-card-body" onclick="openNightDetail(${i})">
-        <div style="display:flex; align-items:center; gap:8px; margin-bottom:0.35rem;">
-          <div class="night-card-name" style="margin-bottom:0;">${esc(n.name)}</div>
+        <div class="night-card-name" style="margin-bottom:0.4rem;">${esc(n.name)}</div>
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:0.45rem; flex-wrap:wrap;">
           ${n.published ? `<span style="font-family:'Cinzel',serif;font-size:0.6rem;letter-spacing:0.12em;text-transform:uppercase;background:rgba(42,107,58,0.2);color:#7DC996;border:1px solid rgba(42,107,58,0.4);padding:2px 7px;border-radius:3px;flex-shrink:0;">Venue</span>` : ''}
           ${(n.publishedHost !== undefined ? n.publishedHost : n.published) ? `<span style="font-family:'Cinzel',serif;font-size:0.6rem;letter-spacing:0.12em;text-transform:uppercase;background:rgba(201,168,76,0.15);color:var(--gold);border:1px solid rgba(201,168,76,0.4);padding:2px 7px;border-radius:3px;flex-shrink:0;">Host</span>` : ''}
         </div>
         ${(n.nightTagsList||[]).length ? `<div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:0.5rem;">${(n.nightTagsList||[]).map(t=>`<span class="badge" style="background:rgba(60,80,100,0.2);color:#9BB8D4;border:1px solid rgba(100,140,180,0.2);font-size:0.65rem;">${esc(t)}</span>`).join('')}</div>` : ''}
-        <div style="margin-top:0.6rem; max-height:160px; overflow-y:auto;">${catListHtml}</div>
       </div>
       <div class="night-card-footer" onclick="event.stopPropagation()">
         <span title="Drag to reorder" style="cursor:grab; color:var(--text-dim); font-size:1.1rem; user-select:none; padding:0.1rem 0.3rem;" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='var(--text-dim)'">⠿</span>
@@ -4627,7 +4645,7 @@ function renderTrivia() {
   if (triviaSearchQ) liveItems = liveItems.filter(c => c.name.toLowerCase().includes(triviaSearchQ) || (c.altName||'').toLowerCase().includes(triviaSearchQ) || (c.shows||[]).some(s=>s.toLowerCase().includes(triviaSearchQ)));
   if (activeTriviaTierFilter) liveItems = liveItems.filter(c => c.plannerTier === activeTriviaTierFilter);
   empty.style.display = (items.length === 0 && liveItems.length === 0) ? 'block' : 'none';
-  grid.innerHTML = items.map(c => {
+  const htmlA = items.map(c => {
     // Trivia's own banner (bgImage, uploaded in Trivia Admin) takes priority
     // here — same 16:4 letterbox shape Trivia Admin shows it at, not the
     // portrait crop Mini Games/Sing-Alongs cards use.
@@ -4643,7 +4661,8 @@ function renderTrivia() {
         ${carBtn('cat',idx)}
       </div>
     </div>`;
-  }).join('') + liveItems.map(liveCategoryCardHTML).join('');
+  });
+  grid.innerHTML = mergeSorted('trivia', items, htmlA, liveItems, liveItems.map(liveCategoryCardHTML));
 }
 
 function renderTriviaFilterChips() {
@@ -5634,9 +5653,36 @@ async function loadCarPicks() {
   catch (e) { carPicks = []; }
 }
 async function persistCarPicks() { await setDoc(doc(db, 'venueMenuConfig', 'mainMenu'), { carouselPicks: carPicks }, { merge: true }); if (typeof mmData === 'object' && mmData) mmData.carouselPicks = carPicks; }
+
+function carModalRef(kind) {
+  if (kind === 'cat') return editingCatIndex >= 0 ? ['cat', editingCatIndex] : null;
+  if (kind === 'night') return editingNightIndex >= 0 ? ['night', editingNightIndex] : null;
+  if (kind === 'movie') return editingMovieId ? ['movie', editingMovieId] : null;
+  if (kind === 'live') return liveCatInfoKind && liveCatInfoId ? ['live', liveCatInfoKind + ':' + liveCatInfoId] : null;
+  return null;
+}
+function carModalSync() {
+  ['cat', 'night', 'movie', 'live'].forEach(k => {
+    const b = document.getElementById('car-modal-' + k); if (!b) return;
+    const ref = carModalRef(k);
+    if (!ref) { b.style.display = 'none'; return; }
+    const nm = carSrcName(ref[0], ref[1]);
+    b.style.display = nm ? '' : 'none';
+    const inn = nm && carPicks.some(p => p.srcType === ref[0] && (p.srcName || p.name) === nm);
+    b.textContent = inn ? '✓ In Carousel Picks' : '+ Carousel';
+    b.classList.toggle('cp-in', !!inn);
+  });
+}
+async function carFromModal(kind) {
+  const ref = carModalRef(kind); if (!ref) return;
+  const nm = carSrcName(ref[0], ref[1]);
+  if (nm && carPicks.some(p => p.srcType === ref[0] && (p.srcName || p.name) === nm)) { toast('Already in Carousel Picks', 'success'); return; }
+  await carouselAdd(ref[0], ref[1]);
+  carModalSync();
+}
 function carBtn(type, ref) {
   const nm = carSrcName(type, ref);
-  if (nm && carPicks.some(p => p.srcType === type && p.name === nm)) return `<button class="btn btn-sm cp-in" style="margin-top:6px;" onclick="event.stopPropagation();carGoPicks()">✓ In Carousel Picks</button>`;
+  if (nm && carPicks.some(p => p.srcType === type && (p.srcName || p.name) === nm)) return `<button class="btn btn-sm cp-in" style="margin-top:6px;" onclick="event.stopPropagation();carGoPicks()">✓ In Carousel Picks</button>`;
   return `<button class="btn btn-sm btn-ghost" style="margin-top:6px;" onclick="event.stopPropagation();carouselAdd('${type}','${String(ref).replace(/'/g, "\\'")}')">+ Carousel</button>`;
 }
 async function carouselAdd(type, ref) {
@@ -5647,56 +5693,89 @@ async function carouselAdd(type, ref) {
   else if (type === 'movie') { const m = movies[ref]; if (!m) return; name = m.title || ''; image = m.poster || ''; desc = m.desc || ''; }
   else if (type === 'night') { const n = nights[Number(ref)]; if (!n) return; name = n.name; image = n.bannerData || ''; desc = n.description || ''; }
   if (!name) return;
-  if (carPicks.some(p => p.srcType === type && p.name === name)) { toast('Already in Carousel Picks', 'error'); return; }
-  carPicks.push({ id: 'cp_' + Date.now(), name, image, desc, srcType: type, mode: 'off', dateType: 'month', month: new Date().getMonth() + 1, day: null, exactDate: '', recurring: true, alwaysOn: true, alwaysOff: true });
+  if (carPicks.some(p => p.srcType === type && (p.srcName || p.name) === name)) { toast('Already in Carousel Picks', 'error'); return; }
+  carPicks.push({ id: 'cp_' + Date.now(), name, image, desc, srcType: type, mode: 'off', dateType: 'month', month: new Date().getMonth() + 1, day: null, exactDate: '', recurring: true, alwaysOn: false, alwaysOff: false, pending: true, srcName: name });
   try { await persistCarPicks(); toast('Sent to Carousel Picks', 'success'); } catch (e) { carPicks.pop(); toast('Save failed: ' + e.message, 'error'); }
   carRerenderCards();
 }
 async function renderCarPicks() {
   await loadCarPicks();
-  const box = document.getElementById('carpicks-list'), empty = document.getElementById('carpicks-empty');
-  empty.style.display = carPicks.length ? 'none' : 'block';
-  const mo = (v) => MONTH_NAMES.slice(1).map((n, i) => `<option value="${i + 1}"${Number(v) === i + 1 ? ' selected' : ''}>${n}</option>`).join('');
-  box.innerHTML = carPicks.map((p, i) => {
-    const m = p.mode || 'off';
-    const row = (extra) => `<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px;">${extra}</div>`;
-    return `<div style="display:flex;gap:14px;padding:0.8rem 0;border-bottom:1px solid var(--border);align-items:flex-start;">
-      <div style="width:60px;aspect-ratio:4/5;background:var(--surface2);border-radius:4px;overflow:hidden;flex-shrink:0;">${p.image ? `<img src="${esc(p.image)}" style="width:100%;height:100%;object-fit:cover;" alt="">` : ''}</div>
-      <div style="flex:1;min-width:0;">
-        <div style="font-family:Cinzel,serif;font-size:0.85rem;letter-spacing:0.06em;text-transform:uppercase;">${esc(p.name)}</div>
-        ${row(`<select onchange="carSet(${i},'mode',this.value)">
-          <option value="off"${m === 'off' ? ' selected' : ''}>Not showing</option>
-          <option value="always"${m === 'always' ? ' selected' : ''}>Always showing</option>
-          <option value="yearly"${m === 'yearly' ? ' selected' : ''}>Every year</option>
-          <option value="range"${m === 'range' ? ' selected' : ''}>From a date to a date, every year</option>
-          <option value="once"${m === 'once' ? ' selected' : ''}>One date only</option></select>
-          ${m === 'range' ? `<select onchange="carSet(${i},'rStartM',this.value)">${mo(p.rStartM || 1)}</select><input type="number" min="1" max="31" value="${p.rStartD || 1}" style="width:70px;" onchange="carSet(${i},'rStartD',this.value)"><span>to</span><select onchange="carSet(${i},'rEndM',this.value)">${mo(p.rEndM || 1)}</select><input type="number" min="1" max="31" value="${p.rEndD || 28}" style="width:70px;" onchange="carSet(${i},'rEndD',this.value)">` : ''}
-          ${m === 'yearly' ? `<select onchange="carSet(${i},'month',this.value)">${mo(p.month)}</select><input type="number" min="1" max="31" placeholder="Day (optional)" value="${p.day || ''}" style="width:130px;" onchange="carSet(${i},'day',this.value)">` : ''}
-          ${m === 'once' ? `<input type="date" value="${esc(p.exactDate || '')}" onchange="carSet(${i},'exactDate',this.value)">` : ''}`)}
-        <div style="font-size:0.78rem;color:var(--text-dim);margin-top:6px;">${m === 'yearly' ? (p.day ? 'Shows 30 days before, every year.' : 'Shows from 2 weeks before the month starts until the last week of the month, every year.') : m === 'range' ? 'Shows every year from the first date through the second.' : m === 'once' ? 'Shows 30 days before the date.' : m === 'always' ? 'Stays in the carousel all year.' : 'Hidden from the carousel.'}</div>
-      </div>
-      <button class="btn btn-sm btn-ghost" onclick="carRemove(${i})">Remove</button>
-    </div>`;
+  const container = document.getElementById('carpicks-list');
+  const emptyEl   = document.getElementById('carpicks-empty');
+  if (!container) return;
+
+  if (!carPicks.length) {
+    container.innerHTML = '';
+    emptyEl.style.display = 'block';
+    return;
+  }
+  emptyEl.style.display = 'none';
+
+  // Group by month (exact-date events go in their month; one-time past events get flagged)
+  const groups = {}; // key: month 1-12 or 'exact'
+  const now = new Date();
+
+  carPicks.forEach(ev => {
+    let m;
+    if (ev.dateType === 'exact') {
+      m = ev.exactDate ? Number(ev.exactDate.split('-')[1]) : 0;
+    } else if (ev.dateType === 'range') {
+      m = Number(ev.rStartM) || 0;
+    } else {
+      m = Number(ev.month) || 0;
+    }
+    if (!groups[m]) groups[m] = [];
+    groups[m].push(ev);
+  });
+
+  // Sort month keys
+  const keys = Object.keys(groups).map(Number).sort((a,b) => {
+    // Rotate sort so current month is first, wrapping around
+    const cur = now.getMonth()+1;
+    const am = ((a - cur + 12) % 12);
+    const bm = ((b - cur + 12) % 12);
+    return am - bm;
+  });
+
+  container.innerHTML = keys.map(m => {
+    const label = m ? MONTH_NAMES[m] : 'Unscheduled';
+    const evs = groups[m];
+    const rows = evs.map(ev => {
+      const active = seIsActive(ev);
+      const pendBadge = ev.pending ? '<span style="background:rgba(139,100,30,0.15);border:1px solid rgba(139,100,30,0.35);color:#C9A84C;padding:1px 8px;border-radius:3px;font-size:0.65rem;font-family:Cinzel,serif;letter-spacing:0.1em;text-transform:uppercase;">Not scheduled yet</span>' : '';
+      const alwaysBadge = ev.alwaysOn
+        ? (ev.alwaysOff
+            ? '<span style="background:rgba(139,58,42,0.2);border:1px solid rgba(139,58,42,0.4);color:#C0654F;padding:1px 8px;border-radius:3px;font-size:0.65rem;font-family:Cinzel,serif;letter-spacing:0.08em;text-transform:uppercase;">Hidden</span>'
+            : '<span style="background:rgba(42,107,58,0.2);border:1px solid rgba(42,107,58,0.5);color:#5AC47A;padding:1px 8px;border-radius:3px;font-size:0.65rem;font-family:Cinzel,serif;letter-spacing:0.08em;text-transform:uppercase;">Always On</span>')
+        : '';
+      const badge = (!ev.alwaysOn && active)
+        ? '<span style="background:rgba(42,107,58,0.2);border:1px solid rgba(42,107,58,0.5);color:#5AC47A;padding:1px 8px;border-radius:3px;font-size:0.65rem;font-family:Cinzel,serif;letter-spacing:0.08em;text-transform:uppercase;">Live</span>'
+        : '';
+      const oneTime = !ev.recurring
+        ? '<span style="background:rgba(139,100,30,0.15);border:1px solid rgba(139,100,30,0.35);color:#C9A84C;padding:1px 8px;border-radius:3px;font-size:0.65rem;font-family:Cinzel,serif;letter-spacing:0.08em;text-transform:uppercase;">One-Time</span>'
+        : '';
+      const dateStr = ev.dateType === 'range'
+        ? MONTH_NAMES[ev.rStartM] + ' ' + ev.rStartD + ' – ' + MONTH_NAMES[ev.rEndM] + ' ' + ev.rEndD + ' (every year)'
+        : ev.dateType === 'exact'
+        ? ev.exactDate
+        : (ev.day ? MONTH_NAMES[Number(ev.month)] + ' ' + ev.day : MONTH_NAMES[Number(ev.month)]);
+
+      return '<div style="display:flex;align-items:center;gap:10px;padding:0.65rem 0;border-bottom:1px solid var(--border);">'
+        + '<div style="flex:1;min-width:0;">'
+        + '<div style="font-family:Cinzel,serif;font-size:0.82rem;letter-spacing:0.06em;text-transform:uppercase;color:var(--text);display:flex;align-items:center;gap:6px;flex-wrap:wrap;">'
+        + esc(ev.name) + ' ' + pendBadge + ' ' + alwaysBadge + ' ' + badge + ' ' + oneTime
+        + '</div>'
+        + '<div style="font-size:0.82rem;color:var(--text-dim);margin-top:2px;">' + esc(dateStr) + (ev.desc ? ' — ' + esc(ev.desc.slice(0,60)) + (ev.desc.length>60?'…':'') : '') + '</div>'
+        + '</div>'
+        + '<button class="btn btn-sm btn-ghost" onclick="openSeasonalModal(\'' + ev.id.replace(/'/g, "\\'") + '\',true)" >Edit</button>'
+        + '</div>';
+    }).join('');
+
+    return '<div style="margin-bottom:2rem;">'
+      + '<div class="section-title" style="margin-bottom:0.5rem;">' + label + '</div>'
+      + rows
+      + '</div>';
   }).join('');
-}
-async function carSet(i, key, val) {
-  const p = carPicks[i]; if (!p) return;
-  if (key === 'mode') {
-    p.mode = val;
-    p.alwaysOn = val === 'off' || val === 'always'; p.alwaysOff = val === 'off';
-    p.dateType = val === 'once' ? 'exact' : (val === 'range' ? 'range' : 'month'); p.recurring = val !== 'once';
-    if (val === 'range') { p.rStartM = p.rStartM || p.month || 1; p.rStartD = p.rStartD || 1; p.rEndM = p.rEndM || p.rStartM; p.rEndD = p.rEndD || 28; }
-  } else if (['rStartM', 'rStartD', 'rEndM', 'rEndD'].includes(key)) p[key] = Number(val) || 1;
-  else if (key === 'month') p.month = Number(val);
-  else if (key === 'day') p.day = val ? Number(val) : null;
-  else p[key] = val;
-  renderCarPicks();
-  try { await persistCarPicks(); } catch (e) { toast('Save failed: ' + e.message, 'error'); }
-}
-async function carRemove(i) {
-  if (!confirm('Remove this from Carousel Picks?')) return;
-  carPicks.splice(i, 1); renderCarPicks(); carRerenderCards();
-  try { await persistCarPicks(); } catch (e) { toast('Save failed: ' + e.message, 'error'); }
 }
 
 // ═══════════════════════════════════════════════════════
@@ -5712,6 +5791,10 @@ async function carRemove(i) {
 
 let seasonalEvents = [];
 let seEditingId = null;
+let sePickMode = false;
+function seList() { return sePickMode ? carPicks : seasonalEvents; }
+async function sePersist() { if (sePickMode) { await persistCarPicks(); carRerenderCards(); } else await persistSeasonalEvents(); }
+function seRefresh() { if (sePickMode) renderCarPicks(); else renderSeasonalAdmin(); }
 const MONTH_NAMES = ['','January','February','March','April','May','June',
                      'July','August','September','October','November','December'];
 
@@ -5731,6 +5814,7 @@ async function persistSeasonalEvents() {
 // ── VISIBILITY LOGIC ──
 // Returns true if this event should currently appear in the "Coming Up" carousel
 function seIsActive(ev) {
+  if (ev.pending) return false;
   if (ev.alwaysOn) return !ev.alwaysOff; // year-round override
   const now = new Date();
   if (ev.dateType === 'range') {
@@ -5868,11 +5952,12 @@ function setSeasonalDateType(type) {
   document.getElementById('se-type-exact-btn').className = 'btn btn-sm' + (type === 'exact' ? '' : ' btn-ghost');
 }
 
-function openSeasonalModal(id) {
+function openSeasonalModal(id, pick) {
+  sePickMode = !!pick;
   seEditingId = id || null;
-  const ev = id ? seasonalEvents.find(e => e.id === id) : null;
+  const ev = id ? seList().find(e => e.id === id) : null;
 
-  document.getElementById('seasonal-modal-title').textContent = ev ? 'Edit Seasonal Event' : 'Add Seasonal Event';
+  document.getElementById('seasonal-modal-title').textContent = pick ? 'Carousel Pick' : (ev ? 'Edit Seasonal Event' : 'Add Seasonal Event');
   document.getElementById('se-name').value   = ev ? ev.name  : '';
   document.getElementById('se-image').value  = ev ? (ev.image||'') : '';
   document.getElementById('se-desc').value   = ev ? (ev.desc||'') : '';
@@ -5937,18 +6022,19 @@ async function saveSeasonalEvent() {
     ev.exactDate = document.getElementById('se-exact-date').value;
   }
 
+  const list = seList();
   if (seEditingId) {
-    const idx = seasonalEvents.findIndex(e => e.id === seEditingId);
-    if (idx >= 0) seasonalEvents[idx] = ev;
+    const idx = list.findIndex(e => e.id === seEditingId);
+    if (idx >= 0) list[idx] = sePickMode ? Object.assign({}, list[idx], ev, { pending: false }) : ev;
   } else {
-    seasonalEvents.push(ev);
+    list.push(ev);
   }
 
   closeSeasonalModal();
-  renderSeasonalAdmin();
+  seRefresh();
 
   try {
-    await persistSeasonalEvents();
+    await sePersist();
     toast('Event saved', 'success');
   } catch(e) { toast('Save failed: ' + e.message, 'error'); }
 }
@@ -5956,12 +6042,12 @@ async function saveSeasonalEvent() {
 async function deleteSeasonalEvent() {
   if (!seEditingId) return;
   if (!confirm('Delete this event?')) return;
-  seasonalEvents = seasonalEvents.filter(e => e.id !== seEditingId);
+  if (sePickMode) carPicks = carPicks.filter(e => e.id !== seEditingId); else seasonalEvents = seasonalEvents.filter(e => e.id !== seEditingId);
   closeSeasonalModal();
-  renderSeasonalAdmin();
+  seRefresh();
 
   try {
-    await persistSeasonalEvents();
+    await sePersist();
     toast('Event deleted', 'success');
   } catch(e) { toast('Delete failed: ' + (e.code || e.message || 'unknown error'), 'error'); }
 }
@@ -6759,7 +6845,7 @@ window.deletePortalCollaborator = async function(id) {
 };
 
 Object.assign(window, {
-  carTab, carGoPicks, setCatSize, setCatStyle, closeCategoryDetail, openNightFromCat, openCategoryDetail, carouselAdd, carSet, carRemove,
+  carTab, carGoPicks, carFromModal, setCatSize, setCatStyle, closeCategoryDetail, openNightFromCat, openCategoryDetail, carouselAdd,
   liveImgPreview,
   toggleNavMenu, closeNavMenu,
   renderMovies, openMovieModal, addMovieLinkRow, closeMovieModal, saveMovie, deleteMovie, openMovieBulk, closeMovieBulk, saveMovieBulk,
@@ -6810,6 +6896,12 @@ Object.assign(window, {
   onSingaTagDragStart, onSingaTagDrop,
   onSingaTagListDragStart, onSingaTagListDragOver, onSingaTagListDragLeave, onSingaTagListDrop
 });
+
+['editCategory', 'editNight', 'openNewNightModal', 'openMovieModal', 'openLiveCategoryInfo', 'openAddCategoryModal'].forEach(n => {
+  const o = window[n]; if (typeof o !== 'function') return;
+  window[n] = function () { const res = o.apply(this, arguments); try { carModalSync(); } catch (e) {} return res; };
+});
+
 
 // ═══════════════════════════════════════════════
 // INIT
