@@ -1747,7 +1747,7 @@
 </div>
 
 <footer class="site-footer" id="site-footer">
-  <span class="footer-line1">Belladonna Audio Alchemies</span><span class="footer-diamond"> ✦ </span><span class="footer-line2">Seattle–Tacoma</span>
+  <span class="footer-line1">Belladonna Audio Alchemies</span><span class="footer-diamond"> ✦ </span><span class="footer-line2">Seattle–Tacoma</span><span style="opacity:.35;font-size:.65rem;margin-left:8px;">venue.html 2026-11-10 b</span>
 </footer>
 
 <script type="module">
@@ -1984,6 +1984,7 @@ async function loadSeasonalEvents() {
 }
 
 function seIsActive(ev) {
+  if (ev.pending) return false;
   if (ev.alwaysOn) return !ev.alwaysOff;
   const now = new Date();
   if (ev.dateType === 'range') {
@@ -2147,7 +2148,6 @@ function renderComingUp() {
       + faceContent
       + '</div>'
       + '<div class="banner-card-name">' + esc(item.name) + '</div>'
-      + (item.sublabel ? '<div class="banner-card-date">' + esc(item.sublabel) + '</div>' : '')
       + '</div>';
   }
 
