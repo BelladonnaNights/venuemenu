@@ -1062,6 +1062,7 @@
     <div id="search-results" class="category-grid" style="display:none;"></div>
     <div id="lib-results-meta" class="results-meta"></div>
     <div id="category-grid" class="category-grid"></div>
+    <div id="cat-detail-view" style="display:none"></div>
     <div id="lib-empty" class="empty-state" style="display:none">
       <div class="empty-state-icon">📚</div>
       <h3>No Categories Yet</h3>
@@ -2840,6 +2841,71 @@ function renderLibrary() {
   document.getElementById('category-grid').innerHTML = items.map(i => i.html()).join('');
 }
 
+
+const ALSO_SEE_LABELS = {karaoke:'Karaoke page', trivia:'Trivia page', booktrivia:'Book Trivia page', bingo:'Bingo page'};
+function catNightsFor(cat) {
+  return (nights || []).filter(n => (n.categoryIds || []).includes(cat.name));
+}
+function catLinkChipsHTML(cat) {
+  const ns = catNightsFor(cat);
+  const ase = cat.alsoSee || [];
+  if (!ns.length && !ase.length) return '';
+  const chip = (t, c) => `<span class="badge" style="background:${c[0]};color:${c[1]};border:1px solid ${c[2]};font-size:0.68rem;">${t}</span>`;
+  return `<div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:0.6rem;">`
+    + ns.map(n => chip('🌙 ' + esc(n.name), ['rgba(201,168,76,0.12)','var(--gold)','rgba(201,168,76,0.35)'])).join('')
+    + ase.map(k => chip('↔ ' + esc(ALSO_SEE_LABELS[k] || k), ['rgba(60,80,100,0.2)','#9BB8D4','rgba(100,140,180,0.25)'])).join('')
+    + `</div>`;
+}
+function openCategoryDetail(idx) {
+  const c = categories[idx];
+  if (!c) return;
+  ['search-results-meta','active-filters-bar-library','search-results','lib-results-meta','category-grid','lib-empty'].forEach(id => { const e = document.getElementById(id); if (e) e.style.display = 'none'; });
+  const bar = document.querySelector('#view-library > div'); if (bar) bar.style.display = 'none';
+  const ns = catNightsFor(c);
+  const ase = c.alsoSee || [];
+  const pts = c.publishedTabs || [];
+  const tags = tagsArray(c.tags).map(t => t.trim()).filter(Boolean);
+  const banner = c.bgImage || c.bannerData;
+  const box = (inner) => `<div style="background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:1rem 1.2rem;margin-bottom:1.5rem;font-size:1rem;color:var(--text-muted);line-height:1.7;">${inner}</div>`;
+  const pill = (t, extra) => `<span class="badge" style="margin:0 6px 6px 0;${extra||''}">${t}</span>`;
+  const el = document.getElementById('cat-detail-view');
+  el.style.display = 'block';
+  el.innerHTML = `
+    <button class="back-btn" onclick="closeCategoryDetail()">← Back to Library</button>
+    <div class="night-detail-banner" style="${banner ? '' : 'background:var(--surface2);'}">
+      ${banner ? `<img src="${banner}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;" alt="">` : ''}
+      <div class="night-detail-banner-text">${esc(c.name)}</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:1.25rem;">
+      ${c.type ? `<span class="badge badge-type">${esc(c.type)}</span>` : ''}
+      ${c.theme ? `<strong style="font-size:0.9rem;">${esc(c.theme)}</strong>` : ''}
+      ${tags.map(t => `<span class="badge" style="background:rgba(60,80,100,0.2);color:#9BB8D4;border:1px solid rgba(100,140,180,0.2);font-size:0.72rem;">${esc(t)}</span>`).join('')}
+      <button class="btn btn-sm btn-ghost" style="margin-left:auto;" onclick="editCategory(${idx})">Edit</button>
+    </div>
+    <div class="section-title">Themed Nights This Is Linked To</div>
+    ${box(ns.length ? ns.map(n => `<span class="badge" style="margin:0 6px 6px 0;background:rgba(201,168,76,0.12);color:var(--gold);border:1px solid rgba(201,168,76,0.35);cursor:pointer;" onclick="openNightFromCat(${nights.indexOf(n)})">🌙 ${esc(n.name)}</span>`).join('') : '<em style="color:var(--text-dim);">Not in any themed night yet.</em>')}
+    <div class="section-title">Also See Links</div>
+    ${box(ase.length ? ase.map(k => pill('↔ ' + esc(ALSO_SEE_LABELS[k] || k))).join('') : '<em style="color:var(--text-dim);">No Also See links.</em>')}
+    <div class="section-title">Published To</div>
+    ${box(pts.length ? pts.map(t => pill(esc(t), 'background:rgba(42,107,58,0.2);color:#7DC996;border:1px solid rgba(42,107,58,0.4);')).join('') : '<em style="color:var(--text-dim);">Not published.</em>')}
+    ${(c.shows||[]).length ? `<div class="section-title">Shows</div>${box(c.shows.map(x => esc(x)).join(', '))}` : ''}
+    ${(c.karaokeSongs||[]).length ? `<div class="section-title">Karaoke Songs (${c.karaokeSongs.length})</div>${box(c.karaokeSongs.map(x => esc(x)).join('<br>'))}` : ''}
+    ${c.notes ? `<div class="section-title">Notes</div>${box(`<span style="white-space:pre-wrap;">${esc(c.notes)}</span>`)}` : ''}
+  `;
+  window.scrollTo(0, 0);
+}
+function closeCategoryDetail() {
+  document.getElementById('cat-detail-view').style.display = 'none';
+  const bar = document.querySelector('#view-library > div'); if (bar) bar.style.display = '';
+  renderLibrary();
+}
+function openNightFromCat(i) {
+  document.getElementById('cat-detail-view').style.display = 'none';
+  const bar = document.querySelector('#view-library > div'); if (bar) bar.style.display = '';
+  switchView('nights');
+  openNightDetail(i);
+}
+
 function categoryCardHTML(cat, idx, highlight) {
   // Shows are searchable but not displayed on library cards
   // They appear only on Mini Games / Sing-Alongs / Trivia tab cards
@@ -2862,7 +2928,7 @@ function categoryCardHTML(cat, idx, highlight) {
     ondrop="onCatDrop(event,${idx})"
     >
     ${bannerHtml}
-    <div class="cat-body">
+    <div class="cat-body" style="cursor:pointer;" onclick="openCategoryDetail(${idx})">
     <div class="category-card-header">
       <div class="category-card-name">${esc(cat.name)}</div>
       ${(cat.publishedTabs||[]).length > 0 ? `<span style="font-family:'Cinzel',serif;font-size:0.55rem;letter-spacing:0.1em;text-transform:uppercase;background:rgba(42,107,58,0.2);border:1px solid rgba(42,107,58,0.5);color:#5AC47A;padding:2px 7px;border-radius:3px;white-space:nowrap;flex-shrink:0;">Published</span>` : ''}
@@ -2872,7 +2938,8 @@ function categoryCardHTML(cat, idx, highlight) {
       ${cat.theme ? `<span style="font-size:0.78rem; font-weight:700; color:var(--text); letter-spacing:0.02em;">${esc(cat.theme)}</span>` : ''}
     </div>
     ${tagsArray(cat.tags).map(t=>t.trim()).filter(Boolean).length ? `<div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:0.6rem;">${tagsArray(cat.tags).map(t=>t.trim()).filter(Boolean).map(t=>`<span class="badge" style="background:rgba(60,80,100,0.2);color:#9BB8D4;border:1px solid rgba(100,140,180,0.2);font-size:0.68rem;">${esc(t)}</span>`).join('')}</div>` : ''}
-    <div class="category-card-actions">
+    ${catLinkChipsHTML(cat)}
+    <div class="category-card-actions" onclick="event.stopPropagation()">
       <span title="Drag to reorder" style="cursor:grab; color:var(--text-dim); font-size:1.1rem; user-select:none; padding:0.1rem 0.3rem; border-radius:3px;" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='var(--text-dim)'">⠿</span>
       <button class="btn btn-sm btn-ghost" onclick="editCategory(${idx})">Edit</button>
     </div>
