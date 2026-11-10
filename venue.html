@@ -1259,10 +1259,6 @@
           <div style="font-family:'Cinzel',serif;font-size:0.58rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--gold-dim);margin-bottom:0.5rem;">Also See</div>
           <div id="also-see-trivia" style="display:flex;gap:0.75rem;overflow-x:auto;padding-bottom:0.5rem;"></div>
         </div>
-        <div class="cat-ctl" style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:1rem;">
-          <label style="display:flex;align-items:center;gap:8px;font-size:0.78rem;color:var(--text-dim);">Size <input type="range" class="cat-size-range" min="140" max="360" step="10" oninput="setCatSize(this.value)" style="width:160px;accent-color:var(--gold);"></label>
-          <div style="display:flex;gap:6px;"><button type="button" class="booking-type-btn cat-sty-btn" data-sty="cards" onclick="setCatStyleLocal('cards')" style="flex:none;padding:0.4rem 0.9rem;">Images</button><button type="button" class="booking-type-btn cat-sty-btn" data-sty="tiles" onclick="setCatStyleLocal('tiles')" style="flex:none;padding:0.4rem 0.9rem;">Black &amp; Gold</button></div>
-        </div>
         <div id="trivia-grid" class="minigames-grid"></div>
         <div id="trivia-empty" class="empty-state" style="display:none;"><h2>No Trivia Published Yet</h2></div>
       </div>
@@ -1283,10 +1279,6 @@
         <div id="also-see-bingo-wrap" style="display:none;margin-bottom:1.25rem;">
           <div style="font-family:'Cinzel',serif;font-size:0.58rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--gold-dim);margin-bottom:0.5rem;">Also See</div>
           <div id="also-see-bingo" style="display:flex;gap:0.75rem;overflow-x:auto;padding-bottom:0.5rem;"></div>
-        </div>
-        <div class="cat-ctl" style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:1rem;">
-          <label style="display:flex;align-items:center;gap:8px;font-size:0.78rem;color:var(--text-dim);">Size <input type="range" class="cat-size-range" min="140" max="360" step="10" oninput="setCatSize(this.value)" style="width:160px;accent-color:var(--gold);"></label>
-          <div style="display:flex;gap:6px;"><button type="button" class="booking-type-btn cat-sty-btn" data-sty="cards" onclick="setCatStyleLocal('cards')" style="flex:none;padding:0.4rem 0.9rem;">Images</button><button type="button" class="booking-type-btn cat-sty-btn" data-sty="tiles" onclick="setCatStyleLocal('tiles')" style="flex:none;padding:0.4rem 0.9rem;">Black &amp; Gold</button></div>
         </div>
         <div id="bingo-grid" class="minigames-grid"></div>
         <div id="bingo-empty" class="empty-state" style="display:none;"><h2>No Bingo Published Yet</h2></div>
@@ -1961,7 +1953,6 @@ const MONTH_NAMES_V = ['','January','February','March','April','May','June',
 
 let catStyle = 'cards';
 let catSize = 200;
-try { catSize = Number(localStorage.getItem('bm_catSize')) || 200; const ls = localStorage.getItem('bm_catStyle'); if (ls) catStyle = ls; } catch (e) {}
 function applyCatSize(grid) {
   if (!grid) return;
   const tiles = grid.classList.contains('cat-tiles');
@@ -1971,19 +1962,8 @@ function applyCatSize(grid) {
   document.querySelectorAll('.cat-size-range').forEach(r => { r.value = catSize; });
   document.querySelectorAll('.cat-sty-btn').forEach(b => b.classList.toggle('active', b.dataset.sty === catStyle));
 }
-function rerenderCatViews() { try { renderTrivia(); renderBingo(); } catch (e) {} }
-function setCatSize(val) {
-  catSize = Number(val) || 200;
-  try { localStorage.setItem('bm_catSize', String(catSize)); } catch (e) {}
-  ['trivia-grid', 'bingo-grid'].forEach(id => applyCatSize(document.getElementById(id)));
-}
-function setCatStyleLocal(v) {
-  catStyle = v;
-  try { localStorage.setItem('bm_catStyle', v); } catch (e) {}
-  rerenderCatViews();
-}
 async function loadDisplaySettings() {
-  try { const d = await getDoc(doc(db, 'venueMenuConfig', 'mainMenu')); let own = null; try { own = localStorage.getItem('bm_catStyle'); } catch (e) {} if (!own) catStyle = (d.exists() && d.data().catStyle) || 'cards'; } catch (e) {}
+  try { const d = await getDoc(doc(db, 'venueMenuConfig', 'mainMenu')); if (d.exists()) { catStyle = d.data().catStyle || 'cards'; catSize = Number(d.data().catSize) || 200; } } catch (e) {}
 }
 function catTileHtml(c, onclickJs) {
   const nm = String(c.name || '');
@@ -2006,6 +1986,10 @@ async function loadSeasonalEvents() {
 function seIsActive(ev) {
   if (ev.alwaysOn) return !ev.alwaysOff;
   const now = new Date();
+  if (ev.dateType === 'range') {
+    const t = (now.getMonth() + 1) * 100 + now.getDate(), a = ev.rStartM * 100 + ev.rStartD, b = ev.rEndM * 100 + ev.rEndD;
+    return a <= b ? (t >= a && t <= b) : (t >= a || t <= b);
+  }
   if (ev.dateType === 'exact') {
     if (!ev.exactDate) return false;
     const [ey, em, ed] = ev.exactDate.split('-').map(Number);
@@ -2031,6 +2015,7 @@ function seIsActive(ev) {
 }
 
 function seDisplayDate(ev) {
+  if (ev.dateType === 'range') return MONTH_NAMES_V[ev.rStartM] + ' ' + ev.rStartD + ' – ' + MONTH_NAMES_V[ev.rEndM] + ' ' + ev.rEndD;
   if (ev.dateType === 'exact' && ev.exactDate) {
     const [,em,ed] = ev.exactDate.split('-').map(Number);
     return MONTH_NAMES_V[em] + ' ' + ed;
@@ -4228,6 +4213,7 @@ async function loadBattlesPageContent() {
 }
 
 Object.assign(window, {
+  ideaReasonChanged,
   renderMovies, openMovieDetail, movieAddToCart,
   navigateTo, toggleNavMenu, closeNavMenu, renderComingUp, toggleFilterSidebar, closeFilterSidebar,
   openCart, closeCart, addToCart, removeFromCart, setBookingType, selectDate, calNav, toggleWeekday,
