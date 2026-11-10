@@ -541,10 +541,13 @@
     font-size: 0.6rem; letter-spacing: 0.08em; text-transform: uppercase;
     cursor: pointer; border-radius: 3px; transition: all 0.15s; text-align: center;
   }
+  .booking-type-btn { color: var(--gold-dim); }
+  .booking-type-btn svg { color: var(--gold); }
   .booking-type-btn.active {
-    border-color: var(--gold-dim); color: var(--gold);
-    background: rgba(201,168,76,0.08);
+    border-color: #8a6414; color: #2b1d02; font-weight: 700;
+    background: linear-gradient(180deg,#fff2b8 0%,#f3d77a 18%,#d9b04a 48%,#b98a26 52%,#e6c363 80%,#f7e08f 100%);
   }
+  .booking-type-btn.active svg { color: #2b1d02; }
   .save-later-btn {
     width: 100%; padding: 0.5rem; border: 1px dashed var(--border);
     background: none; color: var(--text-dim); font-family: 'Cinzel', serif;
@@ -846,7 +849,7 @@
   .top-link:hover { color: var(--gold-light); border-color: var(--border2); }
   .top-link.active { color: var(--gold); border-color: var(--gold); background: var(--gold-dim); }
   .top-link.cart-btn { position: relative; width: auto; height: auto; display: inline-flex; align-items: center; gap: 6px; }
-  .top-link .cart-count { position: static; transform: none; }
+  .top-link .cart-count { position: static; transform: none; min-width: 26px; height: 26px; border-radius: 13px; font-size: 0.9rem; margin-left: 4px; background: linear-gradient(180deg,#fff2b8,#d9b04a 50%,#b98a26); box-shadow: 0 0 10px rgba(226,184,72,.55); }
   @media (max-width: 768px) { .top-link { padding: 7px 12px; font-size: 10px; } }
 
   /* My Queue: drag-and-drop list, dates stay put, categories move */
@@ -1558,9 +1561,13 @@
   <div class="view" id="view-ideas">
     <div class="desc-view">
       <div class="desc-title">Suggest Your Own Idea</div>
-      <div class="desc-body" style="font-size:0.95rem;">Have a category you would like to run, like your own book trivia theme? Tell us about it and we will review it. Ideas can be picked for a date <b>6 to 8 weeks from today</b>. Anything closer than 6 weeks is already locked in, and anything further out is not open yet.</div>
+      <div class="desc-body" style="font-size:0.95rem;">Have a category you would like to run? Tell us about it and we will review it. Ideas can be picked for a date <b>6 to 8 weeks from today</b>. Anything closer than 6 weeks is already locked in, and anything further out is not open yet.</div>
       <div class="vp-card">
         <div class="vp-msg" id="vp-ideas-msg"></div>
+        <div class="vp-field"><label>Why are you sending this?</label>
+          <select id="vp-id-reason" onchange="ideaReasonChanged()"><option value="new">A new idea for an open date</option><option value="change">Change the theme of an event I already have scheduled</option></select>
+          <div id="vp-id-change-note" style="display:none;font-size:0.85rem;color:var(--gold);margin-top:6px;line-height:1.5;">Are you wanting to change the theme for an event that is already scheduled? Make sure it is at least 6 weeks out, since anything closer is already locked in.</div>
+        </div>
         <div class="vp-field"><label>Idea name</label><input type="text" id="vp-id-name"></div>
         <div class="vp-field"><label>Game type</label>
           <select id="vp-id-type"><option>Book Trivia</option><option>Trivia</option><option>Music Bingo</option><option>Karaoke</option><option>Other</option></select>
@@ -2991,7 +2998,9 @@ function renderMovies() {
       : '<div class="night-card-img" style="aspect-ratio:4/5;display:flex;align-items:center;justify-content:center;background:var(--surface2);color:var(--text-dim);font-size:2rem;">🎬</div>';
     const meta = [m.year, m.runtime ? m.runtime + ' min' : ''].filter(Boolean).join(' · ');
     return '<div class="night-card" onclick="openMovieDetail(\'' + m._id + '\')">' + imgEl + '<div class="night-card-body"><div class="night-name">' + esc(m.title) + '</div>'
-      + (meta ? '<div style="font-size:0.8rem;color:var(--text-muted);margin-top:2px;">' + esc(meta) + '</div>' : '') + '</div></div>';
+      + (meta ? '<div style="font-size:0.8rem;color:var(--text-muted);margin-top:2px;">' + esc(meta) + '</div>' : '')
+      + (effectiveMode() === 'venue' ? '<div class="br-btns" style="padding:8px 0 0;"><button class="br-btn gold" onclick="event.stopPropagation();brWish(\'movie\',\'' + m._id + '\')">Add to Wish List</button></div>' : '')
+      + '</div></div>';
   }).join('');
 }
 function movieCartId(id) { return 'movie_' + id; }
@@ -3739,8 +3748,22 @@ const CART_FIELD_DEFS = {
   ticket: { label: 'Ticket price and who sells the tickets', ph: 'e.g. $15 — sold by the venue', type: 'text' },
   game:   { label: 'Which game?', ph: 'Bingo, Trivia, Karaoke…', type: 'text' }
 };
+function cartWeeklyNotice(item) {
+  if (item.bookingType !== 'weekly' || !(item.weekdays || []).length) return '';
+  const hits = [];
+  (item.weekdays || []).forEach(wd => {
+    const seen = {};
+    (queueUpcomingItems || []).filter(it => !it.cancelled && it.date && new Date(it.date + 'T12:00:00').getDay() === wd).forEach(it => {
+      const k = it.kind + '|' + it.time; if (seen[k]) return; seen[k] = 1;
+      hits.push(esc(it.kind || 'a gig') + ' on ' + WEEKDAYS[wd] + 's' + (it.time ? ' at ' + esc(qFmtTime(it.time)) : ''));
+    });
+  });
+  if (!hits.length) return '';
+  return '<div class="cart-conflict">You already have a recurring gig on that day (' + hits.join('; ') + '). If this is at the same time as your recurring gig, this request replaces it on those days if approved.</div>';
+}
 function cartExtrasHtml(item, i) {
-  if (!item.premium) return '';
+  const wn = cartWeeklyNotice(item);
+  if (!item.premium) return wn;
   let h = '<div class="cart-premium">$ This costs extra. We will confirm the price when we approve it.</div>';
   const ev = (typeof BR_EVENTS !== 'undefined') ? BR_EVENTS.find(x => x.key === item.kind) : null;
   if (ev) {
@@ -3750,10 +3773,8 @@ function cartExtrasHtml(item, i) {
   if (item.bookingType === 'date' && item.selectedDate) {
     const cf = cartConflicts(item.selectedDate);
     if (cf.length) h += '<div class="cart-conflict">You already have ' + cf.map(c => esc(c.kind) + (c.time ? ' at ' + esc(c.time) : '')).join(' and ') + ' that night. If we approve this, it replaces that night.</div>';
-  } else if (item.bookingType === 'weekly') {
-    h += '<div class="cart-conflict">Weekly requests replace your regular game on those days if approved.</div>';
   }
-  return h;
+  return h + wn;
 }
 function cartItemIdx(id) { return cart.findIndex(c => c.id === id); }
 function cartHas(id) { return cartItemIdx(id) >= 0; }
@@ -3815,7 +3836,7 @@ async function loadAvailability() {
   } catch(e) { availDates = {}; }
 }
 
-function isAvailable(dateStr) { return availDates[dateStr] === 'available'; }
+function isAvailable(dateStr) { return Object.keys(availDates).length ? availDates[dateStr] === 'available' : true; }
 function isBooked(dateStr)    { return availDates[dateStr] === 'booked'; }
 
 // ── CART DRAWER ──
@@ -3852,6 +3873,7 @@ function renderCartItems() {
   document.getElementById('cart-checkout-form').style.display = 'none';
 
   itemsEl.innerHTML = cart.map((item, i) => {
+    if (item.bookingType === 'weekly' && cartNoWeekly(item)) item.bookingType = 'date';
     const dateSel = renderMiniCal(item, i);
     const weekSel = renderWeekdayPicker(item, i);
     const saveLaterSel = item.bookingType === 'later'
@@ -3863,7 +3885,7 @@ function renderCartItems() {
 
     const queueNote = item.bookingType === 'queue'
       ? '<div style="margin-top:0.5rem;padding:0.6rem 0.75rem;background:rgba(201,168,76,0.06);border:1px solid rgba(201,168,76,0.18);border-radius:4px;font-size:0.8rem;color:var(--text-muted);line-height:1.5;">'
-        + '🗓 You are on our scheduling queue for this one — no date picked yet. We will reach out to find the next open slot that works for you.'
+        + 'You are on our scheduling queue for this one — no date picked yet. We will reach out to find the next open slot that works for you.'
         + '</div>'
       : '';
 
@@ -3874,9 +3896,9 @@ function renderCartItems() {
       + '</div>'
       + '<div class="cart-item-body">'
       + '<div class="booking-type-toggle">'
-      + '<button class="booking-type-btn' + (item.bookingType==='date'?' active':'') + '" onclick="setBookingType(' + i + ',\'date\')">📅 Single Date</button>'
-      + '<button class="booking-type-btn' + (item.bookingType==='weekly'?' active':'') + '" onclick="setBookingType(' + i + ',\'weekly\')">🔁 Weekly Gig</button>'
-      + '<button class="booking-type-btn' + (item.bookingType==='queue'?' active':'') + '" onclick="setBookingType(' + i + ',\'queue\')">🗓 Queue</button>'
+      + '<button class="booking-type-btn' + (item.bookingType==='date'?' active':'') + '" onclick="setBookingType(' + i + ',\'date\')"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px;"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>Single Date</button>'
+      + (cartNoWeekly(item) ? '' : '<button class="booking-type-btn' + (item.bookingType==='weekly'?' active':'') + '" onclick="setBookingType(' + i + ',\'weekly\')"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px;"><path d="M17 2l4 4-4 4"/><path d="M3 11V9a3 3 0 013-3h15"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v2a3 3 0 01-3 3H3"/></svg>Weekly Gig</button>')
+      + '<button class="booking-type-btn' + (item.bookingType==='queue'?' active':'') + '" onclick="setBookingType(' + i + ',\'queue\')"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px;"><path d="M4 6h16M4 12h16M4 18h10"/></svg>Queue</button>'
       + '</div>'
       + (item.bookingType === 'date' ? dateSel : '')
       + (item.bookingType === 'weekly' ? weekSel : '')
@@ -3887,7 +3909,11 @@ function renderCartItems() {
   }).join('');
 }
 
+function cartNoWeekly(item) {
+  return publishedNights.some(n => n._id === item.id) || publishedCategories.some(c => c._id === item.id && isSingAlong(c));
+}
 function setBookingType(idx, type) {
+  if (type === 'weekly' && cartNoWeekly(cart[idx])) type = 'date';
   cart[idx].bookingType = type;
   if (type === 'later' || type === 'queue') { cart[idx].selectedDate = null; cart[idx].weekdays = []; }
   cartSave();
@@ -4236,12 +4262,20 @@ async function renderVenueShortcuts() {
 
 // ── Venue ideas: the venue suggests its own category; we approve it in the admin ──
 function ideaDateKey(offsetDays) { const d = new Date(); d.setHours(12, 0, 0, 0); d.setDate(d.getDate() + offsetDays); return qDateToKey(d); }
-function loadIdeasView() {
-  vpMsg('vp-ideas-msg', '', '');
+function ideaReasonChanged() {
+  const isChange = document.getElementById('vp-id-reason').value === 'change';
   const lo = ideaDateKey(42), hi = ideaDateKey(56);
   const dt = document.getElementById('vp-id-date');
-  dt.min = lo; dt.max = hi;
-  document.getElementById('vp-id-range').textContent = 'Open dates: ' + campFmtDate(lo) + ' to ' + campFmtDate(hi) + '.';
+  dt.min = lo;
+  if (isChange) dt.removeAttribute('max'); else dt.max = hi;
+  document.getElementById('vp-id-change-note').style.display = isChange ? 'block' : 'none';
+  document.getElementById('vp-id-range').textContent = isChange
+    ? 'Date of the scheduled event: ' + campFmtDate(lo) + ' or later.'
+    : 'Open dates: ' + campFmtDate(lo) + ' to ' + campFmtDate(hi) + '.';
+}
+function loadIdeasView() {
+  vpMsg('vp-ideas-msg', '', '');
+  ideaReasonChanged();
   const n = document.getElementById('vp-id-name2'); if (n && !n.value) n.value = (currentProfile && currentProfile.name) || '';
   const em = document.getElementById('vp-id-email'); if (em && !em.value) em.value = (currentProfile && currentProfile.email) || '';
 }
@@ -4255,9 +4289,10 @@ window.submitVenueIdea = async function() {
   if (!entryName) { vpMsg('vp-ideas-msg', 'Give your idea a name.', 'error'); return; }
   if (!description) { vpMsg('vp-ideas-msg', 'Describe the idea first.', 'error'); return; }
   if (!targetDate) { vpMsg('vp-ideas-msg', 'Pick a date.', 'error'); return; }
+  const isChange = document.getElementById('vp-id-reason').value === 'change';
   const lo = ideaDateKey(42), hi = ideaDateKey(56);
   if (targetDate < lo) { vpMsg('vp-ideas-msg', 'That date is less than 6 weeks away, so it is locked. Pick ' + campFmtDate(lo) + ' or later.', 'error'); return; }
-  if (targetDate > hi) { vpMsg('vp-ideas-msg', 'That date is more than 8 weeks away and is not open yet. Pick ' + campFmtDate(hi) + ' or earlier.', 'error'); return; }
+  if (!isChange && targetDate > hi) { vpMsg('vp-ideas-msg', 'That date is more than 8 weeks away and is not open yet. Pick ' + campFmtDate(hi) + ' or earlier.', 'error'); return; }
   try {
     await addDoc(collection(db, 'venueFeedback'), {
       type: 'categoryEntry',
@@ -4266,7 +4301,8 @@ window.submitVenueIdea = async function() {
       name: document.getElementById('vp-id-name2').value.trim(),
       email: document.getElementById('vp-id-email').value.trim(),
       entryName, gameType, targetDate, description, sampleQuestions,
-      message: entryName + ' (' + gameType + ') for ' + targetDate + ': ' + description,
+      requestKind: isChange ? 'change' : 'new',
+      message: (isChange ? '[THEME CHANGE for a scheduled event] ' : '') + entryName + ' (' + gameType + ') for ' + targetDate + ': ' + description,
       decision: 'pending',
       status: 'new',
       createdAt: serverTimestamp()
