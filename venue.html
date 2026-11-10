@@ -888,10 +888,13 @@
   .br-yr { font-size: .8rem; color: var(--text-dim); }
   .br-btns { display: flex; flex-direction: column; gap: 6px; padding: 8px 12px 12px; margin-top: auto; }
   .br-btn { background: transparent; border: 1px solid var(--border2); color: var(--text); padding: 8px; border-radius: 8px; cursor: pointer; font: inherit; font-size: .78rem; }
-  .br-btn.gold { background: var(--gold); border-color: var(--gold); color: #1a1408; font-weight: 700; }
+  .br-btn.gold, .br-pill { background: linear-gradient(180deg,#fff2b8 0%,#f3d77a 18%,#d9b04a 48%,#b98a26 52%,#e6c363 80%,#f7e08f 100%); border-color: #8a6414; color: #2b1d02; font-weight: 700; text-shadow: 0 1px 0 rgba(255,244,196,.7); box-shadow: inset 0 1px 0 rgba(255,255,255,.75), inset 0 -1px 2px rgba(110,72,6,.45), 0 1px 4px rgba(0,0,0,.4), 0 0 8px rgba(226,184,72,.25); position: relative; overflow: hidden; }
+  .br-btn.gold::after, .br-pill::after { content:''; position:absolute; top:0; left:-60%; width:40%; height:100%; background: linear-gradient(100deg,transparent,rgba(255,255,255,.55),transparent); transform: skewX(-20deg); animation: goldshine 4.5s ease-in-out infinite; pointer-events:none; }
+  @keyframes goldshine { 0%,70% { left:-60%; } 100% { left:140%; } }
+  .br-btn.gold:hover { filter: brightness(1.08) saturate(1.1); }
   .br-btn.done { border-color: var(--gold); color: var(--gold); }
   @media (max-width: 768px) { .br-card { flex-basis: 190px; } }
-  .br-pill { display: inline-block; margin-left: 8px; vertical-align: middle; font-family: var(--cinzel); font-size: .55rem; letter-spacing: .1em; text-transform: uppercase; color: #1a1408; background: var(--gold); border-radius: 10px; padding: 2px 8px; }
+  .br-pill { display: inline-block; margin-left: 8px; vertical-align: middle; font-family: var(--cinzel); font-size: .55rem; letter-spacing: .1em; text-transform: uppercase; border-radius: 10px; padding: 2px 8px; border: 1px solid #8a6414; }
   .br-blurb { padding: 0 12px; color: var(--text-muted); font-size: .85rem; line-height: 1.4; }
   .cart-premium { margin-top: .6rem; padding: .5rem .7rem; border: 1px solid var(--gold); border-radius: 6px; color: var(--gold-light); font-size: .8rem; }
   .cart-conflict { margin-top: .5rem; padding: .5rem .7rem; border: 1px solid #C0654F; border-radius: 6px; color: #E69A87; font-size: .8rem; line-height: 1.45; }
@@ -974,7 +977,6 @@
         <svg class="burger-ico" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false"><path d="M3 6h18M3 12h18M3 18h18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
       </button>
       <nav class="nav-tabs" id="main-nav">
-        <div class="nav-group">Home</div>
         <button class="nav-tab active" id="nav-menu" onclick="navigateTo('menu')">Main Menu</button>
         <div class="nav-group">Plan my nights</div>
         <button class="nav-tab venue-only-nav" style="display:none;" id="nav-queue" onclick="navigateTo('queue')">My Queue</button>
@@ -1033,10 +1035,6 @@
 
       <!-- COMING UP CAROUSEL — rendered by renderComingUp() -->
       <div id="coming-up-section" class="coming-up-section" style="display:none;">
-        <div class="coming-up-header">
-          <span class="coming-up-title">✦ My Queue</span>
-          <div class="coming-up-line"></div>
-        </div>
         <div class="carousel-outer" id="carousel-outer">
           <div class="carousel-track" id="carousel-track"></div>
         </div>
@@ -2607,7 +2605,9 @@ function renderThemedNights() {
   grid.innerHTML = filtered.map((n,i) => {
     const img = n.bannerData ? `<img class="night-card-img" src="${n.bannerData}" alt="${esc(n.name)}" loading="lazy">` : `<div class="night-card-img" style="display:flex;align-items:center;justify-content:center;background:var(--surface2);color:var(--text-dim);font-size:2rem;">🌙</div>`;
     const star = starBtnHtml('night', n._id);
-    return `<div class="night-card" onclick="openNightDetail(${publishedNights.indexOf(n)})">${img}${star}<div class="night-card-body"><div class="night-name">${esc(n.name)}</div>${n.description?`<div class="night-desc">${esc(n.description)}</div>`:''}</div></div>`;
+    const ni = publishedNights.indexOf(n);
+    const nBtns = effectiveMode()==='venue' ? `<div class="br-btns" style="padding:8px 0 0;"><button class="br-btn gold" onclick="event.stopPropagation();brWish('night',${ni})">Add to Wish List</button><button class="br-btn" onclick="event.stopPropagation();brRequest('night',${ni})">Pick a Date</button></div>` : '';
+    return `<div class="night-card" onclick="openNightDetail(${publishedNights.indexOf(n)})">${img}${star}<div class="night-card-body"><div class="night-name">${esc(n.name)}${brPill('night')}</div>${nBtns}</div></div>`;
   }).join('');
 }
 
@@ -2845,34 +2845,54 @@ function toggleKaraokeSongs(id) {
   if (el) el.classList.toggle('open');
 }
 let detailNightIdx = null;
+const NIGHT_DESC_FALLBACK = {
+ "2000-s-night-b3k08u": "Rewind to the turn of the millennium with 2000's bingo, trivia, lyric challenges and a few 'wait, THEY were in that?' surprises. Dial-up nostalgia not included.",
+ "adult-animation-night-hehgvq": "Animation for grown-ups: the sharp, sarcastic and gloriously inappropriate cartoons you can't watch with the kids. Bring your best quotes.",
+ "apocalypse-night-tkw6wh": "The world ended, the party didn't. Survival trivia, end-of-the-world movie games and a wasteland's worth of dark humor.",
+ "beetlejuice-night-qbw54j": "Say it three times if you dare. A spooky, silly night of striped suits, sandworms and ghostly games for fans of the ghost with the most.",
+ "buffyyyyyy-323kb7": "Grab a stake and a seat. Trivia, karaoke and bingo celebrating the Slayer, the Scoobies and all of Sunnydale's finest apocalypses.",
+ "cartoon-chaos-kids-edition-r27jvc": "Saturday morning, any time of day. Kid-friendly cartoon trivia, bingo and sing-alongs for the whole family.",
+ "cartoon-chaos-night-er9xly": "Your favorite animated worlds collide: cartoon karaoke, bingo and trivia from classic hits to modern obsessions.",
+ "cozy-mystery-night-up7oim": "Tea, clues and a suspiciously quiet village. A gentle whodunit night of puzzles, trivia and amateur sleuthing.",
+ "cryptid-campfire-night-ddx3ie": "Gather round the fire for Bigfoot, Mothman and other legends of the woods. Spooky stories, trivia and games about things that go bump in the forest.",
+ "emo-night-plcocf": "Eyeliner optional, feelings mandatory. Scream-along anthems, angsty trivia and the soundtrack of every bedroom wall poster.",
+ "feed-the-plant-night-p7btn2": "Something green is hungry. A dark, funny botanical night inspired by musical man-eating plants, with bingo and trivia that bite back.",
+ "femme-fatale-night-8ifnn7": "Smoke, shadows and dangerous women. Film noir glamour meets trivia, music and games about the most captivating villains and heroines.",
+ "gilmore-girls-theme-night-aglhtj": "Coffee, quick banter and a little Stars Hollow magic. Trivia, bingo and games for fans who talk as fast as Lorelai and Rory.",
+ "hazbin-hotel-night-ol3lf6": "Welcome to the hotel! Karaoke, games and trivia for fans of Hell's most chaotic redemption project.",
+ "hollywood-night-g9zgdz": "Roll out the red carpet. Movie trivia, 'before they were famous' reveals and behind-the-screen games for film buffs of every era.",
+ "mockumentary-madness-a2q08q": "Look into the camera and groan. Trivia and games from the funniest fake documentaries and workplace sitcoms.",
+ "monsters-magic-melodrama-night-7xviiy": "Vampires, witches and teen-drama heartbreak. A night of supernatural favorites, big feelings and bigger plot twists.",
+ "once-upon-a-time-family-night-bhk5jr": "Storybook fun for all ages. Fairy tale trivia, sing-alongs and games where everyone gets a happily ever after.",
+ "pixel-quest-h85ens": "Press start. Video game trivia, bingo and challenges from retro arcades to modern epics.",
+ "quest-mode-night-gsk03d": "Level up your night. Family-friendly adventures, gaming trivia and team challenges with quests to complete.",
+ "rental-rewind-night-vij7e9": "Be kind, rewind. A video store throwback with movie trivia and games from the days of Friday night rentals and late fees.",
+ "rom-com-night-nblhlw": "Meet-cutes, grand gestures and running through airports. Rom-com trivia, bingo and sing-alongs for hopeless romantics.",
+ "showtune-showdown-bjmzje": "Jazz hands required. Musical theatre bingo, trivia and belt-it-out showstoppers from Broadway to the big screen.",
+ "sinatra-after-dark-mjshkw": "Dim lights, dry martinis and timeless crooners. A swinging, classy night of standards, trivia and rat-pack style.",
+ "sketch-comedy-night-6iaxt1": "Quote it, don't just watch it. Trivia and games from the sketches and shows that made everyone laugh.",
+ "teen-scream-night-hoent9": "Slasher flicks, final girls and cheesy horror. Trivia, bingo and games for fans of scary movies with a teenage heart.",
+ "the-southern-fried-social-4jbliq": "Boots, bourbon and back-porch classics. Country bingo, trivia and sing-alongs from outlaws to modern hitmakers.",
+ "thriller-mystery-night-ueq3xn": "Twists, red herrings and cliffhangers. Mystery and thriller trivia for people who always guess the ending.",
+ "totally-fetch-night-eghywt": "Grool! Fetch is happening. Early-2000s teen movie trivia, quotes and games for the whole plastic-free crew.",
+ "true-crime-night-fc02bc": "For the armchair detectives. True crime trivia, 'dead or alive?' challenges and mystery book games. Dark but fun.",
+ "villians-night-gdcsoo": "Embrace the dark side. Trivia, karaoke and games celebrating the best screen villains, schemers and monsters.",
+ "witches-night-poq5kd": "Brew-tiful fun for the enchanted. Witchcore bingo and trivia, an entrance exam and games for magic lovers of every coven."
+};
 function openNightDetail(i) {
   const n = publishedNights[i];
   if (!n) return;
   detailNightIdx = i;
   document.getElementById('detail-title').textContent = n.name;
-  document.getElementById('detail-cats').textContent = n.categoryIds?.length ? n.categoryIds.length + (n.categoryIds.length === 1 ? ' category' : ' categories') : '';
+  document.getElementById('detail-cats').textContent = '';
   const banner = document.getElementById('detail-banner');
-  if (n.bannerData) { banner.src = n.bannerData; banner.style.display='block'; } else { banner.style.display='none'; }
-  document.getElementById('detail-tags').innerHTML = (n.filterTags||[]).map(t=>`<span class="detail-tag">${esc(t)}</span>`).join('');
-
+  banner.style.display='none';
+  document.getElementById('detail-tags').innerHTML = '';
   const descEl = document.getElementById('detail-desc');
-  if (n.description) { descEl.textContent = n.description; descEl.style.display='block'; }
+  const dTxt = n.description || NIGHT_DESC_FALLBACK[n._id] || '';
+  if (dTxt) { descEl.textContent = dTxt; descEl.style.display='block'; }
   else { descEl.style.display='none'; }
-
-  // Resolve this night's linked categories (stored as category names) against
-  // the full published list, so the venue can see exactly what the night is
-  // built from — whether that's a fixed lineup (e.g. Buffy Trivia + Buffy
-  // Bingo + Buffy Karaoke) or a menu of options to choose from.
-  const nightCats = (n.categoryIds || [])
-    .map(name => publishedCategories.find(c => c.name === name))
-    .filter(Boolean);
-  const catSection = document.getElementById('detail-cat-section');
-  if (nightCats.length) {
-    catSection.style.display = 'block';
-    document.getElementById('detail-cat-grid').innerHTML = renderNightRoundGroups(nightCats);
-  } else {
-    catSection.style.display = 'none';
-  }
+  document.getElementById('detail-cat-section').style.display = 'none';
 
   // Scheduling/booking is a Venue concern (the cart/checkout flow asks for
   // venue contact info) — hosts get the star button above instead, not these.
