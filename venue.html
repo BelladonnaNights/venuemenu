@@ -839,10 +839,25 @@
   .queue-cta { font-family: var(--cinzel); font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: var(--gold); cursor: pointer;
     background: var(--gold-dim); border: 1px solid var(--gold); border-radius: 99px; padding: 10px 26px; transition: all .2s; }
   .queue-cta:hover { background: var(--gold); color: #111; }
+  html, body { overflow-x: hidden; max-width: 100%; }
+  .hdr-user { font-size:0.72rem; color:var(--text-dim); white-space:nowrap; margin-left:auto; }
+  #main-nav .nav-group { cursor:pointer; user-select:none; display:flex; justify-content:space-between; align-items:center; }
+  #main-nav .nav-group::after { content:'▾'; font-size:10px; }
+  #main-nav .nav-group.collapsed::after { content:'▸'; }
+  #main-nav .grp-hide { display:none !important; }
   @media (max-width: 768px) {
-    .site-header { padding: 0.6rem 1rem !important; gap: 8px !important; flex-wrap: wrap; }
-    .wordmark-one { font-size: 18px !important; } .wordmark-two { font-size: 13px !important; }
-    #main-nav { right: 0; min-width: 210px; }
+    .site-header { padding: 0.5rem 0.6rem !important; gap: 4px 6px !important; flex-wrap: wrap; position: sticky; top: 0; }
+    .header-left { gap: 6px !important; min-width: 0; flex: 1 1 auto; order: 1; }
+    .logo-img { width: 30px !important; height: 30px !important; }
+    .wordmark-one { font-size: 14px !important; } .wordmark-two { font-size: 10px !important; }
+    .hdr-right { order: 2; gap: 4px !important; flex: 0 0 auto; flex-wrap: nowrap; }
+    .hdr-right .sidebar-toggle-btn { padding: 0.4rem 0.45rem !important; font-size: 0.52rem !important; }
+    .hdr-right .top-links { display:flex; gap:2px; }
+    .hdr-right .top-link { padding: 6px 7px !important; font-size: 8.5px !important; letter-spacing: .06em !important; }
+    .hdr-right .top-link .cart-count { min-width: 20px; height: 20px; font-size: .75rem; margin-left: 2px; }
+    .burger-btn { width: 36px !important; height: 34px !important; padding: 0 6px !important; }
+    .hdr-user { order: 3; flex: 1 0 100%; margin-left: 0; text-align: right; white-space: normal; font-size: .65rem; }
+    #main-nav { right: 0; min-width: 210px; max-height: 75vh; overflow-y: auto; }
   }
 
   /* top bar: Main Menu / My Queue / Shop always visible */
@@ -974,11 +989,12 @@
       </div>
     </div>
   </div>
-  <div style="display:flex;align-items:center;gap:0.75rem;">
+  <span id="gateway-user-label" class="hdr-user"></span>
+  <div class="hdr-right" style="display:flex;align-items:center;gap:0.75rem;">
     <span id="preview-mode-toggle" style="display:none;align-items:center;white-space:nowrap;"></span>
-    <span id="gateway-user-label" style="font-size:0.72rem;color:var(--text-dim);white-space:nowrap;"></span>
     <button class="sidebar-toggle-btn" onclick="gatewaySignOut()" style="white-space:nowrap;">Sign Out</button>
     <div class="top-links" id="top-links">
+      <button class="top-link venue-only-nav" style="display:none;" id="top-queue" onclick="navigateTo('queue')">My Queue</button>
       <button class="top-link cart-btn" id="cart-btn" onclick="openCart()">Wish List <span class="cart-count" id="cart-count">0</span></button>
     </div>
     <div class="nav-menu-wrap">
@@ -2282,6 +2298,10 @@ async function loadLiveCategories() {
     ];
     // Same category saved twice (two records, or the same one under both Trivia and Bingo
     // libraries) shows once: same type + same name, keep the one with a banner/description.
+    // A live record that replaced an older Firestore copy inherits that copy's type (e.g. "Book Trivia").
+    const inheritType = new Map();
+    publishedCategories.forEach(d => { if (d._migratedTo && d.type) inheritType.set(d._migratedTo, d.type); });
+    live.forEach(l => { const t = inheritType.get(l._id) || inheritType.get(String(l._id).replace(/^(trivia|bingo):/,'')); if (t) l.type = t; });
     const seen = new Map();
     publishedCategories.concat(live).forEach(c => {
       if (c._migratedTo || c._plannerMirror) return;   // old copies the admin already hides — never show them
@@ -2415,6 +2435,19 @@ let pendingTypeFilter = null;
 // Active type-chip filter for the trivia view (null = show all)
 let activeTriviaTypeFilter = null;
 
+function toggleNavGroup(g){
+  const collapsed = g.classList.toggle('collapsed');
+  let el = g.nextElementSibling;
+  while (el && !el.classList.contains('nav-group')) { el.classList.toggle('grp-hide', collapsed); el = el.nextElementSibling; }
+}
+function initNavGroups(){
+  document.querySelectorAll('#main-nav .nav-group').forEach(g => {
+    if (g.dataset.init) return; g.dataset.init = '1';
+    g.addEventListener('click', ev => { ev.stopPropagation(); toggleNavGroup(g); });
+    toggleNavGroup(g);   // start collapsed
+  });
+}
+initNavGroups();
 function toggleNavMenu(e){
   if(e) e.stopPropagation();
   const nav = document.getElementById('main-nav'), b = document.getElementById('burger-btn');
@@ -3014,7 +3047,7 @@ function openCategoryDetail(id) {
   } else {
     actionsEl.innerHTML = isInCategoryQueue(c._id)
       ? '<button class="atc-btn in-cart" onclick="closeDetail();navigateTo(\'queue\')">✓ In Your Queue — View</button>'
-      : '<button class="atc-btn" onclick="addCategoryToQueue(\'' + c._id + '\')">🗓 Add to Queue</button>';
+      : '<button class="atc-btn" onclick="addCategoryToQueue(\'' + c._id + '\')">Add to Queue</button>';
   }
   document.getElementById('detail-overlay').classList.add('open');
 }
@@ -3199,8 +3232,8 @@ async function addCategoryToQueue(id) {
     qToast('Added to the top of your queue.');
   }
   closeDetail();
-  renderCategoryQueueSection();
-  navigateTo('queue');
+  try { renderCategoryQueueSection(); } catch(e) {}
+  try { if (document.getElementById('view-browse')?.classList.contains('active')) renderBrowse(); } catch(e) {}
 }
 async function removeCategoryQueueItem(idx) {
   qSnap();
