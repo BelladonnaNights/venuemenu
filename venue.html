@@ -404,7 +404,7 @@
     display: flex; gap: 14px; padding: 0 1rem;
     width: max-content;
   }
-  .carousel-track:hover { animation-play-state: paused !important; }
+  .carousel-track img { -webkit-user-drag: none; user-select: none; }
 
   /* Individual card */
   .banner-card {
@@ -852,7 +852,7 @@
     .header-left { gap: 6px !important; min-width: 0; flex: 1 1 auto; order: 1; }
     .logo-img { width: 46px !important; height: 46px !important; }
     .wordmark-one { font-size: 19px !important; } .wordmark-two { font-size: 13px !important; }
-    .hdr-right { display: contents; }
+    .hdr-right { display: contents !important; }
     .nav-menu-wrap { order: 2; margin-left: auto; position: relative; }
     .hdr-actions { order: 3; flex: 1 0 100%; justify-content: flex-end; gap: 4px !important; }
     .hdr-right .sidebar-toggle-btn { padding: 0.4rem 0.45rem !important; font-size: 0.52rem !important; }
@@ -860,7 +860,7 @@
     .hdr-right .top-link { padding: 6px 7px !important; font-size: 8.5px !important; letter-spacing: .06em !important; }
     .hdr-right .top-link .cart-count { min-width: 20px; height: 20px; font-size: .75rem; margin-left: 2px; }
     .burger-btn { width: 36px !important; height: 34px !important; padding: 0 6px !important; }
-    .hdr-user { order: 3; flex: 1 0 100%; margin-left: 0; text-align: right; white-space: normal; font-size: .65rem; }
+    .hdr-user { order: 4; flex: 1 0 100%; margin-left: 0; text-align: right; white-space: normal; font-size: .65rem; }
     #main-nav { right: 0; min-width: 210px; max-height: 75vh; overflow-y: auto; }
   }
 
@@ -2198,67 +2198,49 @@ function renderComingUp() {
 
   const durationSec = Math.max(15, items.length * 6);
   track.style.animation = 'none';
-  void track.offsetWidth; // force reflow
-  track.style.animation = 'carousel-scroll ' + durationSec + 's linear infinite';
-
-  // Touch: pause, drag, resume after 10s
-  track.removeEventListener('touchstart', _carouselTouchStart);
-  track.removeEventListener('touchmove',  _carouselTouchMove);
-  track.removeEventListener('touchend',   _carouselTouchEnd);
-  track.addEventListener('touchstart', _carouselTouchStart, { passive: true });
-  track.addEventListener('touchmove',  _carouselTouchMove,  { passive: true });
-  track.addEventListener('touchend',   _carouselTouchEnd,   { passive: true });
+  track.style.touchAction = 'pan-y';
+  carouselStart(track, singleSetPx, singleSetPx / durationSec);
 }
 
-function _carouselTouchStart(e) {
-  const track = document.getElementById('carousel-track');
-  if (!track) return;
-  // Capture current position from computed transform before pausing
-  const mat = new DOMMatrix(getComputedStyle(track).transform);
-  carouselCurrentOffset  = mat.m41; // translateX in px
-  carouselTouchStartX    = e.touches[0].clientX;
-  track.style.animation  = 'none';
-  track.style.transform  = 'translateX(' + carouselCurrentOffset + 'px)';
-  if (carouselResumeTimer) clearTimeout(carouselResumeTimer);
-}
-
-function _carouselTouchMove(e) {
-  const track = document.getElementById('carousel-track');
-  if (!track) return;
-  const dx      = e.touches[0].clientX - carouselTouchStartX;
-  const singleSetPx = track.scrollWidth / Math.max(4, Math.ceil(3000 / (track.scrollWidth / 4)) + 2);
-  let   newX    = carouselCurrentOffset + dx;
-  // Wrap into valid range
-  const setW = track.scrollWidth / (track.querySelectorAll('.banner-card').length / (track.querySelectorAll('.banner-card').length / track.children.length));
-  track.style.transform = 'translateX(' + newX + 'px)';
-}
-
-function _carouselTouchEnd(e) {
-  const track = document.getElementById('carousel-track');
-  if (!track) return;
-  // Resume animation from current visual position after 10s
-  carouselResumeTimer = setTimeout(() => {
-    if (!track) return;
-    // Get current visual offset
-    const mat    = new DOMMatrix(getComputedStyle(track).transform);
-    const curX   = mat.m41;
-    // Read singleSetPx from keyframe style tag
-    const styleEl = document.getElementById('carousel-keyframe');
-    const match   = styleEl ? styleEl.textContent.match(/translateX\(-(\d+)px\)/) : null;
-    const setW    = match ? parseInt(match[1]) : 0;
-    if (!setW) { track.style.animation = ''; return; }
-    // Normalise offset into [0, -setW) range
-    let normX = curX % setW;
-    if (normX > 0) normX -= setW;
-    // Work out how far through the cycle we are (0-1)
-    const progress  = Math.abs(normX) / setW;
-    const durationSec = parseFloat(track.style.animationDuration) || 42;
-    // Restart animation with a delay so it begins at the right position
-    track.style.transform = 'translateX(' + normX + 'px)';
-    track.style.animation = 'none';
-    void track.offsetWidth;
-    track.style.animation = 'carousel-scroll ' + durationSec + 's linear ' + (-progress * durationSec) + 's infinite';
-  }, 10000);
+// Auto-scroll driven in JS so it can be grabbed: touch/drag it and it follows your finger;
+// 5 seconds after the last touch it starts scrolling on its own again.
+let _carRaf = null, _carCleanup = null;
+function carouselStart(track, setW, speed) {
+  if (_carRaf) cancelAnimationFrame(_carRaf);
+  if (_carCleanup) _carCleanup();
+  let offset = 0, resumeAt = 0, dragging = false, moved = false, startX = 0, startOff = 0, last = performance.now(), hover = false;
+  const wrap = o => { o = o % setW; if (o > 0) o -= setW; return o; };
+  const apply = () => { track.style.transform = 'translateX(' + offset + 'px)'; };
+  const tick = now => {
+    const dt = Math.min(0.1, (now - last) / 1000); last = now;
+    if (!dragging && !hover && now >= resumeAt) { offset = wrap(offset - speed * dt); apply(); }
+    _carRaf = requestAnimationFrame(tick);
+  };
+  const down = e => { dragging = true; moved = false; startX = e.clientX; startOff = offset; resumeAt = Infinity; };
+  const move = e => {
+    if (!dragging) return;
+    const dx = e.clientX - startX;
+    if (Math.abs(dx) > 6) moved = true;
+    if (moved) { offset = wrap(startOff + dx); apply(); }
+  };
+  const up = () => { if (!dragging) return; dragging = false; resumeAt = performance.now() + 5000; };
+  const click = e => { if (moved) { e.stopPropagation(); e.preventDefault(); moved = false; } };
+  const enter = e => { if (e.pointerType === 'mouse') hover = true; };
+  const leave = e => { if (e.pointerType === 'mouse') { hover = false; resumeAt = performance.now() + 5000; } };
+  track.addEventListener('pointerdown', down);
+  window.addEventListener('pointermove', move);
+  window.addEventListener('pointerup', up);
+  window.addEventListener('pointercancel', up);
+  track.addEventListener('click', click, true);
+  track.addEventListener('pointerenter', enter);
+  track.addEventListener('pointerleave', leave);
+  _carCleanup = () => {
+    track.removeEventListener('pointerdown', down); window.removeEventListener('pointermove', move);
+    window.removeEventListener('pointerup', up); window.removeEventListener('pointercancel', up);
+    track.removeEventListener('click', click, true); track.removeEventListener('pointerenter', enter); track.removeEventListener('pointerleave', leave);
+  };
+  apply();
+  _carRaf = requestAnimationFrame(tick);
 }
 
 
@@ -2499,6 +2481,7 @@ function navigateTo(view, typeFilter) {
   if (el) el.classList.add('active');
   currentView = view;
   pendingTypeFilter = typeFilter || null;
+  setTimeout(() => { try { renderGigBanner(view, typeFilter); } catch (e) { console.error(e); } }, 50);
   // Reset trivia type filter when navigating away from trivia
   if (view !== 'trivia') activeTriviaTypeFilter = null;
   closeFilterSidebar();
@@ -2530,7 +2513,6 @@ function navigateTo(view, typeFilter) {
   if (view === 'concurrent')    loadConcurrentView();
   if (view === 'campaigns')     loadCampaignsView();
   if (view === 'collaborators') loadCollaboratorsView();
-  setTimeout(() => renderGigBanner(view), 0);
 }
 
 // ── FILTER SIDEBAR ──
@@ -3022,7 +3004,7 @@ function handleOverlayClick(e) { if (e.target === document.getElementById('detai
 function nightAddToCart(i, bookingType) {
   const n = publishedNights[i];
   if (!n) return;
-  if (!cartHas(n._id)) addToCart(n._id, n.name, n.addonPrice || 0); else openCart();
+  if (!cartHas(n._id)) addToCart(n._id, n.name, n.addonPrice || 0);;
   const idx = cartItemIdx(n._id);
   if (idx >= 0) setBookingType(idx, bookingType);
   closeDetail();
@@ -3126,7 +3108,7 @@ function openMovieDetail(id) {
 function movieAddToCart(id, bookingType) {
   const m = publishedMovies.find(x => x._id === id); if (!m) return;
   const cid = movieCartId(id);
-  if (!cartHas(cid)) addToCart(cid, 'Movie: ' + m.title + (m.year ? ' (' + m.year + ')' : ''), 0); else openCart();
+  if (!cartHas(cid)) addToCart(cid, 'Movie: ' + m.title + (m.year ? ' (' + m.year + ')' : ''), 0);;
   const idx = cartItemIdx(cid);
   if (idx >= 0) setBookingType(idx, bookingType);
   closeDetail();
@@ -3141,7 +3123,7 @@ const GIG_DEFS = {
 function gigRequest(key) {
   const d = GIG_DEFS[key]; if (!d) return;
   const id = 'gig:' + key;
-  if (!cartHas(id)) { addToCart(id, d.name, 0); cartMeta(id, { kind: d.kind, bookingType: 'weekly' }); } else openCart();
+  if (!cartHas(id)) { addToCart(id, d.name, 0); cartMeta(id, { kind: d.kind, bookingType: 'weekly' }); } else qToast('Already on your Wish List.');
 }
 function isBookTrivia(c) { return (c.type || '').toLowerCase().split(',').map(t => t.trim()).includes('book trivia'); }
 function bookTriviaAdd(c) {
@@ -3152,12 +3134,12 @@ function bookTriviaAdd(c) {
   cartSave(); renderCartItems();
 }
 function bookTriviaRemove(i, j) { if (!cart[i] || !cart[i].picks) return; cart[i].picks.splice(j, 1); cartSave(); renderCartItems(); }
-function renderGigBanner(view) {
+function renderGigBanner(view, tf) {
   document.querySelectorAll('.gig-banner').forEach(e => e.remove());
   if (effectiveMode() !== 'venue') return;
   let key = null, text = '', btn = '';
   if (view === 'bingo')   { key = 'bingo';   text = 'Want us to run Music Bingo for you as a recurring gig?'; btn = 'Request a weekly Bingo gig'; }
-  if (view === 'trivia')  { if (activeTriviaTypeFilter === 'book trivia') { key = 'booktrivia'; text = 'Add the Book Trivia categories you like with Add to Wish List. They go straight onto your Book Trivia request.'; btn = 'Schedule a Book Trivia gig'; } else { key = 'trivia'; text = 'Want us to run Trivia for you as a recurring gig?'; btn = 'Request a weekly Trivia gig'; } }
+  if (view === 'trivia')  { if (String(tf || activeTriviaTypeFilter || '').toLowerCase() === 'book trivia') { key = 'booktrivia'; text = 'Add the Book Trivia categories you like with Add to Wish List. They go straight onto your Book Trivia request.'; btn = 'Schedule a Book Trivia gig'; } else { key = 'trivia'; text = 'Want us to run Trivia for you as a recurring gig?'; btn = 'Request a weekly Trivia gig'; } }
   if (view === 'karaoke') { key = 'karaoke'; text = 'Want us to run Karaoke for you as a recurring gig?'; btn = 'Request a weekly Karaoke gig'; }
   if (!key) return;
   const v = document.getElementById('view-' + view); const back = v && v.querySelector('.back-btn'); if (!back) return;
@@ -3169,7 +3151,7 @@ function categoryAddToCart(id, bookingType) {
   const c = publishedCategories.find(x => x._id === id);
   if (!c) return;
   if (isBookTrivia(c)) { bookTriviaAdd(c); closeDetail(); return; }
-  if (!cartHas(c._id)) addToCart(c._id, c.name, c.addonPrice || 0); else openCart();
+  if (!cartHas(c._id)) addToCart(c._id, c.name, c.addonPrice || 0);
   const idx = cartItemIdx(c._id);
   if (idx >= 0) setBookingType(idx, bookingType);
   closeDetail();
@@ -3928,14 +3910,14 @@ function cartItemIdx(id) { return cart.findIndex(c => c.id === id); }
 function cartHas(id) { return cartItemIdx(id) >= 0; }
 
 function addToCart(id, name, price) {
-  if (cartHas(id)) { openCart(); return; }
+  if (cartHas(id)) { qToast('Already on your Wish List.'); return; }
   const now = new Date();
   cart.push({ id, name, price: price || 0, bookingType: 'date', selectedDate: null, weekdays: [],
                calMonth: now.getMonth(), calYear: now.getFullYear() });
   cartSave();
   updateCartCount();
   updateAllATCButtons();
-  openCart();
+  qToast('Added to your Wish List.');
 }
 
 function removeFromCart(id) {
