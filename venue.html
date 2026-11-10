@@ -1949,6 +1949,10 @@ async function loadSeasonalEvents() {
     const snap = await getDoc(doc(db, 'venueMenuConfig', 'seasonalEvents'));
     seasonalEvents = snap.exists() ? (snap.data().events || []) : [];
   } catch(e) { seasonalEvents = []; }
+  try {
+    const ps = await getDoc(doc(db, 'venueMenuConfig', 'carouselPicks'));
+    if (ps.exists()) seasonalEvents = seasonalEvents.concat((ps.data().picks || []).filter(p => p && p.id));
+  } catch(e) {}
   renderComingUp();
 }
 
