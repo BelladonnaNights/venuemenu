@@ -280,6 +280,11 @@
   .active-filter-pill:hover { border-color: var(--gold); color: var(--gold); }
   .pill-x { color: var(--gold-dim); font-size: 0.8rem; }
   .nights-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 1.25rem; }
+  .minigames-grid.cat-tiles { grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; }
+  .cat-tile { background: #0a0a0a; border: 1px solid #262626; border-radius: 12px; padding: 1.05rem 0.8rem; text-align: center; cursor: pointer;
+    font-family: 'Bebas Neue', sans-serif; font-size: 1.3rem; letter-spacing: .02em; line-height: 1.15; text-transform: uppercase; color: #e2c068; transition: border-color .2s, transform .15s; }
+  .cat-tile:hover { border-color: rgba(201,168,76,.6); transform: translateY(-1px); }
+  .cat-tile .ct-tail { color: #c9a84c; }
   .minigames-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1.25rem; }
   .night-card {
     background: var(--surface); border: 1px solid var(--border);
@@ -1262,19 +1267,21 @@
 
   <!-- MUSIC BINGO description page -->
   <div class="view" id="view-bingo">
-    <div class="desc-view-wrap">
-      <div class="desc-view">
+    <div class="app-layout">
+      <div class="browse-main">
         <button class="back-btn" onclick="navigateTo('menu')">← Back to Menu</button>
-        <div class="desc-hero" id="desc-hero-bingo"></div>
-        <div class="desc-title">Music Bingo</div>
-        <div class="desc-subtitle">Main Course</div>
-        <div class="desc-body">
-          Music Bingo is Belladonna's signature twist on a classic — instead of numbers, guests race to mark off songs as we play them. It's fast, it's loud, and it keeps the whole room engaged from the first track to the last. We bring themed bingo cards, a full-service host, and a custom playlist built around whatever energy your venue wants to bring. From 90s throwbacks to country nights to holiday specials, every Music Bingo night is built to fill seats and drive sales at the bar.
+        <div style="font-family:'Cinzel',serif;font-size:0.75rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--text-dim);margin-bottom:0.75rem;">Music Bingo</div>
+        <div class="search-wrap" style="margin-bottom:0.75rem;">
+          <span>🔍</span>
+          <input type="search" autocomplete="off" class="search-input" id="bingo-search" placeholder="Search bingo…" oninput="renderBingo()">
         </div>
-        <button class="atc-btn" id="atc-bingo" onclick="addToCart('bingo', 'Music Bingo')" style="margin-top:0.75rem;">＋ Add to Wish List</button>
-      </div>
-      <div class="also-see-rail" id="also-see-bingo">
-        <div class="also-see-title">Also See</div>
+        <button class="atc-btn" id="atc-bingo" onclick="addToCart('bingo', 'Music Bingo')" style="margin-bottom:1rem;">＋ Add to Wish List</button>
+        <div id="also-see-bingo-wrap" style="display:none;margin-bottom:1.25rem;">
+          <div style="font-family:'Cinzel',serif;font-size:0.58rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--gold-dim);margin-bottom:0.5rem;">Also See</div>
+          <div id="also-see-bingo" style="display:flex;gap:0.75rem;overflow-x:auto;padding-bottom:0.5rem;"></div>
+        </div>
+        <div id="bingo-grid" class="minigames-grid"></div>
+        <div id="bingo-empty" class="empty-state" style="display:none;"><h2>No Bingo Published Yet</h2></div>
       </div>
     </div>
   </div>
@@ -1944,6 +1951,16 @@ let seasonalEvents = [];
 const MONTH_NAMES_V = ['','January','February','March','April','May','June',
                        'July','August','September','October','November','December'];
 
+let catStyle = 'cards';
+async function loadDisplaySettings() {
+  try { const d = await getDoc(doc(db, 'venueMenuConfig', 'displaySettings')); catStyle = (d.exists() && d.data().catStyle) || 'cards'; } catch (e) { catStyle = 'cards'; }
+}
+function catTileHtml(c, onclickJs) {
+  const nm = String(c.name || '');
+  const m = nm.match(/^(.*?)(\s+bingo)$/i);
+  const label = m ? esc(m[1]) + '<span class="ct-tail">' + esc(m[2]) + '</span>' : esc(nm);
+  return '<div class="cat-tile" onclick="' + onclickJs + '">' + label + '</div>';
+}
 async function loadSeasonalEvents() {
   try {
     const snap = await getDoc(doc(db, 'venueMenuConfig', 'seasonalEvents'));
@@ -2252,7 +2269,8 @@ async function loadLiveCategories() {
     // libraries) shows once: same type + same name, keep the one with a banner/description.
     const seen = new Map();
     publishedCategories.concat(live).forEach(c => {
-      const key = (c.type || '') + '|' + (c.name || '').trim().toLowerCase();
+      if (c._migratedTo || c._plannerMirror) return;   // old copies the admin already hides — never show them
+      const key = (c.type || '') + '|' + sNorm(c.name);
       const prev = seen.get(key);
       const score = x => (x.unified ? 4 : 0) + (x.bannerData ? 2 : 0) + (x.theme ? 1 : 0);
       if (!prev || score(c) > score(prev)) seen.set(key, c);
@@ -2284,6 +2302,7 @@ async function load() {
   document.getElementById('view-menu').classList.add('active');
   // Load seasonal events and availability non-blocking
   loadSeasonalEvents().catch(()=>{});
+  loadDisplaySettings().then(() => { try { if (currentView === 'trivia') renderTrivia(); else if (currentView === 'bingo') renderBingo(); } catch (e) {} });
   loadAvailability().catch(()=>{});
   cartLoad();
   updateCartCount();
@@ -2610,7 +2629,7 @@ function renderThemedNights() {
   if (!grid) return;
   const q = (document.getElementById('themed-search')?.value||'').toLowerCase().trim();
   let filtered = publishedNights.filter(nightVisibleNow);
-  if (q) filtered = filtered.filter(n => n.name.toLowerCase().includes(q)||(n.description||'').toLowerCase().includes(q));
+  if (q) filtered = filtered.filter(n => sMatch(q, n.name, n.description, NIGHT_DESC_FALLBACK[n._id]));
   if (hasSidebarFilters()) filtered = filtered.filter(n => nightMatchesFilters(n));
   if (!filtered.length) { showEmpty(empty, q); grid.innerHTML=''; return; }
   empty.style.display = 'none';
@@ -2638,11 +2657,13 @@ function renderCategoryGrid(gridId, emptyId, filterFn, starKind, clickable) {
   const q = (document.getElementById(searchId)?.value||'').toLowerCase().trim();
 
   let filtered = publishedCategories.filter(c => (c.publishedTabs||[]).length > 0 || c.published).filter(filterFn);
-  if (q) filtered = filtered.filter(c => c.name.toLowerCase().includes(q)||(c.altName||'').toLowerCase().includes(q)||(c.theme||'').toLowerCase().includes(q));
+  if (q) filtered = filtered.filter(c => sMatch(q, c.name, c.altName, c.theme, c.shows));
   if (hasSidebarFilters()) filtered = filtered.filter(itemMatchesFilters);
 
+  grid.classList.toggle('cat-tiles', catStyle === 'tiles' && gridId === 'bingo-grid');
   if (!filtered.length) { showEmpty(empty, q); grid.innerHTML=''; return; }
   empty.style.display='none';
+  if (catStyle === 'tiles' && gridId === 'bingo-grid') { grid.innerHTML = filtered.map(c => catTileHtml(c, "openCategoryDetail('" + c._id + "')")).join(''); return; }
   grid.innerHTML = filtered.map(c => {
     const ratio = gridId === 'trivia-grid' ? '16/10' : '4/5';   // Trivia + Book Trivia match the Browse page's 16:10 images
     const img = catImg(c, gridId === 'trivia-grid' ? 'l54' : 'p45');
@@ -2656,6 +2677,12 @@ function renderCategoryGrid(gridId, emptyId, filterFn, starKind, clickable) {
   }).join('');
 }
 
+// Forgiving search: ignores commas, &/and, apostrophes and case, and matches words in any order.
+function sNorm(x) { return String(x == null ? '' : x).toLowerCase().replace(/&/g, ' and ').replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, ' ').trim(); }
+function sMatch(q, ...fields) {
+  const hay = sNorm(fields.flat().join(' '));
+  return sNorm(q).split(' ').filter(w => w && w !== 'and').every(w => hay.includes(w));
+}
 function renderTrivia() {
   // Consume pending type filter from menu card navigation
   const typeFilter = pendingTypeFilter ? pendingTypeFilter.toLowerCase().trim() : (activeTriviaTypeFilter || null);
@@ -2676,12 +2703,7 @@ function renderTrivia() {
   );
   const triviaSearchQ = (document.getElementById('trivia-search')?.value || '').toLowerCase().trim();
   if (triviaSearchQ) {
-    filtered = filtered.filter(c =>
-      c.name.toLowerCase().includes(triviaSearchQ) ||
-      (c.altName||'').toLowerCase().includes(triviaSearchQ) ||
-      (c.theme||'').toLowerCase().includes(triviaSearchQ) ||
-      (c.shows||[]).some(s => s.toLowerCase().includes(triviaSearchQ))
-    );
+    filtered = filtered.filter(c => sMatch(triviaSearchQ, c.name, c.altName, c.theme, c.shows));
   }
   if (typeFilter) {
     // Specific sub-type requested (e.g. "book trivia") — show only that type
@@ -2695,8 +2717,10 @@ function renderTrivia() {
     );
   }
 
+  grid.classList.toggle('cat-tiles', catStyle === 'tiles');
   if (!filtered.length) { showEmpty(empty, triviaSearchQ); grid.innerHTML = ''; return; }
   empty.style.display = 'none';
+  if (catStyle === 'tiles') { grid.innerHTML = filtered.map(c => catTileHtml(c, "openCategoryDetail('" + c._id + "')")).join(''); return; }
   grid.innerHTML = filtered.map(c => {
     const img = catImg(c,'p45');
     const imgEl = img
@@ -2754,7 +2778,7 @@ function renderSingAlongs() {
 function renderMiniGames() {
   const q = (document.getElementById('mini-search')?.value || '').toLowerCase().trim();
   let items = publishedCategories.filter(c => isMiniGame(c) && ((c.publishedTabs||[]).includes('mini') || c.published));
-  if (q) items = items.filter(c => c.name.toLowerCase().includes(q) || (c.altName||'').toLowerCase().includes(q) || (c.theme||'').toLowerCase().includes(q));
+  if (q) items = items.filter(c => sMatch(q, c.name, c.altName, c.theme));
 
   const knowledge   = items.filter(c => c.miniSection === 'knowledge');
   const interactive = items.filter(c => c.miniSection === 'interactive');
@@ -2993,7 +3017,7 @@ function renderMovies() {
   if (!grid) return;
   const q = (document.getElementById('movies-search')?.value || '').toLowerCase().trim();
   let list = publishedMovies;
-  if (q) list = list.filter(m => m.title.toLowerCase().includes(q) || (m.genre || '').toLowerCase().includes(q) || String(m.year || '').includes(q));
+  if (q) list = list.filter(m => sMatch(q, m.title, m.genre, m.year));
   if (!list.length) { showEmpty(empty, q); grid.innerHTML = ''; return; }
   empty.style.display = 'none';
   grid.innerHTML = list.map(m => {
