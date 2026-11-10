@@ -1030,6 +1030,7 @@
       <button class="nav-tab" onclick="closeNavMenu();switchView('feedback')">Feedback Inbox</button>
       <button class="nav-tab" onclick="closeNavMenu();openVenueEntries()">Venue Ideas</button>
       <button class="nav-tab" onclick="closeNavMenu();switchView('shortcuts')">Venue Shortcuts</button>
+      <button class="nav-tab" onclick="closeNavMenu();switchView('settings')">Settings</button>
     </nav>
 
     </div>
@@ -1466,6 +1467,17 @@
     <div id="seasonal-empty" style="display:none;text-align:center;padding:4rem 2rem;color:var(--text-dim);">
       <div style="font-family:Cinzel,serif;font-size:0.85rem;letter-spacing:0.15em;text-transform:uppercase;margin-bottom:0.5rem;">No Events Yet</div>
       <p style="font-size:0.9rem;">Add your first event to start building the rolling calendar.</p>
+    </div>
+  </div>
+
+  <!-- ═══ SETTINGS VIEW ═══ -->
+  <div class="view" id="view-settings">
+    <div class="section-title" style="margin-bottom:0.25rem;">Settings</div>
+    <p style="color:var(--text-muted);font-size:0.9rem;margin-bottom:1.25rem;">Display options for the venue menu (venue.html).</p>
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:1.1rem 1.3rem;max-width:620px;">
+      <div style="font-family:Cinzel,serif;font-size:0.78rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--gold);margin-bottom:0.6rem;">Trivia &amp; Bingo categories</div>
+      <label style="display:flex;gap:10px;align-items:flex-start;margin-bottom:0.7rem;cursor:pointer;"><input type="radio" name="set-catstyle" value="cards" onchange="setCatStyle(this.value)" style="margin-top:4px;"><span>Image cards <span style="color:var(--text-dim);">(4:5 pictures with the name)</span></span></label>
+      <label style="display:flex;gap:10px;align-items:flex-start;cursor:pointer;"><input type="radio" name="set-catstyle" value="tiles" onchange="setCatStyle(this.value)" style="margin-top:4px;"><span>Black &amp; gold name tiles <span style="color:var(--text-dim);">(like the Bingo app: black tile, gold lettering, no pictures)</span></span></label>
     </div>
   </div>
 
@@ -2625,6 +2637,7 @@ function switchView(name) {
   if (name === 'mainmenu' && !mmData) loadMainMenu();
   if (name === 'seasonal') renderSeasonalAdmin();
   if (name === 'carpicks') renderCarPicks();
+  if (name === 'settings') loadSettingsView();
   if (name === 'waytoplay') renderWayToPlay();
   if (name === 'battles') initBattlesPage();
   if (name === 'bookings') initBookingsTab();
@@ -5530,6 +5543,17 @@ const _origSwitchView = switchView;
 // Hook into switchView to load main menu data
 
 
+
+// ── SETTINGS (venueMenuConfig/displaySettings) ──
+async function loadSettingsView() {
+  let st = 'cards';
+  try { const d = await getDoc(doc(db, 'venueMenuConfig', 'displaySettings')); st = (d.exists() && d.data().catStyle) || 'cards'; } catch (e) {}
+  document.querySelectorAll('input[name="set-catstyle"]').forEach(r => r.checked = r.value === st);
+}
+async function setCatStyle(val) {
+  try { await setDoc(doc(db, 'venueMenuConfig', 'displaySettings'), { catStyle: val }, { merge: true }); toast('Saved', 'success'); }
+  catch (e) { toast('Save failed: ' + e.message, 'error'); }
+}
 
 // ═══════════════════════════════════════════════════════
 // CAROUSEL PICKS — copies of menu items scheduled into the venue "Coming Up" carousel.
