@@ -976,6 +976,14 @@
   .cat-tile-a { background: #0a0a0a; border-bottom: 1px solid #262626; padding: 1.5rem .8rem; min-height: 84px; text-align: center; display: flex; align-items: center; justify-content: center; }
   .cat-tile-a span { font-family: 'Bebas Neue', sans-serif; color: #c9a84c; font-size: 1.6rem; letter-spacing: .06em; line-height: 1.05; text-transform: uppercase; }
   #trivia-grid.tiles .category-card-name, #bingo-grid.tiles .category-card-name { display: none; }
+  #trivia-grid.tiles .cat-tile-a, #bingo-grid.tiles .cat-tile-a { height: 104px; min-height: 0; padding: .5rem .6rem; overflow: hidden; flex-direction: column; gap: 4px; }
+  #trivia-grid.tiles .cat-tile-a span, #bingo-grid.tiles .cat-tile-a span { font-size: 1.3rem; }
+  .cat-tile-a.np span { opacity: .5; }
+  .cat-tile-a.np::after { content: 'not published'; font-family: 'Cinzel', serif; font-size: 8px; letter-spacing: .12em; text-transform: uppercase; color: #777; }
+  #trivia-grid.tiles .cat-body > :not(.cfoot):not(.category-card-actions), #bingo-grid.tiles .cat-body > :not(.cfoot):not(.category-card-actions) { display: none; }
+  #trivia-grid.tiles .cat-body, #bingo-grid.tiles .cat-body { padding: 8px 10px 10px; }
+  .cfoot, .category-card-actions { flex-wrap: nowrap; }
+  .cfoot .btn, .category-card-actions .btn { padding: 5px 9px; font-size: 10px; letter-spacing: .05em; white-space: nowrap; }
   #trivia-grid.tiles .category-card, #bingo-grid.tiles .category-card { background: #0a0a0a; border-color: #262626; }
   .filter-sidebar:not(.open) { border-right: none; }
 
@@ -2802,7 +2810,7 @@ function renderBingo() {
   empty.style.display = (items.length === 0 && liveItems.length === 0) ? 'block' : 'none';
   const htmlA = items.map(c => {
     const miniSrc = c.miniGameImage || (c.images && c.images.p45) || c.bgImage || c.bannerData || null;
-    const bannerHtml = catStyleVal === 'tiles' ? catTileA(c.name) : miniSrc
+    const bannerHtml = catStyleVal === 'tiles' ? catTileA(c.name, !(c.published || (c.publishedTabs||[]).length)) : miniSrc
       ? `<div class="cat-banner-wrap"><img src="${miniSrc}" alt=""></div>`
       : `<div class="cat-banner-wrap"><span>${esc(c.name)}</span></div>`;
     const idx = categories.indexOf(c);
@@ -3048,7 +3056,7 @@ function liveCategoryCardHTML(cat) {
   // at (.cat-banner there) — mapLiveCategory already reads bgImage as the
   // banner source, this just makes it look the same size here as it does there.
   const liveSrc = cat.miniGameImage || cat.bannerData;
-  const bannerHtml = catStyleVal === 'tiles' ? catTileA(cat.name) : liveSrc
+  const bannerHtml = catStyleVal === 'tiles' ? catTileA(cat.name, !cat.venueMenuShow) : liveSrc
     ? `<div class="cat-banner-wrap"><img src="${liveSrc}" alt=""></div>`
     : `<div class="cat-banner-wrap"><span>${esc(cat.name)}</span></div>`;
   const ownerLabel = cat._liveKind === 'bingo' ? 'Bingo Admin' : 'Trivia Admin';
@@ -4661,7 +4669,7 @@ function renderTrivia() {
     // here — same 16:4 letterbox shape Trivia Admin shows it at, not the
     // portrait crop Mini Games/Sing-Alongs cards use.
     const miniSrc = c.miniGameImage || (c.images && c.images.p45) || c.bgImage || c.bannerData || null;
-    const bannerHtml = catStyleVal === 'tiles' ? catTileA(c.name) : miniSrc
+    const bannerHtml = catStyleVal === 'tiles' ? catTileA(c.name, !(c.published || (c.publishedTabs||[]).length)) : miniSrc
       ? `<div class="cat-banner-wrap"><img src="${miniSrc}" alt=""></div>`
       : `<div class="cat-banner-wrap"><span>${esc(c.name)}</span></div>`;
     const idx = categories.indexOf(c);
@@ -5700,7 +5708,7 @@ const GRAB_ICON = '<span title="Drag to reorder" style="cursor:grab;color:var(--
 function cfoot(editJs, type, ref, grab) {
   return `<div class="cfoot" onclick="event.stopPropagation()">${grab ? GRAB_ICON : ''}<button class="btn btn-sm btn-ghost" onclick="${editJs}">Edit</button>${carBtn(type, ref)}</div>`;
 }
-function catTileA(name) { return `<div class="cat-tile-a"><span>${esc(name)}</span></div>`; }
+function catTileA(name, np) { return `<div class="cat-tile-a${np ? ' np' : ''}"><span>${esc(name)}</span></div>`; }
 let catLoaded = false;
 function ensureCatDisplay() { if (catLoaded) return; catLoaded = true; loadCatDisplay(); }
 function carBtn(type, ref) {
