@@ -546,7 +546,7 @@
     font-size: 0.6rem; letter-spacing: 0.08em; text-transform: uppercase;
     cursor: pointer; border-radius: 3px; transition: all 0.15s; text-align: center;
   }
-  .booking-type-btn { color: var(--gold-dim); }
+  .booking-type-btn { color: var(--gold-light); border-color: rgba(201,168,76,.5); }
   .booking-type-btn svg { color: var(--gold); }
   .booking-type-btn.active {
     border-color: #8a6414; color: #2b1d02; font-weight: 700;
@@ -555,7 +555,7 @@
   .booking-type-btn.active svg { color: #2b1d02; }
   .save-later-btn {
     width: 100%; padding: 0.5rem; border: 1px dashed var(--border);
-    background: none; color: var(--text-dim); font-family: 'Cinzel', serif;
+    background: none; color: var(--text-muted); font-family: 'Cinzel', serif;
     font-size: 0.62rem; letter-spacing: 0.1em; text-transform: uppercase;
     cursor: pointer; border-radius: 3px; transition: all 0.15s;
   }
@@ -982,6 +982,12 @@
   .gig-banner { margin: 0 0 1.1rem; padding: .8rem 1rem; border: 1px solid var(--border-strong); border-radius: 10px; background: rgba(201,168,76,.05); display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
   .gig-banner span { font-size: .82rem; color: var(--text-muted); line-height: 1.4; flex: 1 1 220px; }
   .cart-theme { margin-top: .5rem; }
+  .back-row { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 1.5rem; }
+  .back-row .back-btn { margin-bottom: 0; }
+  .cat-view-toggle { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; padding: 0; border: 1px solid var(--border-strong); background: none; color: var(--gold); border-radius: 3px; cursor: pointer; }
+  .cat-view-toggle .cvt-in { display: none; }
+  .cat-view-toggle.on { background: linear-gradient(180deg,#fff2b8 0%,#f3d77a 18%,#d9b04a 48%,#b98a26 52%,#e6c363 80%,#f7e08f 100%); color: #2b1d02; border-color: #8a6414; }
+  .cat-view-toggle.on .cvt-out { display: none; } .cat-view-toggle.on .cvt-in { display: block; }
 </style>
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 </head>
@@ -1981,6 +1987,30 @@ const MONTH_NAMES_V = ['','January','February','March','April','May','June',
                        'July','August','September','October','November','December'];
 
 let catStyle = 'cards';
+function effCatStyle() { let o = null; try { o = localStorage.getItem('belladonna_catview'); } catch (e) {} return o || catStyle; }
+function toggleCatView(view) {
+  const next = effCatStyle() === 'tiles' ? 'cards' : 'tiles';
+  try { localStorage.setItem('belladonna_catview', next); } catch (e) {}
+  if (view === 'bingo') renderBingo(); else renderTrivia();
+  paintViewToggles();
+}
+function paintViewToggles() {
+  const on = effCatStyle() !== 'tiles';   // gold + full box = pictures showing
+  document.querySelectorAll('.cat-view-toggle').forEach(b => b.classList.toggle('on', on));
+}
+function ensureViewToggle(view) {
+  if (view !== 'trivia' && view !== 'bingo') return;
+  const v = document.getElementById('view-' + view); const back = v && v.querySelector('.back-btn'); if (!back) return;
+  if (!v.querySelector('.cat-view-toggle')) {
+    const row = document.createElement('div'); row.className = 'back-row';
+    back.parentNode.insertBefore(row, back);
+    const b = document.createElement('button'); b.className = 'cat-view-toggle'; b.type = 'button'; b.title = 'Switch between black & gold and pictures';
+    b.setAttribute('onclick', "toggleCatView('" + view + "')");
+    b.innerHTML = '<svg class="cvt-out" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg><svg class="cvt-in" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="1"/></svg>';
+    row.appendChild(b); row.appendChild(back);
+  }
+  paintViewToggles();
+}
 let catSize = 200;
 function applyCatSize(grid) {
   if (!grid) return;
@@ -2704,11 +2734,11 @@ function renderCategoryGrid(gridId, emptyId, filterFn, starKind, clickable) {
   if (q) filtered = filtered.filter(c => sMatch(q, c.name, c.altName, c.theme, c.shows));
   if (hasSidebarFilters()) filtered = filtered.filter(itemMatchesFilters);
 
-  grid.classList.toggle('cat-tiles', catStyle === 'tiles' && gridId === 'bingo-grid');
+  grid.classList.toggle('cat-tiles', effCatStyle() === 'tiles' && gridId === 'bingo-grid');
   if (gridId === 'bingo-grid') applyCatSize(grid);
   if (!filtered.length) { showEmpty(empty, q); grid.innerHTML=''; return; }
   empty.style.display='none';
-  if (catStyle === 'tiles' && gridId === 'bingo-grid') { grid.innerHTML = filtered.map(c => catTileHtml(c, "openCategoryDetail('" + c._id + "')")).join(''); return; }
+  if (effCatStyle() === 'tiles' && gridId === 'bingo-grid') { grid.innerHTML = filtered.map(c => catTileHtml(c, "openCategoryDetail('" + c._id + "')")).join(''); return; }
   grid.innerHTML = filtered.map(c => {
     const ratio = gridId === 'trivia-grid' ? '16/10' : '4/5';   // Trivia + Book Trivia match the Browse page's 16:10 images
     const img = catImg(c, gridId === 'trivia-grid' ? 'l54' : 'p45');
@@ -2762,11 +2792,11 @@ function renderTrivia() {
     );
   }
 
-  grid.classList.toggle('cat-tiles', catStyle === 'tiles');
+  grid.classList.toggle('cat-tiles', effCatStyle() === 'tiles');
   applyCatSize(grid);
   if (!filtered.length) { showEmpty(empty, triviaSearchQ); grid.innerHTML = ''; return; }
   empty.style.display = 'none';
-  if (catStyle === 'tiles') { grid.innerHTML = filtered.map(c => catTileHtml(c, "openCategoryDetail('" + c._id + "')")).join(''); return; }
+  if (effCatStyle() === 'tiles') { grid.innerHTML = filtered.map(c => catTileHtml(c, "openCategoryDetail('" + c._id + "')")).join(''); return; }
   grid.innerHTML = filtered.map(c => {
     const img = catImg(c,'p45');
     const imgEl = img
@@ -3041,7 +3071,8 @@ function openCategoryDetail(id) {
       : '<button class="atc-btn" onclick="categoryAddToCart(\'' + c._id + '\',\'later\')">✦ Add to Wish List' + priceTag + '</button>'
         + '<button class="atc-btn" onclick="categoryAddToCart(\'' + c._id + '\',\'date\')">📅 Add to Date' + priceTag + '</button>';
   } else {
-    actionsEl.innerHTML = isInCategoryQueue(c._id)
+    let inQ = false; try { inQ = isInCategoryQueue(c._id); } catch (e) {}
+    actionsEl.innerHTML = inQ
       ? '<button class="atc-btn in-cart" onclick="closeDetail();navigateTo(\'queue\')">✓ In Your Queue — View</button>'
       : (isBookTrivia(c) ? '<button class="atc-btn" onclick="categoryAddToCart(\'' + c._id + '\',\'later\')">Add to Wish List</button>' : '') + '<button class="atc-btn" onclick="addCategoryToQueue(\'' + c._id + '\')">Add to Queue</button>';
   }
@@ -3136,13 +3167,14 @@ function bookTriviaAdd(c) {
 function bookTriviaRemove(i, j) { if (!cart[i] || !cart[i].picks) return; cart[i].picks.splice(j, 1); cartSave(); renderCartItems(); }
 function renderGigBanner(view, tf) {
   document.querySelectorAll('.gig-banner').forEach(e => e.remove());
+  ensureViewToggle(view);
   if (effectiveMode() !== 'venue') return;
   let key = null, text = '', btn = '';
-  if (view === 'bingo')   { key = 'bingo';   text = 'Want us to run Music Bingo for you as a recurring gig?'; btn = 'Request a weekly Bingo gig'; }
-  if (view === 'trivia')  { if (String(tf || activeTriviaTypeFilter || '').toLowerCase() === 'book trivia') { key = 'booktrivia'; text = 'Add the Book Trivia categories you like with Add to Wish List. They go straight onto your Book Trivia request.'; btn = 'Schedule a Book Trivia gig'; } else { key = 'trivia'; text = 'Want us to run Trivia for you as a recurring gig?'; btn = 'Request a weekly Trivia gig'; } }
-  if (view === 'karaoke') { key = 'karaoke'; text = 'Want us to run Karaoke for you as a recurring gig?'; btn = 'Request a weekly Karaoke gig'; }
+  if (view === 'bingo')   { key = 'bingo';   text = 'Want us to run Music Bingo for you as a recurring gig?'; btn = 'Add weekly Bingo gig to Wish List'; }
+  if (view === 'trivia')  { if (String(tf || activeTriviaTypeFilter || '').toLowerCase() === 'book trivia') { key = 'booktrivia'; text = 'Add the Book Trivia categories you like with Add to Wish List. They go straight onto your Book Trivia request.'; btn = 'Schedule a Book Trivia gig'; } else { key = 'trivia'; text = 'Want us to run Trivia for you as a recurring gig?'; btn = 'Add weekly Trivia gig to Wish List'; } }
+  if (view === 'karaoke') { key = 'karaoke'; text = 'Want us to run Karaoke for you as a recurring gig?'; btn = 'Add weekly Karaoke gig to Wish List'; }
   if (!key) return;
-  const v = document.getElementById('view-' + view); const back = v && v.querySelector('.back-btn'); if (!back) return;
+  const v = document.getElementById('view-' + view); const back0 = v && v.querySelector('.back-btn'); if (!back0) return; const back = back0.closest('.back-row') || back0;
   const d = document.createElement('div'); d.className = 'gig-banner';
   d.innerHTML = '<span>' + text + '</span><button class="br-btn gold" onclick="gigRequest(\'' + key + '\')">' + btn + '</button>';
   back.insertAdjacentElement('afterend', d);
@@ -4301,7 +4333,7 @@ async function loadBattlesPageContent() {
 Object.assign(window, {
   ideaReasonChanged,
   renderMovies, openMovieDetail, movieAddToCart,
-  navigateTo, gigRequest, bookTriviaRemove, toggleNavGroup, toggleNavMenu, closeNavMenu, renderComingUp, toggleFilterSidebar, closeFilterSidebar,
+  navigateTo, toggleCatView, gigRequest, bookTriviaRemove, toggleNavGroup, toggleNavMenu, closeNavMenu, renderComingUp, toggleFilterSidebar, closeFilterSidebar,
   openCart, closeCart, addToCart, removeFromCart, setBookingType, selectDate, calNav, toggleWeekday,
   showCheckoutForm, hideCheckoutForm, submitCart,
   openSeasonalPopup, closeSeasonalPopup, closeSeasonalPopupDirect, addSeasonalToCart,
