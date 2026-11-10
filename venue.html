@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Belladonna Audio Alchemies — Venue Menu</title>
+<title>Belladonna — Venue Menu</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Cinzel:wght@400;600;700&family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=DM+Sans:wght@300;400;500;600&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -280,9 +280,9 @@
   .active-filter-pill:hover { border-color: var(--gold); color: var(--gold); }
   .pill-x { color: var(--gold-dim); font-size: 0.8rem; }
   .nights-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 1.25rem; }
-  .minigames-grid.cat-tiles { grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; }
+  .minigames-grid.cat-tiles { gap: 12px; }
   .cat-tile { background: #0a0a0a; border: 1px solid #262626; border-radius: 12px; padding: 1.05rem 0.8rem; text-align: center; cursor: pointer;
-    font-family: 'Bebas Neue', sans-serif; font-size: 1.3rem; letter-spacing: .02em; line-height: 1.15; text-transform: uppercase; color: #e2c068; transition: border-color .2s, transform .15s; }
+    font-family: 'Bebas Neue', sans-serif; font-size: var(--tile-font, 1.3rem); letter-spacing: .02em; line-height: 1.15; text-transform: uppercase; color: #e2c068; transition: border-color .2s, transform .15s; }
   .cat-tile:hover { border-color: rgba(201,168,76,.6); transform: translateY(-1px); }
   .cat-tile .ct-tail { color: #c9a84c; }
   .minigames-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1.25rem; }
@@ -1259,6 +1259,10 @@
           <div style="font-family:'Cinzel',serif;font-size:0.58rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--gold-dim);margin-bottom:0.5rem;">Also See</div>
           <div id="also-see-trivia" style="display:flex;gap:0.75rem;overflow-x:auto;padding-bottom:0.5rem;"></div>
         </div>
+        <div class="cat-ctl" style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:1rem;">
+          <label style="display:flex;align-items:center;gap:8px;font-size:0.78rem;color:var(--text-dim);">Size <input type="range" class="cat-size-range" min="140" max="360" step="10" oninput="setCatSize(this.value)" style="width:160px;accent-color:var(--gold);"></label>
+          <div style="display:flex;gap:6px;"><button type="button" class="booking-type-btn cat-sty-btn" data-sty="cards" onclick="setCatStyleLocal('cards')" style="flex:none;padding:0.4rem 0.9rem;">Images</button><button type="button" class="booking-type-btn cat-sty-btn" data-sty="tiles" onclick="setCatStyleLocal('tiles')" style="flex:none;padding:0.4rem 0.9rem;">Black &amp; Gold</button></div>
+        </div>
         <div id="trivia-grid" class="minigames-grid"></div>
         <div id="trivia-empty" class="empty-state" style="display:none;"><h2>No Trivia Published Yet</h2></div>
       </div>
@@ -1279,6 +1283,10 @@
         <div id="also-see-bingo-wrap" style="display:none;margin-bottom:1.25rem;">
           <div style="font-family:'Cinzel',serif;font-size:0.58rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--gold-dim);margin-bottom:0.5rem;">Also See</div>
           <div id="also-see-bingo" style="display:flex;gap:0.75rem;overflow-x:auto;padding-bottom:0.5rem;"></div>
+        </div>
+        <div class="cat-ctl" style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:1rem;">
+          <label style="display:flex;align-items:center;gap:8px;font-size:0.78rem;color:var(--text-dim);">Size <input type="range" class="cat-size-range" min="140" max="360" step="10" oninput="setCatSize(this.value)" style="width:160px;accent-color:var(--gold);"></label>
+          <div style="display:flex;gap:6px;"><button type="button" class="booking-type-btn cat-sty-btn" data-sty="cards" onclick="setCatStyleLocal('cards')" style="flex:none;padding:0.4rem 0.9rem;">Images</button><button type="button" class="booking-type-btn cat-sty-btn" data-sty="tiles" onclick="setCatStyleLocal('tiles')" style="flex:none;padding:0.4rem 0.9rem;">Black &amp; Gold</button></div>
         </div>
         <div id="bingo-grid" class="minigames-grid"></div>
         <div id="bingo-empty" class="empty-state" style="display:none;"><h2>No Bingo Published Yet</h2></div>
@@ -1952,8 +1960,30 @@ const MONTH_NAMES_V = ['','January','February','March','April','May','June',
                        'July','August','September','October','November','December'];
 
 let catStyle = 'cards';
+let catSize = 200;
+try { catSize = Number(localStorage.getItem('bm_catSize')) || 200; const ls = localStorage.getItem('bm_catStyle'); if (ls) catStyle = ls; } catch (e) {}
+function applyCatSize(grid) {
+  if (!grid) return;
+  const tiles = grid.classList.contains('cat-tiles');
+  const min = tiles ? Math.round(catSize * 1.3) : catSize;
+  grid.style.gridTemplateColumns = 'repeat(auto-fill, minmax(' + min + 'px, 1fr))';
+  grid.style.setProperty('--tile-font', (catSize / 200 * 1.3).toFixed(2) + 'rem');
+  document.querySelectorAll('.cat-size-range').forEach(r => { r.value = catSize; });
+  document.querySelectorAll('.cat-sty-btn').forEach(b => b.classList.toggle('active', b.dataset.sty === catStyle));
+}
+function rerenderCatViews() { try { renderTrivia(); renderBingo(); } catch (e) {} }
+function setCatSize(val) {
+  catSize = Number(val) || 200;
+  try { localStorage.setItem('bm_catSize', String(catSize)); } catch (e) {}
+  ['trivia-grid', 'bingo-grid'].forEach(id => applyCatSize(document.getElementById(id)));
+}
+function setCatStyleLocal(v) {
+  catStyle = v;
+  try { localStorage.setItem('bm_catStyle', v); } catch (e) {}
+  rerenderCatViews();
+}
 async function loadDisplaySettings() {
-  try { const d = await getDoc(doc(db, 'venueMenuConfig', 'displaySettings')); catStyle = (d.exists() && d.data().catStyle) || 'cards'; } catch (e) { catStyle = 'cards'; }
+  try { const d = await getDoc(doc(db, 'venueMenuConfig', 'displaySettings')); let own = null; try { own = localStorage.getItem('bm_catStyle'); } catch (e) {} if (!own) catStyle = (d.exists() && d.data().catStyle) || 'cards'; } catch (e) {}
 }
 function catTileHtml(c, onclickJs) {
   const nm = String(c.name || '');
@@ -2661,6 +2691,7 @@ function renderCategoryGrid(gridId, emptyId, filterFn, starKind, clickable) {
   if (hasSidebarFilters()) filtered = filtered.filter(itemMatchesFilters);
 
   grid.classList.toggle('cat-tiles', catStyle === 'tiles' && gridId === 'bingo-grid');
+  if (gridId === 'bingo-grid') applyCatSize(grid);
   if (!filtered.length) { showEmpty(empty, q); grid.innerHTML=''; return; }
   empty.style.display='none';
   if (catStyle === 'tiles' && gridId === 'bingo-grid') { grid.innerHTML = filtered.map(c => catTileHtml(c, "openCategoryDetail('" + c._id + "')")).join(''); return; }
@@ -2718,6 +2749,7 @@ function renderTrivia() {
   }
 
   grid.classList.toggle('cat-tiles', catStyle === 'tiles');
+  applyCatSize(grid);
   if (!filtered.length) { showEmpty(empty, triviaSearchQ); grid.innerHTML = ''; return; }
   empty.style.display = 'none';
   if (catStyle === 'tiles') { grid.innerHTML = filtered.map(c => catTileHtml(c, "openCategoryDetail('" + c._id + "')")).join(''); return; }
