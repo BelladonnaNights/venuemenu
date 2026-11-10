@@ -982,7 +982,10 @@
   .gig-banner { margin: 0 0 1.1rem; padding: .8rem 1rem; border: 1px solid var(--border-strong); border-radius: 10px; background: rgba(201,168,76,.05); display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
   .gig-banner span { font-size: .82rem; color: var(--text-muted); line-height: 1.4; flex: 1 1 220px; }
   .cart-theme { margin-top: .5rem; }
-  .back-row { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 1.5rem; }
+  .back-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 1.5rem; }
+  .detail-overlay, .seasonal-popup-overlay, .qm-overlay { overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+  .cat-tile { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; }
+  .cat-tile .ct-wish { font-size: .6rem; padding: 6px 10px; white-space: nowrap; }
   .back-row .back-btn { margin-bottom: 0; }
   .cat-view-toggle { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; padding: 0; border: 1px solid var(--border-strong); background: none; color: var(--gold); border-radius: 3px; cursor: pointer; }
   .cat-view-toggle .cvt-in { display: none; }
@@ -2007,7 +2010,7 @@ function ensureViewToggle(view) {
     const b = document.createElement('button'); b.className = 'cat-view-toggle'; b.type = 'button'; b.title = 'Switch between black & gold and pictures';
     b.setAttribute('onclick', "toggleCatView('" + view + "')");
     b.innerHTML = '<svg class="cvt-out" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg><svg class="cvt-in" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="1"/></svg>';
-    row.appendChild(b); row.appendChild(back);
+    row.appendChild(back); row.appendChild(b);
   }
   paintViewToggles();
 }
@@ -2028,7 +2031,8 @@ function catTileHtml(c, onclickJs) {
   const nm = String(c.name || '');
   const m = nm.match(/^(.*?)(\s+bingo)$/i);
   const label = m ? esc(m[1]) + '<span class="ct-tail">' + esc(m[2]) + '</span>' : esc(nm);
-  return '<div class="cat-tile" onclick="' + onclickJs + '">' + label + '</div>';
+  const wb = (effectiveMode() === 'venue' && c._id) ? '<button class="br-btn gold ct-wish" onclick="event.stopPropagation();categoryAddToCart(\'' + c._id + '\',\'later\')">Add to Wish List</button>' : '';
+  return '<div class="cat-tile" onclick="' + onclickJs + '"><div>' + label + '</div>' + wb + '</div>';
 }
 async function loadSeasonalEvents() {
   try {
@@ -2504,7 +2508,21 @@ function catImg(c, shape) {
   const order = { p45: [p45, sq, l54, banner], l54: [l54, banner, sq, p45], banner: [banner, l54, sq, p45], square: [sq, p45, l54, banner] }[shape] || [banner];
   return order.find(Boolean) || null;
 }
+(function () {
+  const ids = ['detail-overlay', 'seasonal-popup-overlay', 'q-modal', 'cart-drawer'];
+  let locked = false, y = 0;
+  const check = () => {
+    const any = ids.some(id => { const e = document.getElementById(id); return e && e.classList.contains('open'); });
+    const st = document.body.style;
+    if (any && !locked) { locked = true; y = window.scrollY; st.position = 'fixed'; st.top = '-' + y + 'px'; st.left = '0'; st.right = '0'; st.width = '100%'; }
+    else if (!any && locked) { locked = false; st.position = ''; st.top = ''; st.left = ''; st.right = ''; st.width = ''; window.scrollTo(0, y); }
+  };
+  window.__lockCheck = check;
+  const mo = new MutationObserver(check);
+  ids.forEach(id => { const e = document.getElementById(id); if (e) mo.observe(e, { attributes: true, attributeFilter: ['class'] }); });
+})();
 function navigateTo(view, typeFilter) {
+  if (window.__lockCheck) window.__lockCheck();
   closeNavMenu();
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   const el = document.getElementById('view-' + view);
@@ -2712,7 +2730,7 @@ function renderThemedNights() {
     const star = starBtnHtml('night', n._id);
     const ni = publishedNights.indexOf(n);
     const nBtns = effectiveMode()==='venue' ? `<div class="br-btns" style="padding:8px 0 0;"><button class="br-btn gold" onclick="event.stopPropagation();brWish('night',${ni})">Add to Wish List</button><button class="br-btn" onclick="event.stopPropagation();brRequest('night',${ni})">Pick a Date</button></div>` : '';
-    return `<div class="night-card" onclick="openNightDetail(${publishedNights.indexOf(n)})">${img}${star}<div class="night-card-body"><div class="night-name">${esc(n.name)}${brPill('night')}</div>${nBtns}</div></div>`;
+    return `<div class="night-card" onclick="openNightDetail(${publishedNights.indexOf(n)})">${img}${star}<div class="night-card-body"><div class="night-name">${esc(n.name)}</div><div style="padding-top:8px;">${brPill('night')}</div>${nBtns}</div></div>`;
   }).join('');
 }
 
@@ -2747,8 +2765,9 @@ function renderCategoryGrid(gridId, emptyId, filterFn, starKind, clickable) {
     const click = clickable ? ' onclick="openCategoryDetail(\'' + c._id + '\')"' : '';
     const singaBtns = (gridId === 'singa-grid' && effectiveMode() === 'venue')
       ? '<div class="br-btns" style="padding:8px 0 0;"><button class="br-btn gold" onclick="event.stopPropagation();brWish(\'cat\',\'' + c._id + '\')">Add to Wish List</button><button class="br-btn" onclick="event.stopPropagation();brRequest(\'cat\',\'' + c._id + '\')">Pick a Date</button></div>' : '';
-    const singaPill = gridId === 'singa-grid' ? brPill('singalong') : '';
-    return '<div class="night-card"' + click + '>' + imgEl + star + '<div class="night-card-body"><div class="night-name">' + esc(c.name) + singaPill + '</div>' + singaBtns + '</div></div>';
+    const singaPill = gridId === 'singa-grid' && brPill('singalong') ? '<div style="padding-top:8px;">' + brPill('singalong') + '</div>' : '';
+    const bingoBtns = (gridId === 'bingo-grid' && effectiveMode() === 'venue') ? '<div class="br-btns" style="padding:8px 0 0;"><button class="br-btn gold" onclick="event.stopPropagation();categoryAddToCart(\'' + c._id + '\',\'later\')">Add to Wish List</button></div>' : '';
+    return '<div class="night-card"' + click + '>' + imgEl + star + '<div class="night-card-body"><div class="night-name">' + esc(c.name) + '</div>' + singaPill + singaBtns + bingoBtns + '</div></div>';
   }).join('');
 }
 
@@ -2804,7 +2823,7 @@ function renderTrivia() {
       : '<div class="night-card-img" style="aspect-ratio:4/5;display:flex;align-items:center;justify-content:center;background:var(--surface2);color:var(--text-dim);font-size:2rem;">🧠</div>';
     const rid = String(c._id).replace(/^trivia:/,'');
     const heart = tlHeartOn ? '<button type="button" title="Like this category for our venue" onclick="event.stopPropagation();toggleTriviaLike(\'' + rid + '\')" style="position:absolute;top:8px;right:8px;z-index:3;width:34px;height:34px;border-radius:50%;border:1px solid rgba(255,255,255,.25);background:rgba(0,0,0,.6);color:' + (tlLiked.has(rid) ? '#e8456b' : '#fff') + ';font-size:18px;line-height:1;cursor:pointer;">' + (tlLiked.has(rid) ? '\u2665' : '\u2661') + '</button>' : '';
-    return '<div class="night-card" style="position:relative;" onclick="openCategoryDetail(\'' + c._id + '\')">' + heart + imgEl + '<div class="night-card-body"><div class="night-name">' + esc(c.name) + '</div>' + (isBookTrivia(c) && effectiveMode() === 'venue' ? '<div class="br-btns" style="padding:8px 0 0;"><button class="br-btn gold" onclick="event.stopPropagation();categoryAddToCart(\'' + c._id + '\',\'later\')">Add to Wish List</button></div>' : '') + '</div></div>';
+    return '<div class="night-card" style="position:relative;" onclick="openCategoryDetail(\'' + c._id + '\')">' + heart + imgEl + '<div class="night-card-body"><div class="night-name">' + esc(c.name) + '</div>' + (effectiveMode() === 'venue' ? '<div class="br-btns" style="padding:8px 0 0;"><button class="br-btn gold" onclick="event.stopPropagation();categoryAddToCart(\'' + c._id + '\',\'later\')">Add to Wish List</button></div>' : '') + '</div></div>';
   }).join('');
 }
 
@@ -3017,10 +3036,10 @@ function openNightDetail(i) {
   } else {
     const priceTag = (n.addonPrice || n.addonPrice === 0) ? ' <span style="color:var(--gold);">(+$' + n.addonPrice.toFixed(2) + ')</span>' : '';
     const inCart = cartHas(n._id);
-    actionsEl.innerHTML = inCart
+    actionsEl.innerHTML = '<div style="flex-basis:100%;">' + brPill('night') + '</div>' + (inCart
       ? '<button class="atc-btn in-cart" onclick="openCart()">✓ In Your Cart — Edit</button>'
       : '<button class="atc-btn" onclick="nightAddToCart(' + i + ',\'later\')">✦ Add to Wish List' + priceTag + '</button>'
-        + '<button class="atc-btn" onclick="nightAddToCart(' + i + ',\'date\')">📅 Add to Date' + priceTag + '</button>';
+        + '<button class="atc-btn" onclick="nightAddToCart(' + i + ',\'date\')">📅 Add to Date' + priceTag + '</button>');
   }
 
   document.getElementById('detail-overlay').classList.add('open');
@@ -3066,15 +3085,15 @@ function openCategoryDetail(id) {
   } else if (isSingAlong(c)) {
     const priceTag = (c.addonPrice || c.addonPrice === 0) ? ' <span style="color:var(--gold);">(+$' + c.addonPrice.toFixed(2) + ')</span>' : '';
     const inCart = cartHas(c._id);
-    actionsEl.innerHTML = inCart
+    actionsEl.innerHTML = '<div style="flex-basis:100%;">' + brPill('singalong') + '</div>' + (inCart
       ? '<button class="atc-btn in-cart" onclick="openCart()">✓ In Your Cart — Edit</button>'
       : '<button class="atc-btn" onclick="categoryAddToCart(\'' + c._id + '\',\'later\')">✦ Add to Wish List' + priceTag + '</button>'
-        + '<button class="atc-btn" onclick="categoryAddToCart(\'' + c._id + '\',\'date\')">📅 Add to Date' + priceTag + '</button>';
+        + '<button class="atc-btn" onclick="categoryAddToCart(\'' + c._id + '\',\'date\')">📅 Add to Date' + priceTag + '</button>');
   } else {
     let inQ = false; try { inQ = isInCategoryQueue(c._id); } catch (e) {}
     actionsEl.innerHTML = inQ
       ? '<button class="atc-btn in-cart" onclick="closeDetail();navigateTo(\'queue\')">✓ In Your Queue — View</button>'
-      : (isBookTrivia(c) ? '<button class="atc-btn" onclick="categoryAddToCart(\'' + c._id + '\',\'later\')">Add to Wish List</button>' : '') + '<button class="atc-btn" onclick="addCategoryToQueue(\'' + c._id + '\')">Add to Queue</button>';
+      : '<button class="atc-btn" onclick="categoryAddToCart(\'' + c._id + '\',\'later\')">Add to Wish List</button>' + '<button class="atc-btn" onclick="addCategoryToQueue(\'' + c._id + '\')">Add to Queue</button>';
   }
   document.getElementById('detail-overlay').classList.add('open');
 }
@@ -4039,7 +4058,7 @@ function renderCartItems() {
     const dateSel = renderMiniCal(item, i);
     const weekSel = renderWeekdayPicker(item, i);
     const saveLaterSel = item.bookingType === 'later'
-      ? '<button class="save-later-btn selected" onclick="setBookingType(' + i + ',\'later\')">✦ Save for Later with Belladonna</button>'
+      ? '<button class="save-later-btn selected" onclick="setBookingType(' + i + ',\'date\')">✓ Saved for later — tap to undo</button>'
         + '<div style="margin-top:0.5rem;padding:0.6rem 0.75rem;background:rgba(201,168,76,0.06);border:1px solid rgba(201,168,76,0.18);border-radius:4px;font-size:0.8rem;color:var(--text-muted);line-height:1.5;">'
         + '✦ We will reach out to you to discuss this event and find the right time. Include your contact info at checkout and we will be in touch.'
         + '</div>'
