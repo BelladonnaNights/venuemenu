@@ -1983,7 +1983,7 @@ function setCatStyleLocal(v) {
   rerenderCatViews();
 }
 async function loadDisplaySettings() {
-  try { const d = await getDoc(doc(db, 'venueMenuConfig', 'displaySettings')); let own = null; try { own = localStorage.getItem('bm_catStyle'); } catch (e) {} if (!own) catStyle = (d.exists() && d.data().catStyle) || 'cards'; } catch (e) {}
+  try { const d = await getDoc(doc(db, 'venueMenuConfig', 'mainMenu')); let own = null; try { own = localStorage.getItem('bm_catStyle'); } catch (e) {} if (!own) catStyle = (d.exists() && d.data().catStyle) || 'cards'; } catch (e) {}
 }
 function catTileHtml(c, onclickJs) {
   const nm = String(c.name || '');
@@ -1997,8 +1997,8 @@ async function loadSeasonalEvents() {
     seasonalEvents = snap.exists() ? (snap.data().events || []) : [];
   } catch(e) { seasonalEvents = []; }
   try {
-    const ps = await getDoc(doc(db, 'venueMenuConfig', 'carouselPicks'));
-    if (ps.exists()) seasonalEvents = seasonalEvents.concat((ps.data().picks || []).filter(p => p && p.id));
+    const ps = await getDoc(doc(db, 'venueMenuConfig', 'mainMenu'));
+    if (ps.exists()) seasonalEvents = seasonalEvents.concat((ps.data().carouselPicks || []).filter(p => p && p.id));
   } catch(e) {}
   renderComingUp();
 }
@@ -4696,5 +4696,20 @@ window.toggleStar = async function(kind, id) {
   <p>Loading the menu…</p>
 </div>
 
+
+<script>
+// Make the gold "Venue Menu" line exactly as wide as "Belladonna".
+(function () {
+  function fit(a, b) {
+    var x = document.querySelector(a), y = document.querySelector(b); if (!x || !y) return;
+    x.style.display = y.style.display = 'inline-block'; y.style.fontSize = '';
+    var wx = x.getBoundingClientRect().width, wy = y.getBoundingClientRect().width;
+    if (wx && wy) y.style.fontSize = (parseFloat(getComputedStyle(y).fontSize) * wx / wy) + 'px';
+  }
+  function run() { fit('.wordmark-one', '.wordmark-two'); }
+  window.addEventListener('load', run); window.addEventListener('resize', run);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(run);
+})();
+</script>
 </body>
 </html>
