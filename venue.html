@@ -289,7 +289,10 @@
   }
   .night-card:hover { border-color: var(--border-strong); transform: translateY(-2px); }
   .night-card-img { width: 100%; aspect-ratio: 4/5; object-fit: cover; display: block; background: var(--surface2); }
-  .night-card-body { padding: 0.75rem; }
+  .night-card { display: flex; flex-direction: column; }
+  .night-card-body { padding: 0.75rem; flex: 1; display: flex; flex-direction: column; }
+  .night-card-body .br-btns { margin-top: auto; padding-top: 10px !important; }
+  .night-name .br-pill { display: table; margin: 6px 0 0 0; }
   .night-name { font-family: 'Cinzel', serif; font-size: 0.82rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text); margin-bottom: 0.3rem; }
   .night-desc { font-size: 0.83rem; color: var(--text-muted); line-height: 1.4; }
   .star-toggle-btn {
@@ -881,16 +884,14 @@
   .br-scroller { display: flex; gap: 14px; overflow-x: auto; scroll-snap-type: x proximity; padding-bottom: 10px; scrollbar-width: thin; }
   .br-card { flex: 0 0 230px; scroll-snap-align: start; background: var(--surface2); border: 1px solid var(--border2); border-radius: 12px; overflow: hidden; cursor: pointer; display: flex; flex-direction: column; }
   .br-card:hover { border-color: var(--gold); }
-  .br-img { aspect-ratio: 16/10; background: var(--surface3); display: flex; align-items: center; justify-content: center; overflow: hidden; }
+  .br-img { aspect-ratio: 4/5; background: var(--surface3); display: flex; align-items: center; justify-content: center; overflow: hidden; }
   .br-img img { width: 100%; height: 100%; object-fit: cover; }
   .br-noimg { padding: 10px; text-align: center; font-family: var(--display); font-size: 1.3rem; color: var(--gold-light); }
   .br-name { font-family: var(--display); font-size: 1.35rem; letter-spacing: .03em; color: #fff; padding: 10px 12px 4px; line-height: 1.1; }
   .br-yr { font-size: .8rem; color: var(--text-dim); }
   .br-btns { display: flex; flex-direction: column; gap: 6px; padding: 8px 12px 12px; margin-top: auto; }
   .br-btn { background: transparent; border: 1px solid var(--border2); color: var(--text); padding: 8px; border-radius: 8px; cursor: pointer; font: inherit; font-size: .78rem; }
-  .br-btn.gold, .br-pill { background: linear-gradient(180deg,#fff2b8 0%,#f3d77a 18%,#d9b04a 48%,#b98a26 52%,#e6c363 80%,#f7e08f 100%); border-color: #8a6414; color: #2b1d02; font-weight: 700; text-shadow: 0 1px 0 rgba(255,244,196,.7); box-shadow: inset 0 1px 0 rgba(255,255,255,.75), inset 0 -1px 2px rgba(110,72,6,.45), 0 1px 4px rgba(0,0,0,.4), 0 0 8px rgba(226,184,72,.25); position: relative; overflow: hidden; }
-  .br-btn.gold::after, .br-pill::after { content:''; position:absolute; top:0; left:-60%; width:40%; height:100%; background: linear-gradient(100deg,transparent,rgba(255,255,255,.55),transparent); transform: skewX(-20deg); animation: goldshine 4.5s ease-in-out infinite; pointer-events:none; }
-  @keyframes goldshine { 0%,70% { left:-60%; } 100% { left:140%; } }
+  .br-btn.gold, .br-pill { background: linear-gradient(180deg,#fff2b8 0%,#f3d77a 18%,#d9b04a 48%,#b98a26 52%,#e6c363 80%,#f7e08f 100%); border-color: #8a6414; color: #2b1d02; font-weight: 700; text-shadow: 0 1px 0 rgba(255,244,196,.7); box-shadow: inset 0 1px 0 rgba(255,255,255,.75), inset 0 -1px 2px rgba(110,72,6,.45), 0 1px 4px rgba(0,0,0,.4), 0 0 8px rgba(226,184,72,.25); }
   .br-btn.gold:hover { filter: brightness(1.08) saturate(1.1); }
   .br-btn.done { border-color: var(--gold); color: var(--gold); }
   @media (max-width: 768px) { .br-card { flex-basis: 190px; } }
@@ -3543,7 +3544,8 @@ async function updateRtdb(path, obj) {
 // BROWSE — Netflix-style rows of everything on the menu
 // ═══════════════════════════════════════════════
 function venueHasGame(kind) {
-  return (queueUpcomingItems || []).some(it => (it.kind || '') === kind) || (categoryQueueDoc && (categoryQueueDoc.queue || []).some(it => (it.type || '') === kind));
+  const k = String(kind).toLowerCase();
+  return (queueUpcomingItems || []).some(it => String(it.kind || '').toLowerCase() === k) || !!(categoryQueueDoc && (categoryQueueDoc.queue || []).some(it => String(it.type || '').toLowerCase() === k)) || !!(queueTargets && queueTargets[k]);
 }
 const PREMIUM_KINDS = ['night', 'singalong', 'battle', 'party', 'holiday', 'ticketed'];
 function brPill(kind) { return PREMIUM_KINDS.includes(kind) ? '<span class="br-pill" title="This costs extra">$ Costs extra</span>' : ''; }
@@ -3564,7 +3566,7 @@ function brCatCard(c) {
     btns = '<button class="br-btn" onclick="event.stopPropagation();brWish(\'cat\',\'' + id + '\')">Add to Wish List</button><button class="br-btn gold" onclick="event.stopPropagation();brRequest(\'cat\',\'' + id + '\')">Request This Night</button>';
   }
   const kind = isSingAlong(c) ? 'singalong' : (isBattles(c) ? 'battle' : '');
-  return '<div class="br-card" onclick="openCategoryDetail(\'' + id + '\')"><div class="br-img">' + brCardImg(catImg(c,'l54'), c.name) + '</div><div class="br-name">' + esc(c.name) + brPill(kind) + '</div><div class="br-btns">' + btns + '</div></div>';
+  return '<div class="br-card" onclick="openCategoryDetail(\'' + id + '\')"><div class="br-img">' + brCardImg(catImg(c,'p45'), c.name) + '</div><div class="br-name">' + esc(c.name) + brPill(kind) + '</div><div class="br-btns">' + btns + '</div></div>';
 }
 function brNightCard(n) {
   const i = publishedNights.indexOf(n);
@@ -4448,8 +4450,8 @@ let queueTargets = { trivia: null, bingo: null };
 let queueNoPlay = new Set();
 async function loadVenueUpcoming() {
   if (queueUpcomingLoaded) return queueUpcomingItems;
-  queueUpcomingLoaded = true;
   if (!currentVenueRecord || !currentVenueRecord.name) return queueUpcomingItems;
+  queueUpcomingLoaded = true;
   const vName = qNormVenueName(currentVenueRecord.name);
   try {
     const [pvSnap, pgSnap, bvSnap, bsSnap, bcSnap, gigSnap] = await Promise.all([
