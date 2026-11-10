@@ -1399,6 +1399,13 @@
       </div>
     </div>
 
+    <!-- REQUEST IMAGES -->
+    <div class="card" style="margin-bottom:1.5rem;">
+      <div class="section-title" style="margin-bottom:0.4rem;">Request Images (4:5)</div>
+      <div style="font-size:0.8rem;color:var(--text-dim);margin-bottom:1rem;">Shown on the venue Browse page, in the Plan an Event row. Paste a link or upload; the picture is cropped to 4:5.</div>
+      <div id="mm-evimgs" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:1rem;"></div>
+    </div>
+
     <!-- EDIT SECTIONS + CARDS -->
     <div id="mm-sections-editor"></div>
 
@@ -5255,7 +5262,31 @@ async function loadMainMenu() {
   }
   mmRenderEditor();
   mmUpdatePreviewText();
+  mmFillEventImages();
 }
+
+const EV_IMG_DEFS = [['party', 'Private Party'], ['holiday', 'Holiday Parties'], ['ticketed', 'Ticketed Event'], ['battle', 'Belladonna Battles — 4-Week Series']];
+function mmEvImgPrev(k) {
+  const v = (document.getElementById('mm-evimg-' + k) || {}).value || '';
+  const box = document.getElementById('mm-evimg-prev-' + k); if (!box) return;
+  box.innerHTML = v ? '<img src="' + esc(v) + '" style="width:100%;height:100%;object-fit:cover;display:block;" onerror="this.style.display=\'none\'">' : '';
+}
+function mmFillEventImages() {
+  const box = document.getElementById('mm-evimgs'); if (!box) return;
+  const ei = (mmData && mmData.eventImages) || {};
+  box.innerHTML = EV_IMG_DEFS.map(([k, l]) => '<div class="form-group"><label class="form-label">' + esc(l) + '</label>'
+    + '<div id="mm-evimg-prev-' + k + '" style="aspect-ratio:4/5;background:var(--surface2);border:1px dashed var(--border);border-radius:6px;overflow:hidden;margin-bottom:0.5rem;"></div>'
+    + '<input type="text" class="form-input" id="mm-evimg-' + k + '" value="' + esc(ei[k] || '') + '" placeholder="https://…" oninput="mmEvImgPrev(\'' + k + '\')">'
+    + '<input type="file" accept="image/*" onchange="mmEvImgUpload(\'' + k + '\',this)" style="margin-top:0.4rem;font-size:0.7rem;max-width:100%;"></div>').join('');
+  EV_IMG_DEFS.forEach(([k]) => mmEvImgPrev(k));
+}
+function mmEvImgUpload(k, inp) {
+  const f = inp.files && inp.files[0]; if (!f) return;
+  const r = new FileReader();
+  r.onload = async () => { const d = await compressBanner(r.result, 800, 0.75); const e = document.getElementById('mm-evimg-' + k); if (e) { e.value = d; mmEvImgPrev(k); } };
+  r.readAsDataURL(f);
+}
+window.mmEvImgPrev = mmEvImgPrev; window.mmEvImgUpload = mmEvImgUpload;
 
 async function saveMainMenu() {
   mmReadFieldsIntoData();
@@ -5570,6 +5601,7 @@ function mmReadFieldsIntoData() {
   mmData.eyebrow  = document.getElementById('mm-eyebrow')?.value  || mmData.eyebrow;
   mmData.title    = document.getElementById('mm-title')?.value    || mmData.title;
   mmData.subtitle = document.getElementById('mm-subtitle')?.value || mmData.subtitle;
+  if (document.getElementById('mm-evimgs') && document.getElementById('mm-evimgs').children.length) { mmData.eventImages = {}; EV_IMG_DEFS.forEach(([k]) => { const e = document.getElementById('mm-evimg-' + k); if (e) mmData.eventImages[k] = e.value.trim(); }); }
   mmData.sections.forEach(sec => {
     const secLabel = document.getElementById('mm-sec-label-' + sec.id);
     const secDesc  = document.getElementById('mm-sec-desc-'  + sec.id);
