@@ -1495,6 +1495,7 @@
     <div style="display:flex;gap:8px;margin-bottom:1.25rem;">
       <button class="filter-chip active" id="car-pill-cal" onclick="carTab('cal')">Calendar</button>
       <button class="filter-chip" id="car-pill-picks" onclick="carTab('picks')">Picks</button>
+      <button class="filter-chip" id="car-pill-all" onclick="carTab('all')">All Images</button>
     </div>
     <div id="car-pane-cal">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;flex-wrap:wrap;gap:1rem;">
@@ -1512,6 +1513,18 @@
       <p style="font-size:0.9rem;">Add your first event to start building the rolling calendar.</p>
     </div>
     </div>
+  <div id="car-pane-all" style="display:none;">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;margin-bottom:1.25rem;">
+      <p style="color:var(--text-muted);font-size:0.9rem;margin:0;">Every Calendar event as its image, January to December. Click an image to edit that event.</p>
+      <div style="display:flex;gap:8px;">
+        <button class="filter-chip active" id="car-all-f-all" onclick="carAllFilter('all')">All</button>
+        <button class="filter-chip" id="car-all-f-live" onclick="carAllFilter('live')">Only Live</button>
+        <button class="filter-chip" id="car-all-f-next3" onclick="carAllFilter('next3')">Next 3 Months</button>
+      </div>
+    </div>
+    <div id="car-all-list"></div>
+    <div id="car-all-empty" style="display:none;text-align:center;padding:4rem 2rem;color:var(--text-dim);">No events match this filter.</div>
+  </div>
   <!-- ═══ CAROUSEL PICKS PANE (a pill inside the Carousel tab) ═══ -->
   <div id="car-pane-picks" style="display:none;">
     <div style="margin-bottom:1.5rem;">
@@ -5688,7 +5701,60 @@ function carTab(which) {
   document.getElementById('car-pane-picks').style.display = which === 'picks' ? '' : 'none';
   document.getElementById('car-pill-cal').classList.toggle('active', which === 'cal');
   document.getElementById('car-pill-picks').classList.toggle('active', which === 'picks');
+  const allPane = document.getElementById('car-pane-all'); if (allPane) allPane.style.display = which === 'all' ? '' : 'none';
+  const allPill = document.getElementById('car-pill-all'); if (allPill) allPill.classList.toggle('active', which === 'all');
   if (which === 'picks') renderCarPicks();
+  if (which === 'all') renderCarAll();
+}
+let carAllMode = 'all';
+function carAllFilter(m) {
+  carAllMode = m;
+  ['all','live','next3'].forEach(k => { const b = document.getElementById('car-all-f-' + k); if (b) b.classList.toggle('active', k === m); });
+  renderCarAll();
+}
+function seEvMonth(ev) {
+  if (ev.dateType === 'exact') return ev.exactDate ? Number(ev.exactDate.split('-')[1]) : 0;
+  if (ev.dateType === 'range') return Number(ev.rStartM) || 0;
+  return Number(ev.month) || 0;
+}
+function seInNext3(ev) {
+  if (ev.pending) return false;
+  if (seIsActive(ev)) return true;
+  const now = new Date(), lim = new Date(now.getFullYear(), now.getMonth() + 3, now.getDate());
+  if (ev.dateType === 'exact') {
+    if (!ev.exactDate) return false;
+    const [y, m, d] = ev.exactDate.split('-').map(Number), t = new Date(y, m - 1, d);
+    return t >= new Date(now.getFullYear(), now.getMonth(), now.getDate()) && t <= lim;
+  }
+  const m = seEvMonth(ev); if (!m) return false;
+  const cur = now.getMonth() + 1;
+  return ((m - cur + 12) % 12) <= 2;
+}
+function renderCarAll() {
+  const box = document.getElementById('car-all-list'), empty = document.getElementById('car-all-empty');
+  if (!box) return;
+  let evs = (typeof seasonalEvents !== 'undefined' ? seasonalEvents : []).filter(ev => !ev.pending);
+  if (carAllMode === 'live') evs = evs.filter(seIsActive);
+  else if (carAllMode === 'next3') evs = evs.filter(seInNext3);
+  if (!evs.length) { box.innerHTML = ''; empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+  const groups = {};
+  evs.forEach(ev => { const m = seEvMonth(ev); (groups[m] = groups[m] || []).push(ev); });
+  const keys = Object.keys(groups).map(Number).sort((a, b) => (a || 99) - (b || 99));
+  box.innerHTML = keys.map(m => {
+    const tiles = groups[m].map(ev => {
+      const live = seIsActive(ev);
+      const img = ev.image
+        ? '<img src="' + esc(ev.image) + '" alt="" loading="lazy" style="width:100%;aspect-ratio:4/5;object-fit:cover;display:block;background:#000;">'
+        : '<div style="width:100%;aspect-ratio:4/5;display:flex;align-items:center;justify-content:center;background:#000;color:var(--text-dim);font-size:0.75rem;text-align:center;padding:8px;">No image</div>';
+      return '<div onclick="openSeasonalModal(\'' + String(ev.id).replace(/'/g, "\\'") + '\')" style="cursor:pointer;border:1px solid ' + (live ? 'rgba(42,107,58,0.7)' : 'var(--border)') + ';border-radius:6px;overflow:hidden;background:var(--surface2);position:relative;">'
+        + (live ? '<span style="position:absolute;top:6px;right:6px;background:rgba(42,107,58,0.9);color:#fff;padding:1px 8px;border-radius:3px;font-size:0.62rem;font-family:Cinzel,serif;letter-spacing:0.08em;text-transform:uppercase;">Live</span>' : '')
+        + img
+        + '<div style="padding:6px 8px;font-family:Cinzel,serif;font-size:0.68rem;letter-spacing:0.05em;text-transform:uppercase;color:var(--text);">' + esc(ev.name) + '</div></div>';
+    }).join('');
+    return '<div style="margin-bottom:1.75rem;"><div class="section-title" style="margin-bottom:0.6rem;">' + (m ? MONTH_NAMES[m] : 'Unscheduled') + '</div>'
+      + '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;">' + tiles + '</div></div>';
+  }).join('');
 }
 function carGoPicks() { switchView('seasonal'); carTab('picks'); }
 function carSrcName(type, ref) {
@@ -5857,7 +5923,7 @@ let seEditingId = null;
 let sePickMode = false;
 function seList() { return sePickMode ? carPicks : seasonalEvents; }
 async function sePersist() { if (sePickMode) { await persistCarPicks(); carRerenderCards(); } else await persistSeasonalEvents(); }
-function seRefresh() { if (sePickMode) renderCarPicks(); else renderSeasonalAdmin(); }
+function seRefresh() { if (sePickMode) renderCarPicks(); else renderSeasonalAdmin(); const ap = document.getElementById('car-pane-all'); if (ap && ap.style.display !== 'none') renderCarAll(); }
 const MONTH_NAMES = ['','January','February','March','April','May','June',
                      'July','August','September','October','November','December'];
 
@@ -6908,7 +6974,7 @@ window.deletePortalCollaborator = async function(id) {
 };
 
 Object.assign(window, {
-  carTab, carGoPicks, carFromModal, setCatSize, setCatStyle, closeCategoryDetail, openNightFromCat, openCategoryDetail, carouselAdd,
+  carTab, carAllFilter, carGoPicks, carFromModal, setCatSize, setCatStyle, closeCategoryDetail, openNightFromCat, openCategoryDetail, carouselAdd,
   liveImgPreview,
   toggleNavMenu, closeNavMenu,
   renderMovies, openMovieModal, addMovieLinkRow, closeMovieModal, saveMovie, deleteMovie, openMovieBulk, closeMovieBulk, saveMovieBulk,
