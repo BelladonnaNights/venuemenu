@@ -1071,6 +1071,7 @@
       <button class="nav-tab" id="nav-library-tab" style="display:none" onclick="closeNavMenu();switchView('library')">Library</button>
       <button class="nav-tab active" onclick="closeNavMenu();switchView('trivia')">Trivia</button>
       <button class="nav-tab" onclick="closeNavMenu();switchView('bingo')">Bingo</button>
+      <button class="nav-tab" onclick="closeNavMenu();switchView('booktrivia')">Book Trivia</button>
       <button class="nav-tab" onclick="closeNavMenu();switchView('singalongs')">Sing-Alongs</button>
       <button class="nav-tab" onclick="closeNavMenu();switchView('movies')">Movies</button>
       <button class="nav-tab" onclick="closeNavMenu();switchView('minigames')">Mini Games</button>
@@ -1188,6 +1189,24 @@
       <div class="empty-state-icon">🧠</div>
       <h3>No Trivia Yet</h3>
       <p>Add categories with Type "Trivia" to see them here.</p>
+    </div>
+  </div>
+
+  <!-- ═══ BOOK TRIVIA VIEW ═══ -->
+  <div class="view" id="view-booktrivia">
+    <div style="display:flex; align-items:center; gap:8px; margin-bottom:0.75rem; flex-wrap:wrap;">
+      <div style="flex:1; position:relative;">
+        <span style="position:absolute;left:0.75rem;top:50%;transform:translateY(-50%);color:var(--text-dim);pointer-events:none;">🔍</span>
+        <input type="search" autocomplete="off" id="booktrivia-search-input" placeholder="Search book trivia…" oninput="renderBookTrivia()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:4px;padding:0.6rem 0.9rem 0.6rem 2.4rem;font-family:'Crimson Text',serif;font-size:16px;width:100%;outline:none;">
+      </div>
+      <button class="btn btn-sm btn-ghost" onclick="toggleSortAZ('booktrivia')" id="booktrivia-az-btn">Published first</button>
+      <button class="btn btn-sm" onclick="openAddCategoryModal()">+ Add Trivia</button>
+    </div>
+    <div id="booktrivia-grid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:1.25rem;"></div>
+    <div id="booktrivia-empty" class="empty-state" style="display:none;">
+      <div class="empty-state-icon">📚</div>
+      <h3>No Book Trivia Yet</h3>
+      <p>Trivia categories marked as Book Trivia show here.</p>
     </div>
   </div>
 
@@ -2722,7 +2741,7 @@ function switchView(name) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
   document.getElementById('view-' + name).classList.add('active');
-  const labelMap = { library: 'librar', nights: 'night', trivia: 'trivia', bingo: 'bingo', minigames: 'mini', singalongs: 'sing', movies: 'movie', import: 'import', feedback: 'feedback', portal: 'portal' };
+  const labelMap = { library: 'librar', nights: 'night', trivia: 'trivia', booktrivia: 'book trivia', bingo: 'bingo', minigames: 'mini', singalongs: 'sing', movies: 'movie', import: 'import', feedback: 'feedback', portal: 'portal' };
   document.querySelectorAll('.nav-tab').forEach(t => {
     const key = labelMap[name] || name;
     if (t.textContent.toLowerCase().includes(key)) t.classList.add('active');
@@ -2730,6 +2749,7 @@ function switchView(name) {
   if (name === 'library') renderLibrary();
   if (name === 'nights') renderNights();
   if (name === 'trivia') renderTrivia();
+  if (name === 'booktrivia') renderBookTrivia();
   if (name === 'bingo') renderBingo();
   if (name === 'minigames') renderMiniGames();
   if (name === 'singalongs') renderSingAlongs();
@@ -2799,7 +2819,7 @@ function toggleSortAZ(tabKey){
   pubFirstState[tabKey] = !pubFirstState[tabKey];
   const btn = document.getElementById(tabKey+'-az-btn');
   if(btn) { btn.classList.toggle('btn-ghost', !pubFirstState[tabKey]); btn.style.color = pubFirstState[tabKey] ? '#000' : ''; }
-  const renderFns = { library: renderLibrary, trivia: renderTrivia, bingo: renderBingo, minigames: renderMiniGames, singalongs: renderSingAlongs, nights: renderNights };
+  const renderFns = { library: renderLibrary, trivia: renderTrivia, booktrivia: renderBookTrivia, bingo: renderBingo, minigames: renderMiniGames, singalongs: renderSingAlongs, nights: renderNights };
   if(renderFns[tabKey]) renderFns[tabKey]();
 }
 function maybeSortAZ(list, tabKey, nameField){
@@ -4653,7 +4673,10 @@ async function saveThemeEdit(i, oldTheme) {
 let activeTriviaTierFilter = '';
 let triviaExcludeBook = false;
 function isBookTriviaCat(c) {
-  return String(c.type || '').toLowerCase().split(',').map(t => t.trim()).includes('book trivia') || c._rawType === 'book' || tagsArray(c.tags).map(t => String(t).trim().toLowerCase()).includes('book trivia');
+  const bk = x => /\bbook/i.test(String(x || ''));
+  return String(c.type || '').toLowerCase().split(',').map(t => t.trim()).includes('book trivia') || c._rawType === 'book'
+    || tagsArray(c.tags).some(bk) || bk(c.plannerTier) || bk(c.type)
+    || (c.alsoSee || []).includes('booktrivia') || (c.publishedTabs || []).includes('booktrivia');
 }
 function setTriviaExBook(v) { triviaExcludeBook = !!v; renderTrivia(); }
 function triviaTierMatch(c) {
@@ -4707,6 +4730,31 @@ function renderTrivia() {
     </div>`;
   });
   grid.innerHTML = mergeSorted('trivia', items, htmlA, liveItems, liveItems.map(liveCategoryCardHTML));
+}
+
+function renderBookTrivia() {
+  ensureCatDisplay();
+  const grid = document.getElementById('booktrivia-grid');
+  const empty = document.getElementById('booktrivia-empty');
+  const q = (document.getElementById('booktrivia-search-input')?.value || '').toLowerCase().trim();
+  let items = categories.filter(c => isTrivia(c) && !isSupersededOldCategory(c) && isBookTriviaCat(c));
+  if (q) items = items.filter(c => c.name.toLowerCase().includes(q) || (c.theme||'').toLowerCase().includes(q));
+  items = maybeSortAZ(items, 'booktrivia', 'name');
+  empty.style.display = items.length ? 'none' : 'block';
+  grid.innerHTML = items.map(c => {
+    const miniSrc = c.miniGameImage || (c.images && c.images.p45) || c.bgImage || c.bannerData || null;
+    const bannerHtml = catStyleVal === 'tiles' ? catTileA(c.name, !(c.published || (c.publishedTabs||[]).length)) : miniSrc
+      ? `<div class="cat-banner-wrap"><img src="${miniSrc}" alt="" data-name="${esc(c.name)}" onload="catImgCheck(this)" onerror="catImgCheck(this,1)"></div>`
+      : `<div class="cat-banner-wrap"><span>${esc(c.name)}</span></div>`;
+    const idx = categories.indexOf(c);
+    return `<div class="category-card" style="cursor:pointer;" onclick="editCategory(${idx})">
+      ${bannerHtml}
+      <div class="cat-body">
+        <div class="category-card-name" style="margin-bottom:0.4rem;">${esc(c.name)}</div>
+        ${cfoot(`editCategory(${idx})`,'cat',idx)}
+      </div>
+    </div>`;
+  }).join('');
 }
 
 function renderTriviaFilterChips() {
