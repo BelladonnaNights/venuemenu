@@ -985,6 +985,41 @@
   .cfoot, .category-card-actions { flex-wrap: nowrap; }
   .cfoot .btn, .category-card-actions .btn { padding: 5px 9px; font-size: 10px; letter-spacing: .05em; white-space: nowrap; }
   #trivia-grid.tiles .category-card, #bingo-grid.tiles .category-card { background: #0a0a0a; border-color: #262626; }
+
+  /* ═══ CARD FRONT CLEAN-UP: centered names, one status line, centered equal buttons, nothing cut off ═══ */
+  .category-card .category-card-name { text-align: center; }
+  .cfoot, .category-card-actions { display: flex !important; justify-content: center !important; align-items: center; gap: 8px; width: 100%; box-sizing: border-box; flex-wrap: nowrap; }
+  .cfoot .btn, .category-card-actions .btn { flex: 1 1 0; min-width: 0; padding: 7px 4px !important; font-size: 9px !important; letter-spacing: .04em !important; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: clip; margin: 0 !important; }
+  .cfoot .car-btn, .category-card-actions .car-btn, .night-card-footer .car-btn { margin-left: 0 !important; }
+  .cfoot > span, .category-card-actions > span { flex: none; }
+  .card-status { text-align: center; font-family: var(--cinzel); font-size: 9px; letter-spacing: .1em; text-transform: uppercase; border-radius: 99px; padding: 4px 0; margin: 0 auto 10px; width: 130px; max-width: 100%; box-sizing: border-box; border: 1px solid var(--border2); color: var(--text-dim); background: rgba(120,120,120,.12); }
+  .card-status.on { color: var(--gold-light); border-color: var(--gold-glow); background: var(--gold-dim); }
+  #trivia-grid .cat-banner-wrap img, #bingo-grid .cat-banner-wrap img { object-fit: contain !important; background: #000; }
+  #trivia-grid .category-card-name, #bingo-grid .category-card-name { min-height: 2.7em; display: flex; align-items: center; justify-content: center; }
+  #trivia-grid.tiles .card-status, #bingo-grid.tiles .card-status { display: none; }
+
+  /* seasonal event pop-up */
+  .se-modal { width: min(920px, 96vw); max-width: 920px !important; max-height: 92vh; overflow-y: auto; overflow-x: hidden; }
+  .se-modal * { box-sizing: border-box; }
+  .se-modal input[type="text"], .se-modal input[type="number"], .se-modal input[type="date"], .se-modal select, .se-modal textarea { width: 100%; min-width: 0; }
+  .se-body { padding: 1.1rem 1.4rem; }
+  .se-top { display: grid; grid-template-columns: 1fr 150px; gap: 1.2rem; align-items: start; margin-bottom: 1rem; }
+  .se-fields { display: grid; gap: .8rem; }
+  .se-prev #se-img-prev img, .se-prev #se-img-prev div { width: 150px; aspect-ratio: 4/5; object-fit: contain; background: #000; border: 1px solid var(--border2); border-radius: 6px; display: flex; align-items: center; justify-content: center; color: var(--text-dim); font-size: 11px; text-align: center; }
+  .se-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .se-box { border: 1px solid var(--border); border-radius: 8px; padding: .9rem 1rem; background: var(--surface2); }
+  .se-box-title { font-family: var(--cinzel); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--gold); margin-bottom: .7rem; }
+  .se-hint { color: var(--text-dim); font-size: .72rem; font-style: italic; text-transform: none; letter-spacing: 0; }
+  .se-note { color: var(--text-dim); font-size: .78rem; font-style: italic; margin: .4rem 0 .6rem; }
+  .se-seg { display: flex; gap: 6px; margin-bottom: .7rem; }
+  .se-seg .btn { flex: 1; padding: 7px 4px; white-space: nowrap; }
+  .se-pair { display: grid; grid-template-columns: 1fr 64px; gap: 6px; }
+  .se-check { display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: .82rem; color: var(--text); margin-top: .4rem; }
+  .se-check input { width: 16px !important; height: 16px; accent-color: var(--gold); flex: none; }
+  .se-check em { color: var(--text-dim); font-size: .75rem; }
+  .se-red { color: #C0654F; }
+  .se-sep { border-top: 1px solid var(--border); margin: .8rem 0 .4rem; }
+  @media (max-width: 720px) { .se-top, .se-cols { grid-template-columns: 1fr; } .se-prev { display: none; } }
   .filter-sidebar:not(.open) { border-right: none; }
 
   /* header: three-bar dropdown menu (replaces the tab row) */
@@ -2103,101 +2138,60 @@
 
 <!-- ═══ SEASONAL EVENT MODAL ═══ -->
 <div class="modal-backdrop" id="seasonal-modal">
-  <div class="modal" style="max-width:560px;">
+  <div class="modal se-modal">
     <div class="modal-header">
       <span class="modal-title" id="seasonal-modal-title">Add Seasonal Event</span>
       <button class="modal-close" onclick="closeSeasonalModal()">✕</button>
     </div>
-    <div class="modal-body">
-      <div class="form-grid">
-        <div class="form-group">
-          <label class="form-label">Event Name *</label>
-          <input type="text" id="se-name" placeholder="e.g. Halloween Night, Pride Month, Cinco de Mayo">
+    <div class="modal-body se-body">
+      <div class="se-top">
+        <div class="se-fields">
+          <div class="form-group"><label class="form-label">Event Name *</label><input type="text" id="se-name"></div>
+          <div class="form-group"><label class="form-label">Image URL <span class="se-hint">(optional, 4:5 card face)</span></label><input type="text" id="se-image" oninput="seImgPrev()"></div>
+          <div class="form-group"><label class="form-label">Short Description <span class="se-hint">(shown on card)</span></label><textarea id="se-desc" rows="3"></textarea></div>
         </div>
-        <div class="form-group">
-          <label class="form-label">Image URL <span style="color:var(--text-dim);font-size:0.72rem;font-style:italic;text-transform:none;letter-spacing:0;">(optional, 4:5 card face)</span></label>
-          <input type="text" id="se-image" placeholder="https://…">
-        </div>
-        <div class="form-group" style="grid-column:1/-1;">
-          <label class="form-label">Short Description <span style="color:var(--text-dim);font-size:0.72rem;font-style:italic;text-transform:none;letter-spacing:0;">(shown on card)</span></label>
-          <textarea id="se-desc" rows="2" placeholder="e.g. A night of drag, disco, and pride anthems."></textarea>
-        </div>
+        <div class="se-prev"><div id="se-img-prev"></div></div>
+      </div>
 
-        <!-- DATE TYPE toggle -->
-        <div class="form-group" style="grid-column:1/-1;">
-          <label class="form-label">Date Type</label>
-          <div style="display:flex;gap:8px;margin-bottom:0.75rem;">
-            <button id="se-type-month-btn" class="btn btn-sm" onclick="setSeasonalDateType('month')" style="flex:1;">📅 Month / Season</button>
-            <button id="se-type-exact-btn" class="btn btn-sm btn-ghost" onclick="setSeasonalDateType('exact')" style="flex:1;">📌 Exact Date</button>
-            <button id="se-type-range-btn" class="btn btn-sm btn-ghost" onclick="setSeasonalDateType('range')" style="flex:1;">↔ Date Range</button>
+      <div class="se-cols">
+        <div class="se-box">
+          <div class="se-box-title">When the event happens</div>
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">Month</label><select id="se-ev-month"><option value="1">January</option><option value="2">February</option><option value="3">March</option><option value="4">April</option><option value="5">May</option><option value="6">June</option><option value="7">July</option><option value="8">August</option><option value="9">September</option><option value="10">October</option><option value="11">November</option><option value="12">December</option></select></div>
+            <div class="form-group"><label class="form-label">Day <span class="se-hint">(optional)</span></label><input type="number" id="se-ev-day" min="1" max="31"></div>
           </div>
+          <p class="se-note">This is the month it sits under in All Images and what "Next 3 Months" uses.</p>
+          <label class="se-check"><input type="checkbox" id="se-recurring"><span>Repeats every year</span></label>
+        </div>
 
-          <!-- Month-only fields -->
+        <div class="se-box">
+          <div class="se-box-title">When it shows in the carousel</div>
+          <div class="se-seg">
+            <button id="se-type-month-btn" class="btn btn-sm" onclick="setSeasonalDateType('month')">Month / Season</button>
+            <button id="se-type-exact-btn" class="btn btn-sm btn-ghost" onclick="setSeasonalDateType('exact')">Exact Date</button>
+            <button id="se-type-range-btn" class="btn btn-sm btn-ghost" onclick="setSeasonalDateType('range')">Date Range</button>
+          </div>
           <div id="se-month-fields">
             <div class="form-row">
-              <div class="form-group">
-                <label class="form-label">Month</label>
-                <select id="se-month">
-                  <option value="1">January</option><option value="2">February</option>
-                  <option value="3">March</option><option value="4">April</option>
-                  <option value="5">May</option><option value="6">June</option>
-                  <option value="7">July</option><option value="8">August</option>
-                  <option value="9">September</option><option value="10">October</option>
-                  <option value="11">November</option><option value="12">December</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label class="form-label">Day of Month <span style="color:var(--text-dim);font-size:0.72rem;font-style:italic;text-transform:none;letter-spacing:0;">(optional)</span></label>
-                <input type="number" id="se-day" min="1" max="31" placeholder="e.g. 31">
-              </div>
+              <div class="form-group"><label class="form-label">Month</label><select id="se-month"><option value="1">January</option><option value="2">February</option><option value="3">March</option><option value="4">April</option><option value="5">May</option><option value="6">June</option><option value="7">July</option><option value="8">August</option><option value="9">September</option><option value="10">October</option><option value="11">November</option><option value="12">December</option></select></div>
+              <div class="form-group"><label class="form-label">Day <span class="se-hint">(optional)</span></label><input type="number" id="se-day" min="1" max="31"></div>
             </div>
-            <p style="color:var(--text-dim);font-size:0.82rem;font-style:italic;margin-top:0.25rem;">Shows in carousel: 2 weeks before this month starts through 1 week before month ends. If a day is set, shows 1 month before that day.</p>
+            <p class="se-note">Shows from 2 weeks before this month starts through 1 week before it ends. With a day set, it shows 1 month before that day.</p>
           </div>
-
-          <!-- Range fields -->
           <div id="se-range-fields" style="display:none;">
             <div class="form-row">
-              <div class="form-group"><label class="form-label">From</label>
-                <div style="display:flex;gap:6px;"><select id="se-rs-m"><option value="1">January</option><option value="2">February</option><option value="3">March</option><option value="4">April</option><option value="5">May</option><option value="6">June</option><option value="7">July</option><option value="8">August</option><option value="9">September</option><option value="10">October</option><option value="11">November</option><option value="12">December</option></select><input type="number" id="se-rs-d" min="1" max="31" style="width:80px;"></div></div>
-              <div class="form-group"><label class="form-label">To</label>
-                <div style="display:flex;gap:6px;"><select id="se-re-m"><option value="1">January</option><option value="2">February</option><option value="3">March</option><option value="4">April</option><option value="5">May</option><option value="6">June</option><option value="7">July</option><option value="8">August</option><option value="9">September</option><option value="10">October</option><option value="11">November</option><option value="12">December</option></select><input type="number" id="se-re-d" min="1" max="31" style="width:80px;"></div></div>
+              <div class="form-group"><label class="form-label">From</label><div class="se-pair"><select id="se-rs-m"><option value="1">January</option><option value="2">February</option><option value="3">March</option><option value="4">April</option><option value="5">May</option><option value="6">June</option><option value="7">July</option><option value="8">August</option><option value="9">September</option><option value="10">October</option><option value="11">November</option><option value="12">December</option></select><input type="number" id="se-rs-d" min="1" max="31"></div></div>
+              <div class="form-group"><label class="form-label">To</label><div class="se-pair"><select id="se-re-m"><option value="1">January</option><option value="2">February</option><option value="3">March</option><option value="4">April</option><option value="5">May</option><option value="6">June</option><option value="7">July</option><option value="8">August</option><option value="9">September</option><option value="10">October</option><option value="11">November</option><option value="12">December</option></select><input type="number" id="se-re-d" min="1" max="31"></div></div>
             </div>
-            <p style="color:var(--text-dim);font-size:0.82rem;font-style:italic;margin-top:0.25rem;">Shows in the carousel from the first date through the second date, every year.</p>
+            <p class="se-note">Shows from the first date through the second date, every year.</p>
           </div>
-
-          <!-- Exact date fields -->
           <div id="se-exact-fields" style="display:none;">
-            <div class="form-group">
-              <label class="form-label">Exact Date</label>
-              <input type="date" id="se-exact-date">
-            </div>
-            <p style="color:var(--text-dim);font-size:0.82rem;font-style:italic;margin-top:0.25rem;">Shows in carousel exactly 1 month before this date.</p>
+            <div class="form-group"><label class="form-label">Exact Date</label><input type="date" id="se-exact-date"></div>
+            <p class="se-note">Shows exactly 1 month before this date.</p>
           </div>
-        </div>
-
-        <!-- Recurrence -->
-        <div class="form-group" style="grid-column:1/-1;">
-          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
-            <input type="checkbox" id="se-recurring" style="accent-color:var(--gold);width:17px;height:17px;">
-            <span style="font-family:Cinzel,serif;font-size:0.72rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--gold);">Repeats Every Year</span>
-          </label>
-          <p style="font-size:0.8rem;color:var(--text-dim);margin-top:4px;">Uncheck for one-time events (concerts, special occasions). Checked events roll back automatically each year.</p>
-        </div>
-
-        <!-- Always On override -->
-        <div class="form-group" style="grid-column:1/-1;border-top:1px solid var(--border);padding-top:0.85rem;">
-          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
-            <input type="checkbox" id="se-always-on" style="accent-color:var(--gold);width:17px;height:17px;" onchange="seToggleAlwaysOn()">
-            <span style="font-family:Cinzel,serif;font-size:0.72rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--gold);">Always Show in Carousel</span>
-          </label>
-          <p style="font-size:0.8rem;color:var(--text-dim);margin-top:4px;">Override all date logic — this event stays in the carousel year-round until you turn it off. Use for ongoing series like <em>Belladonna Through the Decades</em>.</p>
-          <div id="se-always-on-off-wrap" style="display:none;margin-top:0.6rem;">
-            <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
-              <input type="checkbox" id="se-always-off" style="accent-color:#8B3A2A;width:17px;height:17px;">
-              <span style="font-family:Cinzel,serif;font-size:0.72rem;letter-spacing:0.12em;text-transform:uppercase;color:#C0654F;">Temporarily Hidden</span>
-            </label>
-            <p style="font-size:0.8rem;color:var(--text-dim);margin-top:4px;">Check to hide it from the carousel right now without deleting it or changing its settings.</p>
-          </div>
+          <div class="se-sep"></div>
+          <label class="se-check"><input type="checkbox" id="se-always-on" onchange="seToggleAlwaysOn()"><span>Always show in carousel <em>(year-round, ignores the dates above)</em></span></label>
+          <div id="se-always-on-off-wrap" style="display:none;"><label class="se-check se-red"><input type="checkbox" id="se-always-off"><span>Temporarily hidden</span></label></div>
         </div>
       </div>
     </div>
@@ -2610,16 +2604,12 @@ async function renderMovies() {
     const img = m.poster
       ? `<div style="aspect-ratio:4/5;width:100%;overflow:hidden;position:relative;background:var(--surface2);"><img src="${esc(m.poster)}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;" alt=""></div>`
       : `<div style="aspect-ratio:4/5;width:100%;background:var(--surface2);display:flex;align-items:center;justify-content:center;"><span style="font-size:2.5rem;opacity:0.3;">🎬</span></div>`;
-    const meta = [m.year, m.runtime ? m.runtime + ' min' : ''].filter(Boolean).join(' · ');
+    const onMenu = m.published === true;
     return `<div class="category-card" style="padding:0;overflow:hidden;cursor:pointer;" onclick="openMovieModal('${m.id}')">${img}
       <div class="cat-pad" style="padding:0.8rem 1rem 1rem;">
-        <div class="category-card-name" style="margin-bottom:0.3rem;">${esc(m.title || '(untitled)')}</div>
+        <div class="category-card-name" style="margin-bottom:0.5rem;">${esc(m.title || '(untitled)')}</div>
+        <div class="card-status ${onMenu ? 'on' : 'off'}">${onMenu ? 'On menu' : 'Hidden from menu'}</div>
         ${cfoot(`openMovieModal('${m.id}')`,'movie',m.id)}
-        ${meta ? `<div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:0.4rem;">${esc(meta)}</div>` : ''}
-        ${m.notes ? `<div style="font-size:0.78rem;color:var(--text-dim);font-style:italic;margin-bottom:0.4rem;">${esc(m.notes)}</div>` : ''}
-        ${movieLinksOf(m).length ? `<div style="font-size:0.75rem;margin-bottom:0.4rem;">${movieLinksOf(m).map((l, i) => `<a href="${esc(l.url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="color:var(--gold);margin-right:8px;">${esc(l.label || ('Link ' + (i + 1)))} ↗</a>`).join('')}</div>` : ''}
-        ${(m.pairs || []).length ? `<div style="font-size:0.75rem;color:var(--gold);margin-bottom:0.4rem;">Pairs with: ${(m.pairs || []).map(p => esc(p.name)).join(', ')}</div>` : ''}
-        ${m.published === true ? `<span class="badge badge-type">On menu</span>` : `<span class="badge" style="background:rgba(120,120,120,0.15);color:var(--text-dim);">Hidden from menu</span>`}
       </div></div>`;
   }).join('');
 }
@@ -3084,12 +3074,7 @@ function liveCategoryCardHTML(cat) {
     ${bannerHtml}
     <div class="cat-body">
     <div class="category-card-name" style="margin-bottom:0.35rem;">${esc(cat.name)}</div>
-    <div style="display:flex; flex-direction:column; align-items:flex-start; gap:5px; margin-bottom:0.5rem;">
-      <span style="font-family:'Cinzel',serif;font-size:0.55rem;letter-spacing:0.1em;text-transform:uppercase;background:rgba(201,168,76,0.15);border:1px solid rgba(201,168,76,0.4);color:var(--gold);padding:2px 7px;border-radius:3px;white-space:nowrap;">Live · ${ownerLabel}</span>
-      ${!cat.venueMenuShow
-        ? `<span style="font-family:'Cinzel',serif;font-size:0.55rem;letter-spacing:0.1em;text-transform:uppercase;background:rgba(120,120,120,0.15);border:1px solid rgba(150,150,150,0.35);color:var(--text-dim);padding:2px 7px;border-radius:3px;white-space:nowrap;">Not Published</span>`
-        : ''}
-    </div>
+    <div class="card-status ${cat.venueMenuShow ? 'on' : 'off'}">${cat.venueMenuShow ? 'Published' : 'Not published'}</div>
     <div class="category-card-actions">
       <button class="btn btn-sm btn-ghost" onclick="openLiveCategoryInfo('${cat._liveKind}','${cat._liveId}')">Edit</button>
       ${carBtn('live',cat._liveKind + ':' + cat._liveId)}
@@ -5704,7 +5689,7 @@ function carTab(which) {
   const allPane = document.getElementById('car-pane-all'); if (allPane) allPane.style.display = which === 'all' ? '' : 'none';
   const allPill = document.getElementById('car-pill-all'); if (allPill) allPill.classList.toggle('active', which === 'all');
   if (which === 'picks') renderCarPicks();
-  if (which === 'all') renderCarAll();
+  if (which === 'all') loadCarPicks().then(renderCarAll);
 }
 let carAllMode = 'all';
 function carAllFilter(m) {
@@ -5713,6 +5698,7 @@ function carAllFilter(m) {
   renderCarAll();
 }
 function seEvMonth(ev) {
+  if (ev.evMonth) return Number(ev.evMonth);
   if (ev.dateType === 'exact') return ev.exactDate ? Number(ev.exactDate.split('-')[1]) : 0;
   if (ev.dateType === 'range') return Number(ev.rStartM) || 0;
   return Number(ev.month) || 0;
@@ -5733,7 +5719,8 @@ function seInNext3(ev) {
 function renderCarAll() {
   const box = document.getElementById('car-all-list'), empty = document.getElementById('car-all-empty');
   if (!box) return;
-  let evs = (typeof seasonalEvents !== 'undefined' ? seasonalEvents : []).filter(ev => !ev.pending);
+  let evs = (typeof seasonalEvents !== 'undefined' ? seasonalEvents : []).filter(ev => !ev.pending).map(ev => Object.assign({}, ev, { _pick: false }))
+    .concat((typeof carPicks !== 'undefined' ? carPicks : []).map(ev => Object.assign({}, ev, { _pick: true })));
   if (carAllMode === 'live') evs = evs.filter(seIsActive);
   else if (carAllMode === 'next3') evs = evs.filter(seInNext3);
   if (!evs.length) { box.innerHTML = ''; empty.style.display = 'block'; return; }
@@ -5747,7 +5734,8 @@ function renderCarAll() {
       const img = ev.image
         ? '<img src="' + esc(ev.image) + '" alt="" loading="lazy" style="width:100%;aspect-ratio:4/5;object-fit:cover;display:block;background:#000;">'
         : '<div style="width:100%;aspect-ratio:4/5;display:flex;align-items:center;justify-content:center;background:#000;color:var(--text-dim);font-size:0.75rem;text-align:center;padding:8px;">No image</div>';
-      return '<div onclick="openSeasonalModal(\'' + String(ev.id).replace(/'/g, "\\'") + '\')" style="cursor:pointer;border:1px solid ' + (live ? 'rgba(42,107,58,0.7)' : 'var(--border)') + ';border-radius:6px;overflow:hidden;background:var(--surface2);position:relative;">'
+      return '<div onclick="openSeasonalModal(\'' + String(ev.id).replace(/'/g, "\\'") + '\'' + (ev._pick ? ',true' : '') + ')" style="cursor:pointer;border:1px solid ' + (live ? 'rgba(42,107,58,0.7)' : 'var(--border)') + ';border-radius:6px;overflow:hidden;background:var(--surface2);position:relative;">'
+        + (ev._pick ? '<span style="position:absolute;top:6px;left:6px;background:rgba(0,0,0,0.75);border:1px solid var(--gold);color:var(--gold);padding:1px 8px;border-radius:3px;font-size:0.62rem;font-family:Cinzel,serif;letter-spacing:0.08em;text-transform:uppercase;">Pick</span>' : '')
         + (live ? '<span style="position:absolute;top:6px;right:6px;background:rgba(42,107,58,0.9);color:#fff;padding:1px 8px;border-radius:3px;font-size:0.62rem;font-family:Cinzel,serif;letter-spacing:0.08em;text-transform:uppercase;">Live</span>' : '')
         + img
         + '<div style="padding:6px 8px;font-family:Cinzel,serif;font-size:0.68rem;letter-spacing:0.05em;text-transform:uppercase;color:var(--text);">' + esc(ev.name) + '</div></div>';
@@ -5774,7 +5762,7 @@ async function loadCarPicks() {
   try { const snap = await getDoc(doc(db, 'venueMenuConfig', 'mainMenu')); carPicks = snap.exists() ? (snap.data().carouselPicks || []) : []; carPicksLoaded = true; }
   catch (e) { carPicks = []; }
 }
-async function persistCarPicks() { await setDoc(doc(db, 'venueMenuConfig', 'mainMenu'), { carouselPicks: carPicks }, { merge: true }); if (typeof mmData === 'object' && mmData) mmData.carouselPicks = carPicks; }
+async function persistCarPicks() { await setDoc(doc(db, 'venueMenuConfig', 'mainMenu'), { carouselPicks: carPicks }, { merge: true }); if (typeof mmData === 'object' && mmData) mmData.carouselPicks = carPicks; carRefreshPanes(); }
 
 function carModalRef(kind) {
   if (kind === 'cat') return editingCatIndex >= 0 ? ['cat', editingCatIndex] : null;
@@ -5824,7 +5812,7 @@ async function carouselAdd(type, ref) {
   if (!name) return;
   if (carPicks.some(p => p.srcType === type && (p.srcName || p.name) === name)) { toast('Already in Carousel Picks', 'error'); return; }
   carPicks.push({ id: 'cp_' + Date.now(), name, image, desc, srcType: type, mode: 'off', dateType: 'month', month: new Date().getMonth() + 1, day: null, exactDate: '', recurring: true, alwaysOn: false, alwaysOff: false, pending: true, srcName: name });
-  try { await persistCarPicks(); toast('Sent to Carousel Picks', 'success'); } catch (e) { carPicks.pop(); toast('Save failed: ' + e.message, 'error'); }
+  try { await persistCarPicks(); toast('Sent to Carousel Picks', 'success'); carRefreshPanes(); } catch (e) { carPicks.pop(); toast('Save failed: ' + e.message, 'error'); }
   carRerenderCards();
 }
 async function renderCarPicks() {
@@ -5938,6 +5926,11 @@ async function loadSeasonalEvents() {
 // ── SAVE TO FIREBASE ──
 async function persistSeasonalEvents() {
   await setDoc(doc(db, 'venueMenuConfig', 'seasonalEvents'), { events: seasonalEvents });
+  carRefreshPanes();
+}
+function carRefreshPanes() {
+  try { renderSeasonalAdmin(); } catch (e) {}
+  ['car-pane-picks:renderCarPicks', 'car-pane-all:renderCarAll'].forEach(x => { const [id, fn] = x.split(':'); const el = document.getElementById(id); if (el && el.style.display !== 'none') { try { window[fn] ? window[fn]() : eval(fn)(); } catch (e) {} } });
 }
 
 // ── VISIBILITY LOGIC ──
@@ -6099,6 +6092,9 @@ function openSeasonalModal(id, pick) {
 
   const dtype = ev ? (ev.dateType || 'month') : 'month';
   setSeasonalDateType(dtype);
+  document.getElementById('se-ev-month').value = ev ? (seEvMonth(ev) || new Date().getMonth() + 1) : new Date().getMonth() + 1;
+  document.getElementById('se-ev-day').value = ev ? (ev.evDay || '') : '';
+  seImgPrev();
 
   if (dtype === 'month') {
     document.getElementById('se-month').value = ev ? (ev.month || 1) : new Date().getMonth()+1;
@@ -6113,6 +6109,10 @@ function openSeasonalModal(id, pick) {
   document.getElementById('seasonal-modal').classList.add('open');
 }
 
+function seImgPrev() {
+  const u = (document.getElementById('se-image').value || '').trim(), box = document.getElementById('se-img-prev');
+  if (box) box.innerHTML = u ? '<img src="' + esc(u) + '" alt="">' : '<div>4:5 preview</div>';
+}
 function closeSeasonalModal() {
   document.getElementById('seasonal-modal').classList.remove('open');
   seEditingId = null;
@@ -6137,6 +6137,8 @@ async function saveSeasonalEvent() {
     alwaysOn:   document.getElementById('se-always-on').checked,
     alwaysOff:  document.getElementById('se-always-off').checked,
     dateType:   seCurrentDateType,
+    evMonth:    Number(document.getElementById('se-ev-month').value) || null,
+    evDay:      Number(document.getElementById('se-ev-day').value) || null,
   };
 
   if (seCurrentDateType === 'month') {
@@ -6974,7 +6976,7 @@ window.deletePortalCollaborator = async function(id) {
 };
 
 Object.assign(window, {
-  carTab, carAllFilter, carGoPicks, carFromModal, setCatSize, setCatStyle, closeCategoryDetail, openNightFromCat, openCategoryDetail, carouselAdd,
+  carTab, carAllFilter, seImgPrev, carGoPicks, carFromModal, setCatSize, setCatStyle, closeCategoryDetail, openNightFromCat, openCategoryDetail, carouselAdd,
   liveImgPreview,
   toggleNavMenu, closeNavMenu,
   renderMovies, openMovieModal, addMovieLinkRow, closeMovieModal, saveMovie, deleteMovie, openMovieBulk, closeMovieBulk, saveMovieBulk,
