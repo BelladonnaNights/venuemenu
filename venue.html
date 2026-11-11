@@ -2049,6 +2049,7 @@ async function loadSeasonalEvents() {
 
 function seIsActive(ev) {
   if (ev.pending) return false;
+  if (ev.hiddenYear && ev.hiddenYear === new Date().getFullYear()) return false;
   if (ev.alwaysOn) return !ev.alwaysOff;
   const now = new Date();
   if (ev.dateType === 'range') {
@@ -2414,8 +2415,9 @@ async function loadMenuConfig() {
           ? '<img class="menu-card-img" src="' + escHtml(card.image) + '" alt="' + escHtml(card.title) + '" loading="lazy" onerror="this.style.display=\'none\'; this.nextSibling.style.display=\'flex\';">'
           : '';
         const phStyle    = card.image ? 'display:none;' : '';
-        const destView   = card.venueView || card.id;
-        const safeFilter = (card.venueFilterType || '').replace(/'/g, "\\'");
+        const isMovieCard = /movie/i.test(card.title || '') && !/themed/i.test(card.title || '');
+        const destView   = isMovieCard ? 'movies' : (card.venueView || card.id);
+        const safeFilter = isMovieCard ? '' : (card.venueFilterType || '').replace(/'/g, "\\'");
         const filterArg  = safeFilter ? (", '" + safeFilter + "'") : '';
         return '<div class="menu-card" onclick="navigateTo(\'' + destView + '\'' + filterArg + ')">'
           + imgEl
