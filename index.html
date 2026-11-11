@@ -1179,6 +1179,8 @@
       <button class="filter-chip" onclick="setTriviaTierFilter('evergreen-topic', event)">Evergreen Trivia</button>
       <button class="filter-chip" onclick="setTriviaTierFilter('feature-trivia', event)">Feature Trivia</button>
       <button class="filter-chip" onclick="setTriviaTierFilter('coordinating-music', event)">Music Trivia</button>
+      <button class="filter-chip" onclick="setTriviaTierFilter('book-trivia', event)">Book Trivia</button>
+      <label id="trivia-exbook-wrap" style="display:none;align-items:center;gap:6px;margin-left:10px;font-size:0.8rem;color:var(--text-dim);cursor:pointer;"><input type="checkbox" id="trivia-exbook" onchange="setTriviaExBook(this.checked)" style="accent-color:var(--gold);"> Exclude Book Trivia</label>
     </div>
     <div id="active-filters-bar-trivia" class="active-filters-bar"></div>
     <div id="trivia-grid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:1.25rem;"></div>
@@ -2796,7 +2798,7 @@ function isPubItem(p) { return !!(p && (p.published || p.publishedHost || (p.pub
 function toggleSortAZ(tabKey){
   pubFirstState[tabKey] = !pubFirstState[tabKey];
   const btn = document.getElementById(tabKey+'-az-btn');
-  if(btn) { btn.classList.toggle('btn-ghost', !pubFirstState[tabKey]); btn.style.color = pubFirstState[tabKey] ? 'var(--gold)' : ''; }
+  if(btn) { btn.classList.toggle('btn-ghost', !pubFirstState[tabKey]); btn.style.color = pubFirstState[tabKey] ? '#000' : ''; }
   const renderFns = { library: renderLibrary, trivia: renderTrivia, bingo: renderBingo, minigames: renderMiniGames, singalongs: renderSingAlongs, nights: renderNights };
   if(renderFns[tabKey]) renderFns[tabKey]();
 }
@@ -4649,8 +4651,21 @@ async function saveThemeEdit(i, oldTheme) {
 // ═══════════════════════════════════════════════
 
 let activeTriviaTierFilter = '';
+let triviaExcludeBook = false;
+function isBookTriviaCat(c) {
+  return String(c.type || '').toLowerCase().split(',').map(t => t.trim()).includes('book trivia') || c._rawType === 'book' || tagsArray(c.tags).map(t => String(t).trim().toLowerCase()).includes('book trivia');
+}
+function setTriviaExBook(v) { triviaExcludeBook = !!v; renderTrivia(); }
+function triviaTierMatch(c) {
+  if (!activeTriviaTierFilter) return true;
+  if (activeTriviaTierFilter === 'book-trivia') return isBookTriviaCat(c);
+  if (c.plannerTier !== activeTriviaTierFilter) return false;
+  if (activeTriviaTierFilter === 'evergreen-topic' && triviaExcludeBook && isBookTriviaCat(c)) return false;
+  return true;
+}
 function setTriviaTierFilter(tier, evt){
   activeTriviaTierFilter = tier;
+  const w = document.getElementById('trivia-exbook-wrap'); if (w) w.style.display = tier === 'evergreen-topic' ? 'flex' : 'none';
   document.querySelectorAll('#trivia-tier-pills .filter-chip').forEach(b=>b.classList.remove('active'));
   if(evt && evt.target) evt.target.classList.add('active');
   renderTrivia();
@@ -4666,13 +4681,13 @@ function renderTrivia() {
     const catTags = tagsArray(c.tags).map(t=>t.trim()).filter(Boolean);
     return [...activeTriviaFilters].every(f => catTags.includes(f));
   });
-  if (activeTriviaTierFilter) items = items.filter(c => c.plannerTier === activeTriviaTierFilter);
+  if (activeTriviaTierFilter) items = items.filter(triviaTierMatch);
   if (triviaSearchQ) items = items.filter(c => c.name.toLowerCase().includes(triviaSearchQ) || (c.theme||'').toLowerCase().includes(triviaSearchQ) || (c.shows||[]).some(s=>s.toLowerCase().includes(triviaSearchQ)));
   if (hasSidebarFilters()) items = items.filter(catMatchesSidebarFilters);
   items = maybeSortAZ(items, 'trivia', 'name');
   let liveItems = liveTriviaCats;
   if (triviaSearchQ) liveItems = liveItems.filter(c => c.name.toLowerCase().includes(triviaSearchQ) || (c.altName||'').toLowerCase().includes(triviaSearchQ) || (c.shows||[]).some(s=>s.toLowerCase().includes(triviaSearchQ)));
-  if (activeTriviaTierFilter) liveItems = liveItems.filter(c => c.plannerTier === activeTriviaTierFilter);
+  if (activeTriviaTierFilter) liveItems = liveItems.filter(triviaTierMatch);
   empty.style.display = (items.length === 0 && liveItems.length === 0) ? 'block' : 'none';
   const htmlA = items.map(c => {
     // Trivia's own banner (bgImage, uploaded in Trivia Admin) takes priority
@@ -6988,7 +7003,7 @@ window.deletePortalCollaborator = async function(id) {
 };
 
 Object.assign(window, {
-  carTab, carAllFilter, seImgPrev, catImgCheck, carGoPicks, carFromModal, setCatSize, setCatStyle, closeCategoryDetail, openNightFromCat, openCategoryDetail, carouselAdd,
+  carTab, carAllFilter, setTriviaExBook, seImgPrev, catImgCheck, carGoPicks, carFromModal, setCatSize, setCatStyle, closeCategoryDetail, openNightFromCat, openCategoryDetail, carouselAdd,
   liveImgPreview,
   toggleNavMenu, closeNavMenu,
   renderMovies, openMovieModal, addMovieLinkRow, closeMovieModal, saveMovie, deleteMovie, openMovieBulk, closeMovieBulk, saveMovieBulk,
