@@ -997,6 +997,10 @@
   #trivia-grid .cat-banner-wrap img, #bingo-grid .cat-banner-wrap img { object-fit: contain !important; background: #000; }
   #trivia-grid .category-card-name, #bingo-grid .category-card-name { min-height: 2.7em; display: flex; align-items: center; justify-content: center; }
   #trivia-grid.tiles .card-status, #bingo-grid.tiles .card-status { display: none; }
+  .card-status { width: auto !important; max-width: 100%; white-space: nowrap; overflow: hidden; padding: 4px 12px !important; font-size: 8.5px !important; letter-spacing: .08em !important; display: block; margin-left: auto; margin-right: auto; text-align: center; }
+  .cfoot .car-btn, .category-card-actions .car-btn { flex: 0 0 38px !important; font-size: 15px !important; line-height: 1; padding: 5px 0 !important; }
+  #trivia-grid .cat-banner-wrap, #bingo-grid .cat-banner-wrap { background: #000 !important; }
+  #trivia-grid .cat-banner-wrap span, #bingo-grid .cat-banner-wrap span, .gold-name { font-family: 'Bebas Neue', sans-serif !important; color: #c9a84c !important; font-size: 1.9rem !important; letter-spacing: .06em !important; line-height: 1.05; text-align: center; text-transform: uppercase; padding: 0 .8rem; opacity: 1 !important; }
 
   /* seasonal event pop-up */
   .se-modal { width: min(920px, 96vw); max-width: 920px !important; max-height: 92vh; overflow-y: auto; overflow-x: hidden; }
@@ -2190,6 +2194,7 @@
             <p class="se-note">Shows exactly 1 month before this date.</p>
           </div>
           <div class="se-sep"></div>
+          <label class="se-check"><input type="checkbox" id="se-hide-year"><span>Hide this year <em>(skips it this year only, back next year)</em></span></label>
           <label class="se-check"><input type="checkbox" id="se-always-on" onchange="seToggleAlwaysOn()"><span>Always show in carousel <em>(year-round, ignores the dates above)</em></span></label>
           <div id="se-always-on-off-wrap" style="display:none;"><label class="se-check se-red"><input type="checkbox" id="se-always-off"><span>Temporarily hidden</span></label></div>
         </div>
@@ -2608,7 +2613,7 @@ async function renderMovies() {
     return `<div class="category-card" style="padding:0;overflow:hidden;cursor:pointer;" onclick="openMovieModal('${m.id}')">${img}
       <div class="cat-pad" style="padding:0.8rem 1rem 1rem;">
         <div class="category-card-name" style="margin-bottom:0.5rem;">${esc(m.title || '(untitled)')}</div>
-        <div class="card-status ${onMenu ? 'on' : 'off'}">${onMenu ? 'On menu' : 'Hidden from menu'}</div>
+        <div class="card-status ${onMenu ? 'on' : 'off'}">${onMenu ? 'On menu' : 'Hidden'}</div>
         ${cfoot(`openMovieModal('${m.id}')`,'movie',m.id)}
       </div></div>`;
   }).join('');
@@ -2821,7 +2826,7 @@ function renderBingo() {
   const htmlA = items.map(c => {
     const miniSrc = c.miniGameImage || (c.images && c.images.p45) || c.bgImage || c.bannerData || null;
     const bannerHtml = catStyleVal === 'tiles' ? catTileA(c.name, !(c.published || (c.publishedTabs||[]).length)) : miniSrc
-      ? `<div class="cat-banner-wrap"><img src="${miniSrc}" alt=""></div>`
+      ? `<div class="cat-banner-wrap"><img src="${miniSrc}" alt="" data-name="${esc(c.name)}" onload="catImgCheck(this)" onerror="catImgCheck(this,1)"></div>`
       : `<div class="cat-banner-wrap"><span>${esc(c.name)}</span></div>`;
     const idx = categories.indexOf(c);
     return `<div class="category-card" style="cursor:pointer;" onclick="editCategory(${idx})">
@@ -3067,7 +3072,7 @@ function liveCategoryCardHTML(cat) {
   // banner source, this just makes it look the same size here as it does there.
   const liveSrc = cat.miniGameImage || cat.bannerData;
   const bannerHtml = catStyleVal === 'tiles' ? catTileA(cat.name, !cat.venueMenuShow) : liveSrc
-    ? `<div class="cat-banner-wrap"><img src="${liveSrc}" alt=""></div>`
+    ? `<div class="cat-banner-wrap"><img src="${liveSrc}" alt="" data-name="${esc(cat.name)}" onload="catImgCheck(this)" onerror="catImgCheck(this,1)"></div>`
     : `<div class="cat-banner-wrap"><span>${esc(cat.name)}</span></div>`;
   const ownerLabel = cat._liveKind === 'bingo' ? 'Bingo Admin' : 'Trivia Admin';
   return `<div class="category-card">
@@ -4675,7 +4680,7 @@ function renderTrivia() {
     // portrait crop Mini Games/Sing-Alongs cards use.
     const miniSrc = c.miniGameImage || (c.images && c.images.p45) || c.bgImage || c.bannerData || null;
     const bannerHtml = catStyleVal === 'tiles' ? catTileA(c.name, !(c.published || (c.publishedTabs||[]).length)) : miniSrc
-      ? `<div class="cat-banner-wrap"><img src="${miniSrc}" alt=""></div>`
+      ? `<div class="cat-banner-wrap"><img src="${miniSrc}" alt="" data-name="${esc(c.name)}" onload="catImgCheck(this)" onerror="catImgCheck(this,1)"></div>`
       : `<div class="cat-banner-wrap"><span>${esc(c.name)}</span></div>`;
     const idx = categories.indexOf(c);
     return `<div class="category-card" style="cursor:pointer;" onclick="editCategory(${idx})">
@@ -5797,10 +5802,14 @@ function cfoot(editJs, type, ref, grab) {
 function catTileA(name, np) { return `<div class="cat-tile-a${np ? ' np' : ''}"><span>${esc(name)}</span></div>`; }
 let catLoaded = false;
 function ensureCatDisplay() { if (catLoaded) return; catLoaded = true; loadCatDisplay(); }
+function catImgCheck(img, bad) {
+  const r = img.naturalWidth && img.naturalHeight ? img.naturalWidth / img.naturalHeight : 0;
+  if (bad || !r || Math.abs(r - 0.8) > 0.06) { const w = img.parentNode; if (w) w.innerHTML = '<span class="gold-name">' + (img.getAttribute('data-name') || '') + '</span>'; }
+}
 function carBtn(type, ref) {
   const nm = carSrcName(type, ref);
-  if (nm && carPicks.some(p => p.srcType === type && (p.srcName || p.name) === nm)) return `<button class="btn btn-sm cp-in car-btn" onclick="event.stopPropagation();carGoPicks()">✓ In Carousel Picks</button>`;
-  return `<button class="btn btn-sm btn-ghost car-btn" onclick="event.stopPropagation();carouselAdd('${type}','${String(ref).replace(/'/g, "\\'")}')">+ Carousel</button>`;
+  if (nm && carPicks.some(p => p.srcType === type && (p.srcName || p.name) === nm)) return `<button class="btn btn-sm cp-in car-btn" title="In Carousel Picks" onclick="event.stopPropagation();carGoPicks()">✓</button>`;
+  return `<button class="btn btn-sm btn-ghost car-btn" title="Add to carousel" onclick="event.stopPropagation();carouselAdd('${type}','${String(ref).replace(/'/g, "\\'")}')">+</button>`;
 }
 async function carouselAdd(type, ref) {
   await loadCarPicks();
@@ -5937,6 +5946,7 @@ function carRefreshPanes() {
 // Returns true if this event should currently appear in the "Coming Up" carousel
 function seIsActive(ev) {
   if (ev.pending) return false;
+  if (ev.hiddenYear && ev.hiddenYear === new Date().getFullYear()) return false;
   if (ev.alwaysOn) return !ev.alwaysOff; // year-round override
   const now = new Date();
   if (ev.dateType === 'range') {
@@ -6095,6 +6105,7 @@ function openSeasonalModal(id, pick) {
   document.getElementById('se-ev-month').value = ev ? (seEvMonth(ev) || new Date().getMonth() + 1) : new Date().getMonth() + 1;
   document.getElementById('se-ev-day').value = ev ? (ev.evDay || '') : '';
   seImgPrev();
+  document.getElementById('se-hide-year').checked = !!(ev && ev.hiddenYear === new Date().getFullYear());
 
   if (dtype === 'month') {
     document.getElementById('se-month').value = ev ? (ev.month || 1) : new Date().getMonth()+1;
@@ -6139,6 +6150,7 @@ async function saveSeasonalEvent() {
     dateType:   seCurrentDateType,
     evMonth:    Number(document.getElementById('se-ev-month').value) || null,
     evDay:      Number(document.getElementById('se-ev-day').value) || null,
+    hiddenYear: document.getElementById('se-hide-year').checked ? new Date().getFullYear() : null,
   };
 
   if (seCurrentDateType === 'month') {
@@ -6976,7 +6988,7 @@ window.deletePortalCollaborator = async function(id) {
 };
 
 Object.assign(window, {
-  carTab, carAllFilter, seImgPrev, carGoPicks, carFromModal, setCatSize, setCatStyle, closeCategoryDetail, openNightFromCat, openCategoryDetail, carouselAdd,
+  carTab, carAllFilter, seImgPrev, catImgCheck, carGoPicks, carFromModal, setCatSize, setCatStyle, closeCategoryDetail, openNightFromCat, openCategoryDetail, carouselAdd,
   liveImgPreview,
   toggleNavMenu, closeNavMenu,
   renderMovies, openMovieModal, addMovieLinkRow, closeMovieModal, saveMovie, deleteMovie, openMovieBulk, closeMovieBulk, saveMovieBulk,
