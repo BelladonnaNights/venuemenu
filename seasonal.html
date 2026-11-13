@@ -131,7 +131,7 @@ function draw(){
   $('#grid').innerHTML=nights.map(n=>`<div class="card" data-open="${esc(n._id)}" tabindex="0" role="button" aria-label="More about ${esc(n.name)}">
     ${posterTag(n,'poster')}
     <div class="body"><div class="when">${esc(whenOf(n))}</div><h2>${esc(n.name)}</h2>
-    ${n.description?`<p>${esc(teaser(n.description))}</p>`:''}
+    ${n.seasonalDesc?`<p>${esc(teaser(n.seasonalDesc))}</p>`:''}
     ${n.seasonalFit?`<div class="fit"><b>Great for:</b> ${esc(n.seasonalFit)}</div>`:''}
     <span class="btn">More info</span></div></div>`).join('');
 }
@@ -140,7 +140,7 @@ function openNight(id){
   $('#modal').innerHTML=`<div class="mgrid">
     <div class="mposter">${posterTag(n,'mimg',n.bannerData?'data-zoom="1"':'')}</div>
     <div class="minfo"><div class="when">${esc(whenOf(n))}</div><h3>${esc(n.name)}</h3>
-    ${n.description?`<div class="desc">${esc(n.description)}</div>`:''}
+    ${n.seasonalDesc?`<div class="desc">${esc(n.seasonalDesc)}</div>`:''}
     ${n.seasonalFit?`<div class="fit"><b>Great for:</b> ${esc(n.seasonalFit)}</div>`:''}
     <div class="fit"><b>Includes:</b> A Belladonna host, the music and sound, themed games, and promo graphics for your socials.</div>
     <div class="acts"><button class="btn ghost" data-x="1">Back</button><a class="btn" href="${BOOK_PAGE}?event=${encodeURIComponent(n._id)}">Book this night</a></div></div></div>`;
