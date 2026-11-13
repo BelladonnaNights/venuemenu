@@ -1901,7 +1901,7 @@
               <input type="checkbox" id="night-published-seasonal" style="accent-color:var(--gold); width:18px; height:18px; cursor:pointer; flex-shrink:0;">
               <span style="font-family:'Cinzel',serif; font-size:0.72rem; letter-spacing:0.14em; text-transform:uppercase; color:var(--gold);">Published to Seasonal Page</span>
             </label>
-            <p style="font-size:0.8rem; color:var(--text-dim); margin:4px 0 0.7rem;">The public Seasonal Nights landing page (no sign-in). It shows this night's banner image as the poster and the Venue Description below. Visitors click the poster for more info, then go to the booking page.</p>
+            <p style="font-size:0.8rem; color:var(--text-dim); margin:4px 0 0.7rem;">The public Seasonal Nights landing page (no sign-in). It shows this night's banner image as the poster and the Seasonal Page Description below (not the Venue Description). Visitors click the poster for more info, then go to the booking page.</p>
             <div class="form-row">
               <div class="form-group">
                 <label class="form-label">Seasonal Page: Date <span style="color:var(--text-dim);font-size:0.72rem;font-style:italic;font-family:'Crimson Text',serif;text-transform:none;letter-spacing:0;">— also sorts the page</span></label>
@@ -1911,6 +1911,10 @@
                 <label class="form-label">Seasonal Page: Date Line <span style="color:var(--text-dim);font-size:0.72rem;font-style:italic;font-family:'Crimson Text',serif;text-transform:none;letter-spacing:0;">— optional, replaces the date shown</span></label>
                 <input type="text" id="night-seasonal-when">
               </div>
+            </div>
+            <div class="form-group" style="margin-top:0.6rem;">
+              <label class="form-label">Seasonal Page: Description <span style="color:var(--text-dim);font-size:0.72rem;font-style:italic;font-family:'Crimson Text',serif;text-transform:none;letter-spacing:0;">— shown to the public. Separate from the Venue Description above</span></label>
+              <textarea id="night-seasonal-desc" rows="4" style="resize:vertical;line-height:1.5;"></textarea>
             </div>
             <div class="form-group" style="margin-top:0.6rem;">
               <label class="form-label">Seasonal Page: Great For</label>
@@ -3644,6 +3648,7 @@ function openNewNightModal() {
   document.getElementById('night-seasonal-date').value = '';
   document.getElementById('night-seasonal-when').value = '';
   document.getElementById('night-seasonal-fit').value = '';
+  document.getElementById('night-seasonal-desc').value = '';
   document.getElementById('night-addon-price').value = '';
   ['genre','tone','era','audience'].forEach(d=>{const el=document.getElementById(`night-${d}`);if(el)el.value='';});
   document.getElementById('night-description').value = '';
@@ -3671,6 +3676,7 @@ function editNight(idx) {
   document.getElementById('night-seasonal-date').value = n.seasonalDate || '';
   document.getElementById('night-seasonal-when').value = n.seasonalWhen || '';
   document.getElementById('night-seasonal-fit').value = n.seasonalFit || '';
+  document.getElementById('night-seasonal-desc').value = n.seasonalDesc || '';
   document.getElementById('night-addon-price').value = (n.addonPrice || n.addonPrice === 0) ? n.addonPrice : '';
   ['genre','tone','era','audience'].forEach(d=>{const el=document.getElementById(`night-${d}`);if(el)el.value=n[d]||'';});
   document.getElementById('night-description').value = n.description || '';
@@ -3897,6 +3903,7 @@ async function saveNight() {
     seasonalDate: document.getElementById('night-seasonal-date').value || '',
     seasonalWhen: document.getElementById('night-seasonal-when').value.trim(),
     seasonalFit: document.getElementById('night-seasonal-fit').value.trim(),
+    seasonalDesc: document.getElementById('night-seasonal-desc').value.trim(),
     addonPrice: document.getElementById('night-addon-price').value.trim() ? parseFloat(document.getElementById('night-addon-price').value) : null,
     description: document.getElementById('night-description').value.trim(),
     adminNotes: document.getElementById('night-admin-notes').value.trim(),
