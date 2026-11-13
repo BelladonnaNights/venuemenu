@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Seasonal Nights · Belladonna Entertainment</title>
+<meta name="description" content="Themed nights your venue can order from Belladonna Entertainment this season.">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=DM+Sans:wght@300;400;500;600&family=Cinzel:wght@400;600;700&display=swap');
+:root{--bg:#000;--surface:#0d0d0d;--surface2:#141414;--surface3:#1a1a1a;--border:rgba(180,150,100,.16);--border2:rgba(180,150,100,.34);--border-gold:rgba(201,169,110,.4);--gold:#c9a96e;--gold2:#e0bc7e;--gold-dim:rgba(201,169,110,.12);--text:#f0ece0;--text2:#b8ad98;--text3:#8a8272;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-weight:300;letter-spacing:.03em;line-height:1.6;min-height:100vh;overflow-x:hidden;padding-bottom:5rem}
+a{color:var(--gold)}
+.head{text-align:center;padding:2.6rem 1.2rem 1rem}
+.logo{width:56px;height:56px;object-fit:contain;opacity:.95;margin-bottom:.6rem}
+.brand{font-family:'Bebas Neue',sans-serif;font-size:2.4rem;letter-spacing:.12em;color:#fff;line-height:1}
+.page{font-family:'Cinzel',serif;font-size:.82rem;letter-spacing:.34em;text-transform:uppercase;color:var(--gold);margin-top:.5rem}
+.hero{max-width:720px;margin:1.6rem auto 0;padding:0 1.2rem;text-align:center}
+.season{font-family:'Cinzel',serif;font-size:.7rem;letter-spacing:.3em;text-transform:uppercase;color:var(--text3)}
+.hero h1{font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:clamp(2.2rem,6vw,3.4rem);letter-spacing:.06em;margin:.4rem 0 .6rem}
+.hero h1 span{color:var(--gold)}
+.hero p{font-family:'EB Garamond',serif;font-size:1.2rem;color:var(--text2);line-height:1.55}
+.incl{max-width:900px;margin:1.6rem auto 0;padding:.9rem 1.2rem;border:1px solid var(--border-gold);background:var(--gold-dim);border-radius:14px;text-align:center;font-size:.86rem;color:var(--text2)}
+.incl b{color:var(--gold2);font-weight:500;letter-spacing:.14em;text-transform:uppercase;font-size:.7rem;display:block;margin-bottom:.2rem}
+.wrap{max-width:1100px;margin:0 auto;padding:0 1.2rem}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:1.4rem;margin-top:2rem}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden;display:flex;flex-direction:column;transition:border-color .2s,box-shadow .2s}
+.card:hover{border-color:var(--border-gold);box-shadow:0 0 28px rgba(201,169,110,.1)}
+.card.on{border-color:var(--gold);box-shadow:0 0 30px rgba(201,169,110,.2)}
+.poster{display:block;width:100%;aspect-ratio:4/5;object-fit:cover;background:var(--surface3);cursor:zoom-in}
+.body{padding:1.1rem 1.2rem 1.3rem;display:flex;flex-direction:column;gap:.55rem;flex:1}
+.when{font-family:'Cinzel',serif;font-size:.68rem;letter-spacing:.2em;text-transform:uppercase;color:var(--gold)}
+.body h2{font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:1.7rem;letter-spacing:.06em;line-height:1.1}
+.body p{font-size:.9rem;color:var(--text2)}
+.fit{font-size:.78rem;color:var(--text3)}
+.fit b{color:var(--text2);font-weight:500}
+.btn{font-family:'Cinzel',serif;font-size:.72rem;letter-spacing:.16em;text-transform:uppercase;border-radius:999px;padding:.8rem 1.3rem;cursor:pointer;background:var(--gold-dim);border:1px solid var(--border-gold);color:var(--gold);transition:all .2s;text-decoration:none;display:inline-block;text-align:center}
+.btn:hover{background:rgba(201,169,110,.22)}
+.card .btn{margin-top:auto}
+.card.on .btn{background:var(--gold);color:#000;border-color:var(--gold)}
+.foot{text-align:center;color:var(--text3);font-size:.8rem;padding:3rem 1.2rem 1rem}
+.foot a{color:var(--gold)}
+.bar{position:fixed;left:0;right:0;bottom:0;background:rgba(0,0,0,.92);border-top:1px solid var(--border-gold);padding:.8rem 1.2rem;display:none;align-items:center;justify-content:center;gap:1.2rem;z-index:20;backdrop-filter:blur(6px)}
+.bar.show{display:flex}
+.bar span{font-size:.9rem;color:var(--text2)}
+.bar b{color:var(--gold2);font-weight:500}
+.bg{position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:50;display:none;align-items:center;justify-content:center;padding:1rem;overflow:auto}
+.bg.open{display:flex}
+.modal{background:var(--surface);border:1px solid var(--border-gold);border-radius:18px;max-width:520px;width:100%;padding:1.6rem 1.5rem;box-shadow:0 0 60px rgba(201,169,110,.12);max-height:94vh;overflow:auto}
+.modal h3{font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:1.9rem;letter-spacing:.08em;color:var(--gold)}
+.modal .sub{font-size:.85rem;color:var(--text2);margin:.2rem 0 1rem}
+.chips{display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:1rem}
+.chip{background:var(--gold-dim);border:1px solid var(--border-gold);color:var(--gold2);border-radius:999px;padding:.25rem .8rem;font-size:.78rem}
+label{display:block;font-family:'Cinzel',serif;font-size:.66rem;letter-spacing:.18em;text-transform:uppercase;color:var(--text3);margin:.8rem 0 .3rem}
+input,textarea{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:12px;color:var(--text);padding:.7rem .9rem;font-family:'DM Sans',sans-serif;font-size:.95rem;font-weight:300}
+input:focus,textarea:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 3px var(--gold-dim)}
+textarea{min-height:90px;resize:vertical}
+.acts{display:flex;gap:.7rem;justify-content:flex-end;margin-top:1.3rem;flex-wrap:wrap}
+.ghost{background:transparent;border-color:var(--border2);color:var(--text2)}
+.err{color:#d98a8a;font-size:.8rem;margin-top:.6rem;min-height:1em}
+.zoom{cursor:zoom-out;padding:1rem}
+.zoom img{max-width:min(92vw,720px);max-height:92vh;border-radius:12px;border:1px solid var(--border-gold)}
+.done{text-align:center;padding:1rem 0}
+.done p{color:var(--text2);margin:.6rem 0}
+</style>
+</head>
+<body>
+
+<div class="head">
+  <img class="logo" src="logo.png" alt="Belladonna" onerror="this.style.display='none'">
+  <div class="brand">BELLADONNA</div>
+  <div class="page">Seasonal Nights</div>
+</div>
+
+<div class="hero">
+  <div class="season" id="season"></div>
+  <h1>Themed nights for <span>your venue</span></h1>
+  <p>Pick the nights you want. Tell us who you are, and we'll get back to you to lock in dates and details.</p>
+</div>
+
+<div class="incl"><b>Every night includes</b>A Belladonna host, the music and sound, themed games, and promo graphics for your socials.</div>
+
+<div class="wrap"><div class="grid" id="grid"></div></div>
+
+<div class="foot">Don't see what you want? <a id="askLink" href="#">Ask us about a custom night</a><br><br><a href="https://www.belladonnanights.com">www.belladonnanights.com</a></div>
+
+<div class="bar" id="bar"><span id="barTxt"></span><button class="btn" id="barBtn">Request these nights</button></div>
+
+<div class="bg" id="bg"><div class="modal" id="modal"></div></div>
+<div class="bg zoom" id="zoom"><img id="zoomImg" alt=""></div>
+
+<script>
+/* ───────── EDIT HERE ─────────
+   SEASON:   the label above the headline.
+   EMAIL:    where requests are sent.
+   EVENTS:   one entry per night. Remove an entry to hide it, add one to show it.
+             img is the poster file in the seasonal-posters folder. */
+const SEASON = 'Winter 2026 · 2027';
+const EMAIL = 'admin@belladonnanights.com';
+const EVENTS = [
+  {id:'xmas-morning-1994', title:'Christmas Morning, 1994', when:'Date of your choosing', img:'seasonal-posters/christmas-morning-1994.jpg',
+   blurb:'A throwback holiday night. Music bingo and trivia built around 90s holiday memories.', fit:'Breweries, taprooms and any crowd that grew up in the 90s'},
+  {id:'xmas-eve-eve', title:'Christmas Eve Eve', when:'Wednesday, Dec 23', img:'seasonal-posters/christmas-eve-eve.jpg',
+   blurb:'The night before the night before. A holiday bingo and trivia night for the locals who are home for the holidays.', fit:'Neighborhood bars and taprooms'},
+  {id:'hair-of-the-dog', title:'Hair of the Dog Brunch Bingo', when:'Friday, Jan 1 · 10:00 am', img:'seasonal-posters/hair-of-the-dog.jpg',
+   blurb:'Music bingo for New Year’s Day brunch. Mimosas optional, recovery encouraged.', fit:'Restaurants and bars with a brunch menu'},
+  {id:'gingerbread-gin', title:'Gingerbread & Gin', when:'Specialty event · date by request', img:'seasonal-posters/gingerbread-and-gin.jpg',
+   blurb:'A cozy specialty night pairing gingerbread with gin cocktails.', fit:'Venues with a cocktail program'},
+  {id:'tarot-tonic', title:'Tarot & Tonic', when:'Date by request', img:'seasonal-posters/tarot-and-tonic.jpg',
+   blurb:'A moody, mystical cocktail night with a tarot theme.', fit:'Cocktail lounges and wine bars'},
+  {id:'son-of-a-nutcracker', title:'Son of a Nutcracker', when:'Date by request', img:'seasonal-posters/son-of-a-nutcracker.jpg',
+   blurb:'Waffles, hot cocoa and elf-level silliness for a daytime holiday event.', fit:'Daytime and weekend venues, coffee spots and family-friendly taprooms'},
+  {id:'burrow', title:'Christmas at the Burrow', when:'Date by request', img:'seasonal-posters/christmas-at-the-burrow.jpg',
+   blurb:'A cozy, wizard-y holiday night with scarves, cocoa and bookish trivia.', fit:'Venues with a trivia-loving, geeky crowd'}
+];
+
+const $=s=>document.querySelector(s);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const picked=new Set();
+$('#season').textContent=SEASON;
+
+function drawGrid(){
+  $('#grid').innerHTML=EVENTS.map(e=>`<div class="card ${picked.has(e.id)?'on':''}" data-id="${esc(e.id)}">
+    <img class="poster" src="${esc(e.img)}" alt="${esc(e.title)} poster" loading="lazy" data-zoom="${esc(e.img)}">
+    <div class="body"><div class="when">${esc(e.when)}</div><h2>${esc(e.title)}</h2><p>${esc(e.blurb)}</p>
+    <div class="fit"><b>Great for:</b> ${esc(e.fit)}</div>
+    <button class="btn" data-pick="${esc(e.id)}">${picked.has(e.id)?'Added ✓':'Request this night'}</button></div></div>`).join('');
+  const n=picked.size;$('#bar').classList.toggle('show',n>0);
+  $('#barTxt').innerHTML=`<b>${n}</b> night${n===1?'':'s'} selected`;
+}
+function openForm(custom){
+  const list=EVENTS.filter(e=>picked.has(e.id));
+  $('#modal').innerHTML=`<h3>${custom?'Ask about a custom night':'Request your nights'}</h3>
+  <div class="sub">${custom?'Tell us what you have in mind.':'We’ll email you back to confirm dates and details.'}</div>
+  ${list.length&&!custom?'<div class="chips">'+list.map(e=>'<span class="chip">'+esc(e.title)+'</span>').join('')+'</div>':''}
+  <label for="f-v">Venue name</label><input id="f-v" autocomplete="organization">
+  <label for="f-n">Your name</label><input id="f-n" autocomplete="name">
+  <label for="f-e">Email</label><input id="f-e" type="email" autocomplete="email">
+  <label for="f-p">Phone (optional)</label><input id="f-p" type="tel" autocomplete="tel">
+  <label for="f-d">Dates you’re thinking of</label><input id="f-d">
+  <label for="f-m">Anything else we should know</label><textarea id="f-m"></textarea>
+  <div class="err" id="err"></div>
+  <div class="acts"><button class="btn ghost" data-x="1">Cancel</button><button class="btn" id="send">Send request</button></div>`;
+  $('#bg').classList.add('open');
+  $('#send').onclick=()=>send(custom,list);
+}
+function send(custom,list){
+  const v=id=>$('#'+id).value.trim();
+  if(!v('f-v')||!v('f-n')||!/\S+@\S+\.\S+/.test(v('f-e'))){$('#err').textContent='Please add your venue name, your name and a valid email.';return;}
+  const nights=list.length&&!custom?list.map(e=>'- '+e.title+' ('+e.when+')').join('\n'):'(a custom night)';
+  const body=`Venue: ${v('f-v')}\nName: ${v('f-n')}\nEmail: ${v('f-e')}\nPhone: ${v('f-p')||'-'}\n\nNights requested:\n${nights}\n\nDates in mind: ${v('f-d')||'-'}\n\nNotes: ${v('f-m')||'-'}\n`;
+  const subj=(custom?'Custom night request':'Seasonal night request')+' – '+v('f-v');
+  location.href='mailto:'+EMAIL+'?subject='+encodeURIComponent(subj)+'&body='+encodeURIComponent(body);
+  $('#modal').innerHTML=`<div class="done"><h3>Almost done</h3><p>Your email app should have opened with your request filled in. Press send there and we’ll be in touch.</p><p style="font-size:.82rem;color:var(--text3)">Nothing opened? Email us at <a href="mailto:${EMAIL}">${EMAIL}</a> with the nights you want.</p><div class="acts" style="justify-content:center"><button class="btn" data-x="1">Close</button></div></div>`;
+}
+document.addEventListener('click',e=>{
+  const p=e.target.closest('[data-pick]');if(p){const id=p.dataset.pick;picked.has(id)?picked.delete(id):picked.add(id);drawGrid();return;}
+  const z=e.target.closest('[data-zoom]');if(z){$('#zoomImg').src=z.dataset.zoom;$('#zoom').classList.add('open');return;}
+  if(e.target.id==='zoom'||e.target.id==='zoomImg'){$('#zoom').classList.remove('open');return;}
+  if(e.target.closest('[data-x]')||e.target.id==='bg'){$('#bg').classList.remove('open');return;}
+  if(e.target.id==='barBtn'){openForm(false);return;}
+  if(e.target.id==='askLink'){e.preventDefault();openForm(true);}
+});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){$('#bg').classList.remove('open');$('#zoom').classList.remove('open');}});
+drawGrid();
+</script>
+</body>
+</html>
