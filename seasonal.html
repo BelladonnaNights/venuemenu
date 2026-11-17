@@ -116,6 +116,25 @@ const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;'
 $('#season').textContent=SEASON;
 let nights=[];
 
+/* Auto pop-up: a night with seasonalMode 'auto' only shows while today falls inside one of its date ranges.
+   Manual nights show whenever they are published. 'Hide this year' skips it for the current year only. */
+function isLiveNow(n){
+  const now=new Date();
+  if(n.seasonalHiddenYear && n.seasonalHiddenYear===now.getFullYear()) return false;
+  if(n.seasonalMode!=='auto') return true;
+  const pad=x=>String(x).padStart(2,'0');
+  const today=now.getFullYear()+'-'+pad(now.getMonth()+1)+'-'+pad(now.getDate());
+  const md=(now.getMonth()+1)*100+now.getDate();
+  return (Array.isArray(n.seasonalRanges)?n.seasonalRanges:[]).some(r=>{
+    if(!r||!r.from) return false;
+    const to=r.to||r.from;
+    if(r.yearly){
+      const a=Number(r.from.slice(5,7))*100+Number(r.from.slice(8,10)), b=Number(to.slice(5,7))*100+Number(to.slice(8,10));
+      return a<=b ? (md>=a&&md<=b) : (md>=a||md<=b);
+    }
+    return today>=r.from && today<=to;
+  });
+}
 function whenOf(n){
   if(n.seasonalWhen) return n.seasonalWhen;
   if(n.seasonalDate){const d=new Date(n.seasonalDate+'T12:00:00');if(!isNaN(d))return d.toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'});}
@@ -160,7 +179,7 @@ document.addEventListener('keydown',e=>{
 (async()=>{
   try{
     const snap=await getDocs(query(collection(db,'venueMenuNights'),where('publishedSeasonal','==',true)));
-    nights=snap.docs.map(d=>({_id:d.id,...d.data()}));
+    nights=snap.docs.map(d=>({_id:d.id,...d.data()})).filter(isLiveNow);
     nights.sort((a,b)=>{const x=a.seasonalDate||'9999',y=b.seasonalDate||'9999';return x<y?-1:x>y?1:String(a.name).localeCompare(String(b.name));});
     if(!nights.length){$('#state').textContent='New seasonal nights are on the way. Check back soon.';return;}
     $('#state').style.display='none';draw();
