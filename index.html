@@ -1968,6 +1968,10 @@
                 <input type="text" id="night-seasonal-when">
               </div>
             </div>
+            <div class="form-group" style="margin-top:0.6rem;max-width:260px;">
+              <label class="form-label">Seasonal Page: Month <span style="color:var(--text-dim);font-size:0.72rem;font-style:italic;font-family:'Crimson Text',serif;text-transform:none;letter-spacing:0;">— the month it sits under (here and on the page). Blank = use the Date</span></label>
+              <select id="night-seasonal-month"><option value="">Use the Date</option><option value="1">January</option><option value="2">February</option><option value="3">March</option><option value="4">April</option><option value="5">May</option><option value="6">June</option><option value="7">July</option><option value="8">August</option><option value="9">September</option><option value="10">October</option><option value="11">November</option><option value="12">December</option></select>
+            </div>
             <div class="form-group" style="margin-top:0.6rem;">
               <label class="form-label">Seasonal Page: Description <span style="color:var(--text-dim);font-size:0.72rem;font-style:italic;font-family:'Crimson Text',serif;text-transform:none;letter-spacing:0;">— shown to the public. Separate from the Venue Description above</span></label>
               <textarea id="night-seasonal-desc" rows="4" style="resize:vertical;line-height:1.5;"></textarea>
@@ -3704,6 +3708,7 @@ function openNewNightModal() {
   document.getElementById('night-published-seasonal').checked = false;
   document.getElementById('night-seasonal-date').value = '';
   document.getElementById('night-seasonal-when').value = '';
+  document.getElementById('night-seasonal-month').value = '';
   nsLoad(null);
   document.getElementById('night-seasonal-fit').value = '';
   document.getElementById('night-seasonal-desc').value = '';
@@ -3755,6 +3760,12 @@ function nsLoad(n) {
   document.getElementById('ns-hide-year').checked = !!(n && n.seasonalHiddenYear && n.seasonalHiddenYear === new Date().getFullYear());
   nsSetMode(n && n.seasonalMode === 'auto' ? 'auto' : 'manual');
 }
+function nightSeasonalMonth(n) {
+  const m = Number(n.seasonalMonth);
+  if (m >= 1 && m <= 12) return m;
+  const mm = /^\d{4}-(\d{2})/.exec(n.seasonalDate || '');
+  return mm ? Number(mm[1]) : 0;
+}
 // Same rule the Seasonal Page uses, so the admin badge matches what the public sees.
 function nightSeasonalLive(n) {
   if (!n || !n.publishedSeasonal) return false;
@@ -3789,6 +3800,7 @@ function editNight(idx) {
   document.getElementById('night-published-seasonal').checked = !!n.publishedSeasonal;
   document.getElementById('night-seasonal-date').value = n.seasonalDate || '';
   document.getElementById('night-seasonal-when').value = n.seasonalWhen || '';
+  document.getElementById('night-seasonal-month').value = n.seasonalMonth || '';
   nsLoad(n);
   document.getElementById('night-seasonal-fit').value = n.seasonalFit || '';
   document.getElementById('night-seasonal-desc').value = n.seasonalDesc || '';
@@ -4017,6 +4029,7 @@ async function saveNight() {
     publishedSeasonal: document.getElementById('night-published-seasonal').checked,
     seasonalDate: document.getElementById('night-seasonal-date').value || '',
     seasonalWhen: document.getElementById('night-seasonal-when').value.trim(),
+    seasonalMonth: Number(document.getElementById('night-seasonal-month').value) || null,
     seasonalMode: nsMode,
     seasonalRanges: nsReadRanges(),
     seasonalHiddenYear: document.getElementById('ns-hide-year').checked ? new Date().getFullYear() : null,
@@ -6024,13 +6037,13 @@ function renderCarSeasonal() {
     .sort((a, b) => { const x = a.n.seasonalDate || '9999', y = b.n.seasonalDate || '9999'; return x < y ? -1 : x > y ? 1 : String(a.n.name).localeCompare(String(b.n.name)); });
   if (!live.length) { box.innerHTML = ''; if (empty) empty.style.display = 'block'; return; }
   if (empty) empty.style.display = 'none';
-  const groups = [];
-  live.forEach(x => { const k = /^\d{4}-\d{2}/.test(x.n.seasonalDate || '') ? x.n.seasonalDate.slice(0, 7) : ''; let g = groups.find(q => q.key === k); if (!g) { g = { key: k, items: [] }; groups.push(g); } g.items.push(x); });
-  const multi = new Set(groups.filter(g => g.key).map(g => g.key.slice(0, 4))).size > 1;
+  const groups = {};
+  live.forEach(x => { const m = nightSeasonalMonth(x.n); (groups[m] = groups[m] || []).push(x); });
+  const gkeys = Object.keys(groups).map(Number).sort((a, b) => (a || 99) - (b || 99));
   const whenOfNight = n => n.seasonalWhen || (n.seasonalDate ? (() => { const d = new Date(n.seasonalDate + 'T12:00:00'); return isNaN(d) ? '' : d.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' }); })() : 'Date by request');
-  box.innerHTML = groups.map(g => {
-    let label = 'Date by request';
-    if (g.key) { const [y, m] = g.key.split('-').map(Number); label = MONTH_NAMES[m] + (multi ? ' ' + y : ''); }
+  box.innerHTML = gkeys.map(m => {
+    const g = { items: groups[m] };
+    const label = m ? MONTH_NAMES[m] : 'No month set';
     const modeTxt = n => n.seasonalMode === 'auto' ? 'Auto' : 'Manual';
     let body;
     if (carViewMode === 'list') {
