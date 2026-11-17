@@ -64,6 +64,17 @@ textarea{min-height:90px;resize:vertical}
 .done p{color:var(--text2);margin:.6rem 0}
 
 .card{cursor:pointer}
+.mh{font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:2rem;letter-spacing:.1em;color:var(--gold);margin:2.4rem 0 0;padding-bottom:.4rem;border-bottom:1px solid var(--border-gold)}
+.mh+.grid{margin-top:1.2rem}
+@media(max-width:700px){
+  .grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:.8rem}
+  .body{padding:.7rem .75rem .9rem;gap:.4rem}
+  .body h2{font-size:1.2rem}
+  .when{font-size:.58rem;letter-spacing:.12em}
+  .body p,.card .fit{display:none}
+  .btn{padding:.65rem .8rem;font-size:.62rem;letter-spacing:.1em}
+  .mh{font-size:1.6rem;margin-top:1.8rem}
+}
 .poster.noimg{display:flex;align-items:center;justify-content:center;text-align:center;padding:1rem;font-family:'Bebas Neue',sans-serif;font-size:2rem;letter-spacing:.06em;color:var(--gold);cursor:pointer}
 .state{text-align:center;color:var(--text2);padding:3rem 1rem;font-family:'EB Garamond',serif;font-size:1.15rem}
 .card .btn{margin-top:auto;pointer-events:none}
@@ -93,7 +104,7 @@ textarea{min-height:90px;resize:vertical}
 
 <div class="incl"><b>Every night includes</b>A Belladonna host, the music and sound, themed games, and promo graphics for your socials.</div>
 
-<div class="wrap"><div class="grid" id="grid"></div><div class="state" id="state">Loading the season&hellip;</div></div>
+<div class="wrap"><div id="grid"></div><div class="state" id="state">Loading the season&hellip;</div></div>
 
 <div class="foot">Looking for something else? <a href="https://belladonnanights.github.io/belladonnahqapp/book.html">Tell us about your venue</a><br><br><a href="https://www.belladonnanights.com">www.belladonnanights.com</a></div>
 
@@ -146,13 +157,30 @@ function posterTag(n,cls,attrs){
   return `<div class="${cls} noimg" style="background:${esc(n.bannerColor||'#141414')}" ${attrs||''}><span>${esc(n.name)}</span></div>`;
 }
 function teaser(t){t=String(t||'').replace(/\s+/g,' ').trim();return t.length>150?t.slice(0,147).trimEnd()+'\u2026':t;}
-function draw(){
-  $('#grid').innerHTML=nights.map(n=>`<div class="card" data-open="${esc(n._id)}" tabindex="0" role="button" aria-label="More about ${esc(n.name)}">
+const MONTHS=['','January','February','March','April','May','June','July','August','September','October','November','December'];
+/* Which month a night sits under: the Month you picked, otherwise the month of its Date. */
+function monthOf(n){
+  const m=Number(n.seasonalMonth);
+  if(m>=1&&m<=12) return m;
+  const mm=/^\d{4}-(\d{2})/.exec(n.seasonalDate||'');
+  return mm?Number(mm[1]):0;
+}
+function cardHtml(n){
+  return `<div class="card" data-open="${esc(n._id)}" tabindex="0" role="button" aria-label="More about ${esc(n.name)}">
     ${posterTag(n,'poster')}
     <div class="body"><div class="when">${esc(whenOf(n))}</div><h2>${esc(n.name)}</h2>
     ${n.seasonalDesc?`<p>${esc(teaser(n.seasonalDesc))}</p>`:''}
     ${n.seasonalFit?`<div class="fit"><b>Great for:</b> ${esc(n.seasonalFit)}</div>`:''}
-    <span class="btn">More info</span></div></div>`).join('');
+    <span class="btn">More info</span></div></div>`;
+}
+function draw(){
+  const groups={};
+  nights.forEach(n=>{const m=monthOf(n);(groups[m]=groups[m]||[]).push(n);});
+  const keys=Object.keys(groups).map(Number).sort((a,b)=>(a||99)-(b||99));
+  $('#grid').innerHTML=keys.map(m=>{
+    const items=groups[m].slice().sort((x,y)=>{const a=x.seasonalDate||'9999',b=y.seasonalDate||'9999';return a<b?-1:a>b?1:String(x.name).localeCompare(String(y.name));});
+    return `<h2 class="mh">${esc(m?MONTHS[m]:'More nights')}</h2><div class="grid">${items.map(cardHtml).join('')}</div>`;
+  }).join('');
 }
 function openNight(id){
   const n=nights.find(x=>x._id===id);if(!n)return;
