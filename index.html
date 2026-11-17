@@ -1583,9 +1583,10 @@
   <div class="view" id="view-seasonal">
     <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:1.25rem;">
       <div style="display:flex;gap:8px;">
+        <button class="filter-chip" id="car-pill-all" onclick="carTab('all')">All</button>
         <button class="filter-chip active" id="car-pill-cal" onclick="carTab('cal')">Calendar</button>
         <button class="filter-chip" id="car-pill-picks" onclick="carTab('picks')">Picks</button>
-        <button class="filter-chip" id="car-pill-all" onclick="carTab('all')">All Images</button>
+        <button class="filter-chip" id="car-pill-seasonal" onclick="carTab('seasonal')">Seasonal</button>
       </div>
       <div class="car-viewtoggle" role="group" aria-label="View">
         <button type="button" id="car-view-grid" class="active" title="Images" onclick="carSetView('grid')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3.5" y="3.5" width="7" height="7" rx="2"/><rect x="13.5" y="3.5" width="7" height="7" rx="2"/><rect x="3.5" y="13.5" width="7" height="7" rx="2"/><rect x="13.5" y="13.5" width="7" height="7" rx="2"/></svg></button>
@@ -1619,6 +1620,13 @@
     </div>
     <div id="car-all-list"></div>
     <div id="car-all-empty" style="display:none;text-align:center;padding:4rem 2rem;color:var(--text-dim);">No events match this filter.</div>
+  </div>
+  <div id="car-pane-seasonal" style="display:none;">
+    <div style="margin-bottom:1.25rem;">
+      <p style="color:var(--text-muted);font-size:0.9rem;margin:0;">The themed nights showing on <b>seasonal.html</b> right now, January to December. Click one to edit it.</p>
+    </div>
+    <div id="car-seasonal-list"></div>
+    <div id="car-seasonal-empty" style="display:none;text-align:center;padding:4rem 2rem;color:var(--text-dim);">Nothing is live on the Seasonal Page right now.</div>
   </div>
   <!-- ═══ CAROUSEL PICKS PANE (a pill inside the Carousel tab) ═══ -->
   <div id="car-pane-picks" style="display:none;">
@@ -4025,6 +4033,7 @@ async function saveNight() {
     if (isEdit) nights[editingNightIndex] = night;
     else nights.push(night);
     toast(isEdit ? 'Night updated' : 'Themed night created');
+    try { renderCarSeasonal(); } catch (e) {}
   } catch(e) {
     toast(e.message || 'Save failed — check connection', 'error'); return;
   }
@@ -5907,6 +5916,9 @@ function carTab(which) {
   document.getElementById('car-pill-picks').classList.toggle('active', which === 'picks');
   const allPane = document.getElementById('car-pane-all'); if (allPane) allPane.style.display = which === 'all' ? '' : 'none';
   const allPill = document.getElementById('car-pill-all'); if (allPill) allPill.classList.toggle('active', which === 'all');
+  const sp = document.getElementById('car-pane-seasonal'); if (sp) sp.style.display = which === 'seasonal' ? '' : 'none';
+  const sPill = document.getElementById('car-pill-seasonal'); if (sPill) sPill.classList.toggle('active', which === 'seasonal');
+  if (which === 'seasonal') renderCarSeasonal();
   if (which === 'picks') renderCarPicks();
   if (which === 'all') loadCarPicks().then(renderCarAll);
 }
@@ -5944,6 +5956,7 @@ function carSetView(m) {
   try { renderSeasonalAdmin(); } catch (e) {}
   try { renderCarPicks(); } catch (e) {}
   try { renderCarAll(); } catch (e) {}
+  try { renderCarSeasonal(); } catch (e) {}
 }
 function seEvDay(ev) {
   if (ev.evMonth) return Number(ev.evDay) || 0;
@@ -6001,6 +6014,40 @@ function carRenderEvents(boxId, emptyId, evs) {
       }).join('') + '</div>';
     }
     return '<div style="margin-bottom:1.75rem;"><div class="section-title" style="margin-bottom:0.6rem;">' + (m ? MONTH_NAMES[m] : 'Unscheduled') + '</div>' + body + '</div>';
+  }).join('');
+}
+// Themed nights that are live on seasonal.html right now (same rule the public page uses)
+function renderCarSeasonal() {
+  const box = document.getElementById('car-seasonal-list'), empty = document.getElementById('car-seasonal-empty');
+  if (!box) return;
+  const live = nights.map((n, i) => ({ n, i })).filter(x => nightSeasonalLive(x.n))
+    .sort((a, b) => { const x = a.n.seasonalDate || '9999', y = b.n.seasonalDate || '9999'; return x < y ? -1 : x > y ? 1 : String(a.n.name).localeCompare(String(b.n.name)); });
+  if (!live.length) { box.innerHTML = ''; if (empty) empty.style.display = 'block'; return; }
+  if (empty) empty.style.display = 'none';
+  const groups = [];
+  live.forEach(x => { const k = /^\d{4}-\d{2}/.test(x.n.seasonalDate || '') ? x.n.seasonalDate.slice(0, 7) : ''; let g = groups.find(q => q.key === k); if (!g) { g = { key: k, items: [] }; groups.push(g); } g.items.push(x); });
+  const multi = new Set(groups.filter(g => g.key).map(g => g.key.slice(0, 4))).size > 1;
+  const whenOfNight = n => n.seasonalWhen || (n.seasonalDate ? (() => { const d = new Date(n.seasonalDate + 'T12:00:00'); return isNaN(d) ? '' : d.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' }); })() : 'Date by request');
+  box.innerHTML = groups.map(g => {
+    let label = 'Date by request';
+    if (g.key) { const [y, m] = g.key.split('-').map(Number); label = MONTH_NAMES[m] + (multi ? ' ' + y : ''); }
+    const modeTxt = n => n.seasonalMode === 'auto' ? 'Auto' : 'Manual';
+    let body;
+    if (carViewMode === 'list') {
+      body = g.items.map(({ n, i }) => {
+        const thumb = n.bannerData ? '<img class="car-list-thumb" src="' + esc(n.bannerData) + '" alt="" loading="lazy">' : '<div class="car-list-thumb"></div>';
+        return '<div class="car-list-row" onclick="editNight(' + i + ')">' + thumb
+          + '<div class="car-list-main"><div class="car-list-name">' + esc(n.name) + ' <span class="car-b warn">' + modeTxt(n) + '</span></div><div class="car-list-sub">' + esc(whenOfNight(n)) + '</div></div>'
+          + '<span class="car-b live">Live</span><button class="btn btn-sm btn-ghost" onclick="event.stopPropagation();editNight(' + i + ')">Edit</button></div>';
+      }).join('');
+    } else {
+      body = '<div class="car-grid">' + g.items.map(({ n, i }) => {
+        const img = n.bannerData ? '<img src="' + esc(n.bannerData) + '" alt="" loading="lazy">' : '<div class="car-noimg" style="background:' + esc(n.bannerColor || '#000') + '">' + esc(n.name) + '</div>';
+        return '<div class="car-tile live" onclick="editNight(' + i + ')">' + img + '<div class="car-name">' + esc(n.name) + '</div><div class="car-date">' + esc(whenOfNight(n)) + '</div>'
+          + '<div class="car-foot"><div class="car-foot-l"><span class="car-b warn">' + modeTxt(n) + '</span></div><div class="car-foot-r"><span class="car-b live">Live</span></div></div></div>';
+      }).join('') + '</div>';
+    }
+    return '<div style="margin-bottom:1.75rem;"><div class="section-title" style="margin-bottom:0.6rem;">' + label + '</div>' + body + '</div>';
   }).join('');
 }
 function renderCarAll() {
@@ -7100,7 +7147,7 @@ window.deletePortalCollaborator = async function(id) {
 };
 
 Object.assign(window, {
-  carTab, carAllFilter, carSetView, nsSetMode, nsAddRange, nsRemoveRange, setTriviaExBook, seImgPrev, catImgCheck, carGoPicks, carFromModal, setCatSize, setCatStyle, closeCategoryDetail, openNightFromCat, openCategoryDetail, carouselAdd,
+  carTab, carAllFilter, carSetView, renderCarSeasonal, nsSetMode, nsAddRange, nsRemoveRange, setTriviaExBook, seImgPrev, catImgCheck, carGoPicks, carFromModal, setCatSize, setCatStyle, closeCategoryDetail, openNightFromCat, openCategoryDetail, carouselAdd,
   liveImgPreview,
   toggleNavMenu, closeNavMenu,
   renderMovies, openMovieModal, addMovieLinkRow, closeMovieModal, saveMovie, deleteMovie, openMovieBulk, closeMovieBulk, saveMovieBulk,
