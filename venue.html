@@ -2056,6 +2056,13 @@ async function loadSeasonalEvents() {
 
 // Carousel and Seasonal page can share one set of dates or each have their own.
 // Date range = live from its start through its end. Single day = live for 2 months before that day, through the day.
+// Runs: one-time and evergreen events list the dates they run (From, and To for a range)
+function seRuns(ev) {
+  if (Array.isArray(ev.runs) && ev.runs.length) return ev.runs.filter(r => r && r.from);
+  if (ev.runFrom) return [{ from: ev.runFrom, to: ev.runTo || '' }];
+  return [];
+}
+function seRunFirst(ev) { return seRuns(ev).slice().sort((a, b) => a.from < b.from ? -1 : 1)[0] || null; }
 function seRangeWins(o) {
   const Y = new Date().getFullYear(), out = [];
   (Array.isArray(o.seasonalRanges) ? o.seasonalRanges : []).forEach(r => {
@@ -2080,11 +2087,13 @@ function seDatesEnd(ev) {
     return null;
   }
   if (ev.dateType === 'run') {
-    if (!ev.runFrom) return null;
-    const [fy, fm, fd] = ev.runFrom.split('-').map(Number);
-    if (!ev.runTo || ev.runTo === ev.runFrom) return win(new Date(fy, fm - 1, fd));
-    const [ty, tm, td] = ev.runTo.split('-').map(Number), st = new Date(fy, fm - 1, fd), en = new Date(ty, tm - 1, td, 23, 59, 59);
-    return (now >= st && now <= en) ? en : null;
+    for (const r of seRuns(ev)) {
+      const [fy, fm, fd] = r.from.split('-').map(Number);
+      if (!r.to || r.to === r.from) { const e = win(new Date(fy, fm - 1, fd)); if (e) return e; continue; }
+      const [ty, tm, td] = r.to.split('-').map(Number), st = new Date(fy, fm - 1, fd), en = new Date(ty, tm - 1, td, 23, 59, 59);
+      if (now >= st && now <= en) return en;
+    }
+    return null;
   }
   if (ev.dateType === 'exact') { if (!ev.exactDate) return null; const [ey, em, ed] = ev.exactDate.split('-').map(Number); return win(new Date(ey, em - 1, ed)); }
   const m = Number(ev.month); if (!m) return null;
@@ -2106,7 +2115,7 @@ function seIsActive(ev) {
 
 function seDisplayDate(ev) {
   if (ev.dateType === 'range') return MONTH_NAMES_V[ev.rStartM] + ' ' + ev.rStartD + ' – ' + MONTH_NAMES_V[ev.rEndM] + ' ' + ev.rEndD;
-  if (ev.dateType === 'run' && ev.runFrom) { const f = ev.runFrom.split('-').map(Number), t = (ev.runTo || '').split('-').map(Number); return MONTH_NAMES_V[f[1]] + ' ' + f[2] + (ev.runTo && ev.runTo !== ev.runFrom ? ' – ' + MONTH_NAMES_V[t[1]] + ' ' + t[2] : ''); }
+  if (ev.dateType === 'run' && seRunFirst(ev)) { const r = seRunFirst(ev), f = r.from.split('-').map(Number), t = (r.to || '').split('-').map(Number); return MONTH_NAMES_V[f[1]] + ' ' + f[2] + (r.to && r.to !== r.from ? ' – ' + MONTH_NAMES_V[t[1]] + ' ' + t[2] : ''); }
   if (ev.dateType === 'exact' && ev.exactDate) {
     const [,em,ed] = ev.exactDate.split('-').map(Number);
     return MONTH_NAMES_V[em] + ' ' + ed;
@@ -2790,7 +2799,7 @@ function setThemedView(v) {
 }
 function evMonthV(e) {
   if (e.evMonth) return Number(e.evMonth);
-  if (e.dateType === 'run') return e.runFrom ? Number(e.runFrom.split('-')[1]) || 0 : 0;
+  if (e.dateType === 'run') { const r = seRunFirst(e); return r ? Number(r.from.split('-')[1]) || 0 : 0; }
   if (e.dateType === 'exact') return e.exactDate ? Number(e.exactDate.split('-')[1]) || 0 : 0;
   if (e.dateType === 'range') return Number(e.rStartM) || 0;
   return Number(e.month) || 0;
