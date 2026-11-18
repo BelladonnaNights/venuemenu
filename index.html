@@ -1042,6 +1042,7 @@
   .car-b.pick { background: rgba(201,168,76,.12); border-color: var(--gold); color: var(--gold); }
   .car-b.live { background: rgba(42,107,58,.2); border-color: rgba(42,107,58,.5); color: #5AC47A; }
   .car-b.warn { background: rgba(139,100,30,.15); border-color: rgba(139,100,30,.35); color: #C9A84C; }
+  .car-b.seasonal { background: rgba(90,140,200,.15); border-color: rgba(90,140,200,.4); color: #8DB4E0; }
   .car-b.red { background: rgba(139,58,42,.2); border-color: rgba(139,58,42,.4); color: #C0654F; }
   .car-list-row { display: flex; align-items: center; gap: 12px; padding: .6rem 0; border-bottom: 1px solid var(--border); cursor: pointer; }
   .car-list-thumb { width: 44px; aspect-ratio: 4/5; object-fit: cover; border-radius: 4px; background: #000; flex: none; display: block; }
@@ -1597,7 +1598,7 @@
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;flex-wrap:wrap;gap:1rem;">
       <div>
         <div class="section-title" style="margin-bottom:0.25rem;">Carousel Calendar</div>
-        <p style="color:var(--text-muted);font-size:0.9rem;">Rolling calendar of upcoming events. Active events show in the <em>Coming Up</em> carousel on the venue menu.</p>
+        <p style="color:var(--text-muted);font-size:0.9rem;">Your regular events, mostly recurring holidays, that show in the <em>Coming Up</em> carousel on the front page every year no matter what. Click an event to set its dates. One that is also live on <b>seasonal.html</b> carries a <b>Seasonal</b> tag.</p>
       </div>
       <button class="btn" onclick="openSeasonalModal()">+ Add Event</button>
     </div>
@@ -1611,7 +1612,7 @@
     </div>
   <div id="car-pane-all" style="display:none;">
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;margin-bottom:1.25rem;">
-      <p style="color:var(--text-muted);font-size:0.9rem;margin:0;">Every Calendar and Picks image, January to December. Click one to edit it.</p>
+      <p style="color:var(--text-muted);font-size:0.9rem;margin:0;">Everything in one place: every Calendar event and every Pick, January to December. An item can be live in more than one place, so a <b>Seasonal</b> tag shows when it is also on seasonal.html. Click one to edit it.</p>
       <div style="display:flex;gap:8px;">
         <button class="filter-chip active" id="car-all-f-all" onclick="carAllFilter('all')">All</button>
         <button class="filter-chip" id="car-all-f-live" onclick="carAllFilter('live')">Only Live</button>
@@ -1623,7 +1624,7 @@
   </div>
   <div id="car-pane-seasonal" style="display:none;">
     <div style="margin-bottom:1.25rem;">
-      <p style="color:var(--text-muted);font-size:0.9rem;margin:0;">The themed nights showing on <b>seasonal.html</b> right now, January to December. Click one to edit it.</p>
+      <p style="color:var(--text-muted);font-size:0.9rem;margin:0;">What is live right now on <b>seasonal.html</b>, the landing page for venues that do not have an account with us. These are usually nights that are already in Calendar or Picks, because one night can be live in several places; the tags show where else each one is. Click one to edit it.</p>
     </div>
     <div id="car-seasonal-list"></div>
     <div id="car-seasonal-empty" style="display:none;text-align:center;padding:4rem 2rem;color:var(--text-dim);">Nothing is live on the Seasonal Page right now.</div>
@@ -1631,7 +1632,7 @@
   <!-- ═══ CAROUSEL PICKS PANE (a pill inside the Carousel tab) ═══ -->
   <div id="car-pane-picks" style="display:none;">
     <div style="margin-bottom:1.5rem;">
-      <p style="color:var(--text-muted);font-size:0.9rem;">Themed nights, sing-alongs, trivia, bingo, mini games and movies you sent here with the <b>+ Carousel</b> button. Click <b>Edit</b> on one to set when it shows in the <em>Coming Up</em> carousel on the venue menu. These are kept separate from the Calendar pill.</p>
+      <p style="color:var(--text-muted);font-size:0.9rem;">Themed nights you created for random times of the year (also sing-alongs, trivia, bingo, mini games and movies), sent here with the <b>+ Carousel</b> button. Click <b>Edit</b> to schedule when each one shows in the <em>Coming Up</em> carousel on the front page: automatically on the dates you pick, or manually (always on) whenever you choose. Kept separate from the Calendar pill. One that is also live on seasonal.html carries a <b>Seasonal</b> tag.</p>
     </div>
     <div id="carpicks-list"></div>
     <div id="carpicks-empty" style="display:none;text-align:center;padding:4rem 2rem;color:var(--text-dim);">Nothing here yet. Click <b>+ Carousel</b> on any card to send a copy.</div>
@@ -2815,7 +2816,7 @@ const SHOW_LIBRARY = false;
 function switchView(name) {
   if (name === 'library' && !SHOW_LIBRARY) name = 'trivia';
   if (name === 'mainmenu' && !mmData) loadMainMenu();
-  if (name === 'seasonal') renderSeasonalAdmin();
+  if (name === 'seasonal') { renderSeasonalAdmin(); carTab('all'); }
   if (name === 'settings') loadSettingsView();
   if (name === 'waytoplay') renderWayToPlay();
   if (name === 'battles') initBattlesPage();
@@ -5983,11 +5984,14 @@ function seEvDateStr(ev) {
   const m = Number(ev.month);
   return m ? (ev.day ? MONTH_NAMES[m] + ' ' + ev.day : MONTH_NAMES[m]) : '';
 }
+const carNorm = x => String(x || '').trim().toLowerCase();
+function carSeasonalNames() { return new Set((typeof nights !== 'undefined' ? nights : []).filter(nightSeasonalLive).map(n => carNorm(n.name))); }
 function carBadges(ev) {
   const left = [];
   if (ev._pick) left.push('<span class="car-b pick">Pick</span>');
   if (ev.pending) left.push('<span class="car-b warn">Not scheduled yet</span>');
   if (ev.alwaysOn) left.push(ev.alwaysOff ? '<span class="car-b red">Hidden</span>' : '<span class="car-b live">Always On</span>');
+  if (carSeasonalNames().has(carNorm(ev._pick ? (ev.srcName || ev.name) : ev.name))) left.push('<span class="car-b seasonal">Seasonal</span>');
   return { left: left.join(''), right: seIsActive(ev) ? '<span class="car-b live">Live</span>' : '' };
 }
 // One renderer for the Calendar, Picks and All Images pills: January at the top, December at the bottom.
@@ -6030,7 +6034,11 @@ function carRenderEvents(boxId, emptyId, evs) {
   }).join('');
 }
 // Themed nights that are live on seasonal.html right now (same rule the public page uses)
-function renderCarSeasonal() {
+async function renderCarSeasonal() {
+  await loadCarPicks();
+  const calNames = new Set((typeof seasonalEvents !== 'undefined' ? seasonalEvents : []).filter(e => !e.pending).map(e => carNorm(e.name)));
+  const pickNames = new Set(carPicks.map(e => carNorm(e.srcName || e.name)));
+  const alsoIn = n => (calNames.has(carNorm(n.name)) ? '<span class="car-b pick">Calendar</span>' : '') + (pickNames.has(carNorm(n.name)) ? '<span class="car-b pick">Pick</span>' : '');
   const box = document.getElementById('car-seasonal-list'), empty = document.getElementById('car-seasonal-empty');
   if (!box) return;
   const live = nights.map((n, i) => ({ n, i })).filter(x => nightSeasonalLive(x.n))
@@ -6050,14 +6058,14 @@ function renderCarSeasonal() {
       body = g.items.map(({ n, i }) => {
         const thumb = n.bannerData ? '<img class="car-list-thumb" src="' + esc(n.bannerData) + '" alt="" loading="lazy">' : '<div class="car-list-thumb"></div>';
         return '<div class="car-list-row" onclick="editNight(' + i + ')">' + thumb
-          + '<div class="car-list-main"><div class="car-list-name">' + esc(n.name) + ' <span class="car-b warn">' + modeTxt(n) + '</span></div><div class="car-list-sub">' + esc(whenOfNight(n)) + '</div></div>'
+          + '<div class="car-list-main"><div class="car-list-name">' + esc(n.name) + ' <span class="car-b warn">' + modeTxt(n) + '</span> ' + alsoIn(n) + '</div><div class="car-list-sub">' + esc(whenOfNight(n)) + '</div></div>'
           + '<span class="car-b live">Live</span><button class="btn btn-sm btn-ghost" onclick="event.stopPropagation();editNight(' + i + ')">Edit</button></div>';
       }).join('');
     } else {
       body = '<div class="car-grid">' + g.items.map(({ n, i }) => {
         const img = n.bannerData ? '<img src="' + esc(n.bannerData) + '" alt="" loading="lazy">' : '<div class="car-noimg" style="background:' + esc(n.bannerColor || '#000') + '">' + esc(n.name) + '</div>';
         return '<div class="car-tile live" onclick="editNight(' + i + ')">' + img + '<div class="car-name">' + esc(n.name) + '</div><div class="car-date">' + esc(whenOfNight(n)) + '</div>'
-          + '<div class="car-foot"><div class="car-foot-l"><span class="car-b warn">' + modeTxt(n) + '</span></div><div class="car-foot-r"><span class="car-b live">Live</span></div></div></div>';
+          + '<div class="car-foot"><div class="car-foot-l"><span class="car-b warn">' + modeTxt(n) + '</span>' + alsoIn(n) + '</div><div class="car-foot-r"><span class="car-b live">Live</span></div></div></div>';
       }).join('') + '</div>';
     }
     return '<div style="margin-bottom:1.75rem;"><div class="section-title" style="margin-bottom:0.6rem;">' + label + '</div>' + body + '</div>';
