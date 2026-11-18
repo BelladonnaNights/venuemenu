@@ -1015,8 +1015,11 @@
   .se-box-title { font-family: var(--cinzel); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--gold); margin-bottom: .7rem; }
   .se-hint { color: var(--text-dim); font-size: .72rem; font-style: italic; text-transform: none; letter-spacing: 0; }
   .se-note { color: var(--text-dim); font-size: .78rem; font-style: italic; margin: .4rem 0 .6rem; }
-  .se-seg { display: flex; gap: 6px; margin-bottom: .7rem; }
-  .se-seg .btn { flex: 1; padding: 7px 4px; white-space: nowrap; }
+  .se-seg { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: .7rem; }
+  .se-seg .btn { flex: 1 1 auto; padding: 7px 10px; white-space: normal; text-align: center; line-height: 1.25; }
+  .mx-row-body, .mx-subbox, .mx-row-body > div { min-width: 0; max-width: 100%; }
+  .mx-row-body .se-note { overflow-wrap: anywhere; }
+  .modal-body.mx { overflow-x: hidden; }
   .se-pair { display: grid; grid-template-columns: 1fr 64px; gap: 6px; }
   .se-check { display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: .82rem; color: var(--text); margin-top: .4rem; }
   .se-check input { width: 16px !important; height: 16px; accent-color: var(--gold); flex: none; }
@@ -1050,8 +1053,8 @@
   .car-list-name { font-family: Cinzel, serif; font-size: .82rem; letter-spacing: .06em; text-transform: uppercase; color: var(--text); display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
   .car-list-sub { font-size: .82rem; color: var(--text-dim); margin-top: 2px; }
   /* night editor: seasonal page date ranges */
-  .ns-range { display: grid; grid-template-columns: 1fr 1fr auto auto; gap: 8px; align-items: end; margin-bottom: 8px; }
-  .ns-range .se-check { margin-top: 0; padding-bottom: 9px; white-space: nowrap; }
+  .ns-range { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; gap: 8px; align-items: end; margin-bottom: 10px; }
+  .ns-range .se-check { grid-column: 1 / -1; order: 5; margin-top: 0; white-space: normal; }
   @media (max-width: 720px) { .ns-range { grid-template-columns: 1fr 1fr; } }
   @media (max-width: 720px) { .se-top, .se-cols { grid-template-columns: 1fr; } .se-prev { display: none; } }
 
@@ -2267,11 +2270,17 @@
                 <label class="se-check"><input type="radio" name="se-dm" id="se-dm-seasonal" onchange="dmSet('car','seasonal')"><span>Use same dates as the Seasonal page</span></label>
                 <label class="se-check"><input type="radio" name="se-dm" id="se-dm-own" onchange="dmSet('car','own')"><span>Add separate dates</span></label>
                 <div id="se-own-dates">
+                <div class="form-label">Type of event</div>
+                <div class="se-seg">
+                  <button id="se-evt-annual" type="button" class="btn btn-sm" onclick="setSeEvType('annual')">Annual Event</button>
+                  <button id="se-evt-onetime" type="button" class="btn btn-sm btn-ghost" onclick="setSeEvType('onetime')">One-Time Event</button>
+                  <button id="se-evt-evergreen" type="button" class="btn btn-sm btn-ghost" onclick="setSeEvType('evergreen')">Evergreen Event</button>
+                </div>
+                <p class="se-note" id="se-evt-note"></p>
+                <div id="se-annual-wrap">
                 <div class="se-seg">
                   <button id="se-type-month-btn" type="button" class="btn btn-sm" onclick="setSeasonalDateType('month')">Month / Season</button>
-                  <button id="se-type-exact-btn" type="button" class="btn btn-sm btn-ghost" onclick="setSeasonalDateType('exact')">Exact date</button>
                   <button id="se-type-range-btn" type="button" class="btn btn-sm btn-ghost" onclick="setSeasonalDateType('range')">Date range</button>
-                  <button id="se-type-run-btn" type="button" class="btn btn-sm btn-ghost" onclick="setSeasonalDateType('run')">Evergreen event (run these dates one time)</button>
                 </div>
                 <div id="se-month-fields">
                   <div class="mx-grid2">
@@ -2287,18 +2296,11 @@
                   </div>
                   <p class="se-note">Shows from the first date through the second date, every year.</p>
                 </div>
+                </div>
                 <div id="se-run-fields" style="display:none;">
-                  <div class="mx-grid2">
-                    <div class="form-group"><label class="form-label">This run starts</label><input type="date" id="se-run-from"></div>
-                    <div class="form-group"><label class="form-label">This run ends <span class="mx-hint">blank = single day</span></label><input type="date" id="se-run-to"></div>
-                  </div>
-                  <p class="se-note">An evergreen event has no set time of year. It shows only between these dates (a single day shows for 2 months before it), then switches off by itself. Use &ldquo;Filed under month&rdquo; above to file it where you want on the calendar.</p>
+                  <div id="se-runs"></div>
+                  <button type="button" id="se-add-run" class="btn btn-sm btn-ghost" onclick="seAddRun()">+ Add a run</button>
                 </div>
-                <div id="se-exact-fields" style="display:none;">
-                  <div class="form-group" style="max-width:240px;"><label class="form-label">Exact date</label><input type="date" id="se-exact-date"></div>
-                  <p class="se-note">Shows for 2 months before this date, through the date.</p>
-                </div>
-                <label class="se-check"><input type="checkbox" id="se-recurring"><span>Repeats every year</span></label>
                 </div>
               </div></div>
               <div id="se-manual-panel" style="display:none;">
@@ -3747,19 +3749,29 @@ let cdDirty = false;
 function cdMount(slotId) { const slot = document.getElementById(slotId), box = document.getElementById('se-auto-panel'); if (slot && box && box.parentNode !== slot) slot.appendChild(box); if (slotId === 'night-cd-slot' && box) box.style.display = ''; }
 function cdLoad(ev) {
   ev = ev || {}; const g = id => document.getElementById(id);
-  setSeasonalDateType(ev.dateType || 'month');
   g('se-month').value = ev.month || (new Date().getMonth() + 1); g('se-day').value = ev.day || '';
   g('se-rs-m').value = ev.rStartM || 1; g('se-rs-d').value = ev.rStartD || ''; g('se-re-m').value = ev.rEndM || 1; g('se-re-d').value = ev.rEndD || '';
-  g('se-exact-date').value = ev.exactDate || ''; g('se-run-from').value = ev.runFrom || ''; g('se-run-to').value = ev.runTo || '';
-  g('se-recurring').checked = ev.dateType ? !!ev.recurring : true;
+  g('se-runs').innerHTML = '';
+  let t = ev.eventType;
+  if (!t) t = ev.dateType === 'exact' ? 'onetime' : ev.dateType === 'run' ? 'evergreen' : 'annual';
+  if (t !== 'annual') {
+    const runs = seRuns(ev); (runs.length ? runs : [{}]).forEach(seAddRun);
+    seCurrentDateType = 'run';
+  } else seCurrentDateType = ev.dateType === 'range' ? 'range' : 'month';
+  setSeEvType(t);
   cdDirty = false;
 }
 function cdRead() {
-  const g = id => document.getElementById(id), t = seCurrentDateType, o = { dateType: t, carouselDates: dmCar, recurring: g('se-recurring').checked };
-  if (t === 'month') { o.month = Number(g('se-month').value); o.day = g('se-day').value.trim() ? Number(g('se-day').value) : null; }
-  else if (t === 'range') { o.rStartM = Number(g('se-rs-m').value); o.rStartD = Number(g('se-rs-d').value) || 1; o.rEndM = Number(g('se-re-m').value); o.rEndD = Number(g('se-re-d').value) || 28; o.recurring = true; }
-  else if (t === 'run') { o.runFrom = g('se-run-from').value; o.runTo = g('se-run-to').value; o.recurring = false; }
-  else o.exactDate = g('se-exact-date').value;
+  const g = id => document.getElementById(id), o = { eventType: seEvType, carouselDates: dmCar };
+  if (seEvType === 'annual') {
+    o.recurring = true;
+    if (seCurrentDateType === 'range') { o.dateType = 'range'; o.rStartM = Number(g('se-rs-m').value); o.rStartD = Number(g('se-rs-d').value) || 1; o.rEndM = Number(g('se-re-m').value); o.rEndD = Number(g('se-re-d').value) || 28; }
+    else { o.dateType = 'month'; o.month = Number(g('se-month').value); o.day = g('se-day').value.trim() ? Number(g('se-day').value) : null; }
+  } else {
+    let runs = seReadRuns(); if (seEvType === 'onetime') runs = runs.slice(0, 1);
+    o.dateType = 'run'; o.recurring = false; o.runs = runs;
+    o.runFrom = runs[0] ? runs[0].from : ''; o.runTo = runs[0] ? runs[0].to : '';
+  }
   return o;
 }
 function dtSweep() { document.querySelectorAll('input[type="date"]').forEach(i => i.classList.toggle('dt-empty', !i.value)); }
@@ -6078,7 +6090,7 @@ function carAllFilter(m) {
 }
 function seEvMonth(ev) {
   if (ev.evMonth) return Number(ev.evMonth);
-  if (ev.dateType === 'run') return ev.runFrom ? Number(ev.runFrom.split('-')[1]) : 0;
+  if (ev.dateType === 'run') { const r = seRunFirst(ev); return r ? Number(r.from.split('-')[1]) : 0; }
   if (ev.dateType === 'exact') return ev.exactDate ? Number(ev.exactDate.split('-')[1]) : 0;
   if (ev.dateType === 'range') return Number(ev.rStartM) || 0;
   return Number(ev.month) || 0;
@@ -6088,9 +6100,7 @@ function seInNext3(ev) {
   if (seIsActive(ev)) return true;
   const now = new Date(), lim = new Date(now.getFullYear(), now.getMonth() + 3, now.getDate());
   if (ev.dateType === 'run') {
-    if (!ev.runFrom) return false;
-    const [y, m, d] = ev.runFrom.split('-').map(Number), t = new Date(y, m - 1, d);
-    return t >= new Date(now.getFullYear(), now.getMonth(), now.getDate()) && t <= lim;
+    return seRuns(ev).some(r => { const [y, m, d] = r.from.split('-').map(Number), t = new Date(y, m - 1, d); return t >= new Date(now.getFullYear(), now.getMonth(), now.getDate()) && t <= lim; });
   }
   if (ev.dateType === 'exact') {
     if (!ev.exactDate) return false;
@@ -6114,14 +6124,14 @@ function carSetView(m) {
 }
 function seEvDay(ev) {
   if (ev.evMonth) return Number(ev.evDay) || 0;
-  if (ev.dateType === 'run') return ev.runFrom ? Number(ev.runFrom.split('-')[2]) || 0 : 0;
+  if (ev.dateType === 'run') { const r = seRunFirst(ev); return r ? Number(r.from.split('-')[2]) || 0 : 0; }
   if (ev.dateType === 'exact') return ev.exactDate ? Number(ev.exactDate.split('-')[2]) || 0 : 0;
   if (ev.dateType === 'range') return Number(ev.rStartD) || 0;
   return Number(ev.day) || 0;
 }
 function seEvDateStr(ev) {
   if (ev.dateType === 'range') return MONTH_NAMES[ev.rStartM] + ' ' + ev.rStartD + ' – ' + MONTH_NAMES[ev.rEndM] + ' ' + ev.rEndD + ' (every year)';
-  if (ev.dateType === 'run') return ev.runFrom ? 'No set timeframe \u00b7 this run ' + ev.runFrom + (ev.runTo && ev.runTo !== ev.runFrom ? ' to ' + ev.runTo : '') : 'No set timeframe';
+  if (ev.dateType === 'run') return (ev.eventType === 'onetime' ? 'One-time \u00b7 ' : 'Evergreen \u00b7 ') + (seRuns(ev).map(r => r.from + (r.to && r.to !== r.from ? ' to ' + r.to : '')).join(', ') || 'no runs yet');
   if (ev.dateType === 'exact') return ev.exactDate || '';
   const m = Number(ev.month);
   return m ? (ev.day ? MONTH_NAMES[m] + ' ' + ev.day : MONTH_NAMES[m]) : '';
@@ -6373,6 +6383,13 @@ function carRefreshPanes() {
 // Returns true if this event should currently appear in the "Coming Up" carousel
 // Carousel and Seasonal page can share one set of dates or each have their own.
 // Date range = live from its start through its end. Single day = live for 2 months before that day, through the day.
+// Runs: one-time and evergreen events list the dates they run (From, and To for a range)
+function seRuns(ev) {
+  if (Array.isArray(ev.runs) && ev.runs.length) return ev.runs.filter(r => r && r.from);
+  if (ev.runFrom) return [{ from: ev.runFrom, to: ev.runTo || '' }];
+  return [];
+}
+function seRunFirst(ev) { return seRuns(ev).slice().sort((a, b) => a.from < b.from ? -1 : 1)[0] || null; }
 function seRangeWins(o) {
   const Y = new Date().getFullYear(), out = [];
   (Array.isArray(o.seasonalRanges) ? o.seasonalRanges : []).forEach(r => {
@@ -6397,11 +6414,13 @@ function seDatesEnd(ev) {
     return null;
   }
   if (ev.dateType === 'run') {
-    if (!ev.runFrom) return null;
-    const [fy, fm, fd] = ev.runFrom.split('-').map(Number);
-    if (!ev.runTo || ev.runTo === ev.runFrom) return win(new Date(fy, fm - 1, fd));
-    const [ty, tm, td] = ev.runTo.split('-').map(Number), st = new Date(fy, fm - 1, fd), en = new Date(ty, tm - 1, td, 23, 59, 59);
-    return (now >= st && now <= en) ? en : null;
+    for (const r of seRuns(ev)) {
+      const [fy, fm, fd] = r.from.split('-').map(Number);
+      if (!r.to || r.to === r.from) { const e = win(new Date(fy, fm - 1, fd)); if (e) return e; continue; }
+      const [ty, tm, td] = r.to.split('-').map(Number), st = new Date(fy, fm - 1, fd), en = new Date(ty, tm - 1, td, 23, 59, 59);
+      if (now >= st && now <= en) return en;
+    }
+    return null;
   }
   if (ev.dateType === 'exact') { if (!ev.exactDate) return null; const [ey, em, ed] = ev.exactDate.split('-').map(Number); return win(new Date(ey, em - 1, ed)); }
   const m = Number(ev.month); if (!m) return null;
@@ -6431,14 +6450,49 @@ let seCurrentDateType = 'month';
 
 function setSeasonalDateType(type) {
   seCurrentDateType = type;
-  document.getElementById('se-month-fields').style.display = type === 'month' ? '' : 'none';
-  document.getElementById('se-exact-fields').style.display = type === 'exact' ? '' : 'none';
-  document.getElementById('se-range-fields').style.display = type === 'range' ? '' : 'none';
-  document.getElementById('se-run-fields').style.display = type === 'run' ? '' : 'none';
-  document.getElementById('se-type-run-btn').className = 'btn btn-sm' + (type === 'run' ? '' : ' btn-ghost');
-  document.getElementById('se-type-range-btn').className = 'btn btn-sm' + (type === 'range' ? '' : ' btn-ghost');
-  document.getElementById('se-type-month-btn').className = 'btn btn-sm' + (type === 'month' ? '' : ' btn-ghost');
-  document.getElementById('se-type-exact-btn').className = 'btn btn-sm' + (type === 'exact' ? '' : ' btn-ghost');
+  const g = id => document.getElementById(id);
+  g('se-month-fields').style.display = type === 'month' ? '' : 'none';
+  g('se-range-fields').style.display = type === 'range' ? '' : 'none';
+  g('se-type-range-btn').className = 'btn btn-sm' + (type === 'range' ? '' : ' btn-ghost');
+  g('se-type-month-btn').className = 'btn btn-sm' + (type === 'month' ? '' : ' btn-ghost');
+}
+let seEvType = 'annual';
+const SE_EVT_NOTES = {
+  annual: 'Happens every year.',
+  onetime: 'Happens once. It shows between these dates (a single day shows for 2 months before it), then switches off for good.',
+  evergreen: 'Has no set time of year. Add a run for each time you want to run it. It shows only during its runs and switches off in between. Use \u201cFiled under month\u201d above to file it where you want on the calendar.'
+};
+function seAddRun(r) {
+  r = r || {};
+  const row = document.createElement('div');
+  row.className = 'ns-range se-run-row';
+  row.innerHTML = '<div class="form-group" style="margin:0;"><label class="form-label">Starts</label><input type="date" class="run-from" value="' + esc(r.from || '') + '"></div>'
+    + '<div class="form-group" style="margin:0;"><label class="form-label">Ends <span class="mx-hint">blank = single day</span></label><input type="date" class="run-to" value="' + esc(r.to || '') + '"></div>'
+    + '<button type="button" class="btn btn-sm btn-ghost se-run-x" title="Remove this run" onclick="this.closest(\'.se-run-row\').remove()">&times;</button>';
+  document.getElementById('se-runs').appendChild(row);
+  try { dtSweep(); } catch (e) {}
+  cdDirty = true;
+}
+function seReadRuns() {
+  return Array.from(document.querySelectorAll('#se-runs .se-run-row')).map(r => ({ from: r.querySelector('.run-from').value || '', to: r.querySelector('.run-to').value || '' })).filter(r => r.from);
+}
+function setSeEvType(t) {
+  seEvType = t;
+  const g = id => document.getElementById(id);
+  ['annual', 'onetime', 'evergreen'].forEach(k => { g('se-evt-' + k).className = 'btn btn-sm' + (k === t ? '' : ' btn-ghost'); });
+  g('se-evt-note').textContent = SE_EVT_NOTES[t];
+  const annual = t === 'annual';
+  g('se-annual-wrap').style.display = annual ? '' : 'none';
+  g('se-run-fields').style.display = annual ? 'none' : '';
+  if (annual) setSeasonalDateType(seCurrentDateType === 'range' ? 'range' : 'month');
+  else {
+    seCurrentDateType = 'run';
+    const rows = document.querySelectorAll('#se-runs .se-run-row');
+    if (!rows.length) seAddRun();
+    if (t === 'onetime') document.querySelectorAll('#se-runs .se-run-row').forEach((r, i) => { if (i > 0) r.remove(); });
+    g('se-add-run').style.display = t === 'evergreen' ? '' : 'none';
+    document.querySelectorAll('#se-runs .se-run-x').forEach(b => { b.style.display = t === 'evergreen' ? '' : 'none'; });
+  }
 }
 
 let ntModes = { night: 'manual', se: 'manual' };
@@ -6472,11 +6526,9 @@ function openSeasonalModal(id, pick) {
   document.getElementById('se-name').value   = ev ? ev.name  : '';
   document.getElementById('se-image').value  = ev ? (ev.image||'') : '';
   document.getElementById('se-desc').value   = ev ? (ev.desc||'') : '';
-  document.getElementById('se-recurring').checked = ev ? !!ev.recurring : true;
   document.getElementById('se-delete-btn').style.display = ev ? '' : 'none';
 
-  const dtype = ev ? (ev.dateType || 'month') : 'month';
-  setSeasonalDateType(dtype);
+  cdLoad(ev);
   document.getElementById('se-ev-month').value = ev ? (seEvMonth(ev) || new Date().getMonth() + 1) : new Date().getMonth() + 1;
   document.getElementById('se-ev-day').value = ev ? (ev.evDay || '') : '';
   if (seLinkedNight) {
@@ -6486,18 +6538,6 @@ function openSeasonalModal(id, pick) {
   }
   seImgPrev();
   document.getElementById('se-hide-year').checked = !!(ev && ev.hiddenYear === new Date().getFullYear());
-
-  if (dtype === 'month') {
-    document.getElementById('se-month').value = ev ? (ev.month || 1) : new Date().getMonth()+1;
-    document.getElementById('se-day').value   = ev ? (ev.day || '') : '';
-  } else if (dtype === 'range') {
-    document.getElementById('se-rs-m').value = ev.rStartM || 1; document.getElementById('se-rs-d').value = ev.rStartD || '';
-    document.getElementById('se-re-m').value = ev.rEndM || 1;   document.getElementById('se-re-d').value = ev.rEndD || '';
-  } else if (dtype === 'run') {
-    document.getElementById('se-run-from').value = ev.runFrom || ''; document.getElementById('se-run-to').value = ev.runTo || '';
-  } else {
-    document.getElementById('se-exact-date').value = ev ? (ev.exactDate || '') : '';
-  }
 
   // Where it shows
   document.getElementById('se-on-carousel').checked = ev ? ev.carouselOn !== false : true;
@@ -6548,10 +6588,8 @@ async function saveSeasonalEvent() {
     name,
     desc:      document.getElementById('se-desc').value.trim(),
     image:     document.getElementById('se-image').value.trim(),
-    recurring:  document.getElementById('se-recurring').checked,
     alwaysOn:   document.getElementById('se-always-on').checked,
     alwaysOff:  document.getElementById('se-always-off').checked,
-    dateType:   seCurrentDateType,
     evMonth:    Number(document.getElementById('se-ev-month').value) || null,
     evDay:      Number(document.getElementById('se-ev-day').value) || null,
     hiddenYear: document.getElementById('se-hide-year').checked ? new Date().getFullYear() : null,
@@ -6559,19 +6597,7 @@ async function saveSeasonalEvent() {
     carouselDates: dmCar,
   };
 
-  if (seCurrentDateType === 'month') {
-    ev.month = Number(document.getElementById('se-month').value);
-    const dayVal = document.getElementById('se-day').value.trim();
-    ev.day = dayVal ? Number(dayVal) : null;
-  } else if (seCurrentDateType === 'range') {
-    ev.rStartM = Number(document.getElementById('se-rs-m').value); ev.rStartD = Number(document.getElementById('se-rs-d').value) || 1;
-    ev.rEndM = Number(document.getElementById('se-re-m').value);   ev.rEndD = Number(document.getElementById('se-re-d').value) || 28;
-    ev.recurring = true;
-  } else if (seCurrentDateType === 'run') {
-    ev.runFrom = document.getElementById('se-run-from').value; ev.runTo = document.getElementById('se-run-to').value; ev.recurring = false;
-  } else {
-    ev.exactDate = document.getElementById('se-exact-date').value;
-  }
+  Object.assign(ev, cdRead());
 
   const wantSeasonal = document.getElementById('se-on-seasonal').checked;
   if (sePickMode && seLinkedNight) {
@@ -7426,7 +7452,7 @@ Object.assign(window, {
   openAddCategoryModal, editCategory, deleteCategory, deleteCategoryFromModal,
   openLiveCategoryInfo, closeLiveCategoryInfo, saveLiveCategoryEdit,
   toggleLibTypeFilter, clearLibTypeFilters,
-  openSeasonalModal, closeSeasonalModal, saveSeasonalEvent, deleteSeasonalEvent, setSeasonalDateType, renderSeasonalAdmin, seToggleAlwaysOn,
+  openSeasonalModal, closeSeasonalModal, saveSeasonalEvent, deleteSeasonalEvent, setSeasonalDateType, setSeEvType, seAddRun, renderSeasonalAdmin, seToggleAlwaysOn,
   switchBookingsTab, adminCalNav, adminCalToggle, setCalMode, saveAvailability, setRequestFilter, updateRequestStatus, deleteRequest, initBookingsTab,
   closeCatModal, saveCategoryFromModal, updateCatKaraokeVisibility,
   handleCatBannerUpload, clearCatBanner, handleCatBannerUrl, handleCatMiniUrl,
