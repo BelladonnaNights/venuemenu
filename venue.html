@@ -2099,7 +2099,7 @@ function seDatesEnd(ev) {
   const m = Number(ev.month); if (!m) return null;
   if (ev.day) { const ys = ev.recurring ? [Y, Y + 1] : [Y]; for (const y of ys) { const e = win(new Date(y, m - 1, ev.day)); if (e) return e; } return null; }
   const ys = ev.recurring ? [Y, Y + 1] : [Y];
-  for (const y of ys) { const st = new Date(y, m - 1, 1); st.setDate(st.getDate() - 14); const en = new Date(y, m, 0); en.setDate(en.getDate() - 7); if (now >= st && now <= en) return en; }
+  for (const y of ys) { const st = new Date(y, m - 4, 1); const en = new Date(y, m, 0); en.setDate(en.getDate() - 7); if (now >= st && now <= en) return en; }
   return null;
 }
 function seDatesLive(ev) { return !!seDatesEnd(ev); }
