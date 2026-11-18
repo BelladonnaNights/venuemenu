@@ -3610,6 +3610,16 @@ async function deleteCategoryFromModal() {
 // ═══════════════════════════════════════════════
 // THEMED NIGHTS
 // ═══════════════════════════════════════════════
+// Live = showing right now somewhere: the carousel, the Seasonal page, or the Themed Nights tab following its dates
+function nightIsLive(n) {
+  try {
+    const pk = (carPicks || []).find(x => x.srcType === 'night' && (x.srcName || x.name) === n.name);
+    if (pk && !pk.pending && seIsActive(pk)) return true;
+    if (nightSeasonalLive(n) && n.seasonalMode === 'auto') return true;
+    if (n.published && n.themedMode === 'dates' && pk && seDatesLive(pk)) return true;
+  } catch (e) {}
+  return false;
+}
 function renderNights() {
   renderNightFilterChips();
   const grid = document.getElementById('nights-grid');
@@ -3645,6 +3655,7 @@ function renderNights() {
       </div>
       <div class="night-card-body" onclick="openNightDetail(${i})">
         <div class="night-card-name" style="margin-bottom:0.4rem;">${esc(n.name)}</div>
+        ${nightIsLive(n) ? `<div style="margin-bottom:0.45rem;"><span style="font-family:'Cinzel',serif;font-size:0.6rem;letter-spacing:0.12em;text-transform:uppercase;background:rgba(42,107,58,0.2);color:#7DC996;border:1px solid rgba(42,107,58,0.4);padding:2px 7px;border-radius:3px;">Live</span></div>` : ''}
       </div>
       <div class="night-card-footer" onclick="event.stopPropagation()">
         <span title="Drag to reorder" style="cursor:grab; color:var(--text-dim); font-size:1.1rem; user-select:none; padding:0.1rem 0.3rem;" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='var(--text-dim)'">⠿</span>
