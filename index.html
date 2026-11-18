@@ -1973,7 +1973,13 @@
                 </div>
                 <p class="se-note" id="ns-mode-note"></p>
                 <div id="ns-auto-wrap" style="display:none;">
-                  <div id="ns-ranges" style="display:none;"></div>
+                  <label class="se-check"><input type="radio" name="sd-dm" id="sd-dm-same" onchange="dmSet('sea','same')"><span>Use same dates as the Carousel</span></label>
+                  <label class="se-check"><input type="radio" name="sd-dm" id="sd-dm-own" onchange="dmSet('sea','own')"><span>Use different dates</span></label>
+                  <div id="ns-own-wrap" style="display:none;">
+                    <div id="ns-ranges"></div>
+                    <button type="button" class="btn btn-sm btn-ghost" onclick="nsAddRange()">+ Add date range</button>
+                    <p class="se-note">Leave To blank for a single day: it shows for 2 months before that day.</p>
+                  </div>
                   <input type="hidden" id="ns-lead" value="0">
                   <label class="se-check"><input type="checkbox" id="ns-hide-year"><span>Hide this year <em>(skips it this year only, back next year)</em></span></label>
                 </div>
@@ -2254,6 +2260,9 @@
               </div>
               <input type="checkbox" id="se-always-on" hidden>
               <div id="se-auto-panel">
+                <label class="se-check"><input type="radio" name="se-dm" id="se-dm-seasonal" onchange="dmSet('car','seasonal')"><span>Use same dates as the Seasonal page</span></label>
+                <label class="se-check"><input type="radio" name="se-dm" id="se-dm-own" onchange="dmSet('car','own')"><span>Use different dates</span></label>
+                <div id="se-own-dates">
                 <div class="se-seg">
                   <button id="se-type-month-btn" type="button" class="btn btn-sm" onclick="setSeasonalDateType('month')">Month / Season</button>
                   <button id="se-type-exact-btn" type="button" class="btn btn-sm btn-ghost" onclick="setSeasonalDateType('exact')">Exact date</button>
@@ -2264,7 +2273,7 @@
                     <div class="form-group"><label class="form-label">Month</label><select id="se-month"><option value="1">January</option><option value="2">February</option><option value="3">March</option><option value="4">April</option><option value="5">May</option><option value="6">June</option><option value="7">July</option><option value="8">August</option><option value="9">September</option><option value="10">October</option><option value="11">November</option><option value="12">December</option></select></div>
                     <div class="form-group"><label class="form-label">Day <span class="mx-hint">optional</span></label><input type="number" id="se-day" min="1" max="31"></div>
                   </div>
-                  <p class="se-note">Shows from 2 weeks before the month starts through 1 week before it ends. With a day set, it shows 1 month before that day.</p>
+                  <p class="se-note">Shows from 2 weeks before the month starts through 1 week before it ends. With a day set, it shows 2 months before that day.</p>
                 </div>
                 <div id="se-range-fields" style="display:none;">
                   <div class="mx-grid2">
@@ -2275,9 +2284,10 @@
                 </div>
                 <div id="se-exact-fields" style="display:none;">
                   <div class="form-group" style="max-width:240px;"><label class="form-label">Exact date</label><input type="date" id="se-exact-date"></div>
-                  <p class="se-note">Shows exactly 1 month before this date.</p>
+                  <p class="se-note">Shows for 2 months before this date, through the date.</p>
                 </div>
                 <label class="se-check"><input type="checkbox" id="se-recurring"><span>Repeats every year</span></label>
+                </div>
               </div>
               <div id="se-manual-panel" style="display:none;">
                 <p class="se-note">Shows all the time. Use the box below to pause it without losing anything.</p>
@@ -3719,13 +3729,27 @@ function openNewNightModal() {
 
 // ── Seasonal page: manual or auto-by-dates ──
 let nsMode = 'manual';
+let dmCar = 'own', dmSea = 'same';
+function dmApply() {
+  const g = id => document.getElementById(id), set = (id, v) => { const e = g(id); if (e) e.checked = v; };
+  set('se-dm-own', dmCar === 'own'); set('se-dm-seasonal', dmCar === 'seasonal');
+  set('sd-dm-same', dmSea === 'same'); set('sd-dm-own', dmSea === 'own');
+  const od = g('se-own-dates'); if (od) od.style.display = dmCar === 'own' ? '' : 'none';
+  const ow = g('ns-own-wrap'); if (ow) ow.style.display = dmSea === 'own' ? '' : 'none';
+  if (dmSea === 'own' && ow && !document.querySelector('#ns-ranges .ns-range')) nsAddRange();
+}
+function dmSet(who, v) {
+  if (who === 'car') { dmCar = v; if (v === 'seasonal') { dmSea = 'own'; nsSetMode('auto'); } }
+  else { dmSea = v; if (v === 'same') dmCar = 'own'; }
+  dmApply();
+}
 function nsSetMode(m) {
   nsMode = m === 'auto' ? 'auto' : 'manual';
   document.getElementById('ns-mode-manual').className = 'btn btn-sm' + (nsMode === 'manual' ? '' : ' btn-ghost');
   document.getElementById('ns-mode-auto').className = 'btn btn-sm' + (nsMode === 'auto' ? '' : ' btn-ghost');
   document.getElementById('ns-auto-wrap').style.display = nsMode === 'auto' ? '' : 'none';
   document.getElementById('ns-mode-note').textContent = nsMode === 'auto'
-    ? 'Uses the same dates as the Carousel. A date range shows for that range. A single day shows for 2 months before that day. Within 2 weeks of the end it is marked Booked. (A themed night uses the dates on its Carousel pick.)'
+    ? 'Shows on the Seasonal page by the dates chosen below. A date range shows for that range. A single day shows for 2 months before it. Within 2 weeks of the end it is marked Booked.'
     : 'Shows on the Seasonal Page whenever the box above is checked.';
 }
 function nsAddRange(r) {
@@ -3733,7 +3757,7 @@ function nsAddRange(r) {
   const row = document.createElement('div');
   row.className = 'ns-range';
   row.innerHTML = '<div class="form-group" style="margin:0;"><label class="form-label">From</label><input type="date" class="ns-from" value="' + esc(r.from || '') + '"></div>'
-    + '<div class="form-group" style="margin:0;"><label class="form-label">To</label><input type="date" class="ns-to" value="' + esc(r.to || '') + '"></div>'
+    + '<div class="form-group" style="margin:0;"><label class="form-label">To <span class="mx-hint">blank = single day</span></label><input type="date" class="ns-to" value="' + esc(r.to || '') + '"></div>'
     + '<label class="se-check"><input type="checkbox" class="ns-yearly"' + (r.yearly === false ? '' : ' checked') + '><span>Every year <em>(year ignored)</em></span></label>'
     + '<button type="button" class="btn btn-sm btn-ghost" title="Remove this range" onclick="nsRemoveRange(this)">&times;</button>';
   document.getElementById('ns-ranges').appendChild(row);
@@ -3785,16 +3809,15 @@ function seasonalLiveObj(o) {
   if (o.seasonalHiddenYear && o.seasonalHiddenYear === now.getFullYear()) return false;
   if (o.seasonalMode !== 'auto') return true;
   const src = seDateSrc(o);
-  if (src) return seDatesLive(src);
-  return seWindows(o).some(w => now >= w.show && now <= w.end);
+  if (seUsesOwn(o) || !src) return !!seWinEnd(o);
+  return seDatesLive(src);
 }
 // Booked = within 2 weeks of its end date
 function seasonalBooked(o) {
   const now = new Date(), day = 864e5;
   if (o.seasonalMode === 'auto') {
-    const src = seDateSrc(o), en = src ? seDatesEnd(src) : null;
+    const src = seDateSrc(o), en = (seUsesOwn(o) || !src) ? seWinEnd(o) : seDatesEnd(src);
     if (en && now >= new Date(en.getTime() - 14 * day)) return true;
-    if (!src && seWindows(o).some(w => now >= new Date(w.end.getTime() - 14 * day) && now <= w.end)) return true;
   }
   if (o.seasonalDate) { const d = new Date(o.seasonalDate + 'T12:00:00'), diff = (d - now) / day; if (diff >= 0 && diff <= 14) return true; }
   return false;
@@ -3840,6 +3863,7 @@ function sdLoad(o) {
   document.getElementById('night-seasonal-fit').value = o.seasonalFit || '';
   document.getElementById('ns-lead').value = 0;
   nsLoad(o);
+  dmSea = o.seasonalDates || ((Array.isArray(o.seasonalRanges) && o.seasonalRanges.length) ? 'own' : 'same'); dmCar = 'own'; dmApply();
 }
 function sdRead() {
   return {
@@ -3849,6 +3873,7 @@ function sdRead() {
     seasonalDesc: ((document.getElementById('night-sd-slot').contains(document.getElementById('sd-box')) ? document.getElementById('night-description') : document.getElementById('se-desc')).value || '').trim(),
     seasonalFit: document.getElementById('night-seasonal-fit').value.trim(),
     seasonalMode: nsMode,
+    seasonalDates: dmSea,
     seasonalLead: 0,
     seasonalRanges: nsReadRanges(),
     seasonalHiddenYear: document.getElementById('ns-hide-year').checked ? new Date().getFullYear() : null
@@ -4110,7 +4135,7 @@ async function saveNight() {
       try {
         await loadCarPicks();
         let hit = false;
-        carPicks.forEach(p => { if (p.srcType === 'night' && (p.srcName || p.name) === existing.name) { p.name = night.name; p.srcName = night.name; p.desc = night.description; if (night.bannerData) p.image = night.bannerData; if (night.seasonalMonth) p.evMonth = night.seasonalMonth; hit = true; } });
+        carPicks.forEach(p => { if (p.srcType === 'night' && (p.srcName || p.name) === existing.name) { p.name = night.name; p.srcName = night.name; p.desc = night.description; if (night.bannerData) p.image = night.bannerData; if (night.seasonalMonth) p.evMonth = night.seasonalMonth; p.seasonalRanges = night.seasonalRanges; p.seasonalDates = night.seasonalDates; hit = true; } });
         if (hit) { await persistCarPicks(); carRerenderCards(); }
       } catch (e) {}
     }
@@ -6297,9 +6322,23 @@ function carRefreshPanes() {
 
 // ── VISIBILITY LOGIC ──
 // Returns true if this event should currently appear in the "Coming Up" carousel
-// One set of dates drives the Carousel, Themed Nights tab and Seasonal page.
+// Carousel and Seasonal page can share one set of dates or each have their own.
 // Date range = live from its start through its end. Single day = live for 2 months before that day, through the day.
+function seRangeWins(o) {
+  const Y = new Date().getFullYear(), out = [];
+  (Array.isArray(o.seasonalRanges) ? o.seasonalRanges : []).forEach(r => {
+    if (!r || !r.from) return;
+    const single = !r.to || r.to === r.from, to = r.to || r.from;
+    const [fy, fm, fd] = r.from.split('-').map(Number), [ty, tm, td] = to.split('-').map(Number);
+    const mk = (sy, ey) => out.push({ show: single ? new Date(sy, fm - 3, fd) : new Date(sy, fm - 1, fd), end: new Date(ey, tm - 1, td, 23, 59, 59) });
+    if (r.yearly) { const wrap = (tm * 100 + td) < (fm * 100 + fd); for (let y = Y - 1; y <= Y + 1; y++) mk(y, y + (wrap ? 1 : 0)); }
+    else mk(fy, ty);
+  });
+  return out;
+}
+function seWinEnd(o) { const now = new Date(), w = seRangeWins(o).find(x => now >= x.show && now <= x.end); return w ? w.end : null; }
 function seDatesEnd(ev) {
+  if (ev.carouselDates === 'seasonal') return seWinEnd(ev);
   const now = new Date(), Y = now.getFullYear();
   const win = (day) => { const end = new Date(day.getFullYear(), day.getMonth(), day.getDate(), 23, 59, 59), st = new Date(day.getFullYear(), day.getMonth() - 2, day.getDate()); return (now >= st && now <= end) ? end : null; };
   if (ev.dateType === 'range') {
@@ -6316,6 +6355,8 @@ function seDatesEnd(ev) {
   return null;
 }
 function seDatesLive(ev) { return !!seDatesEnd(ev); }
+// Seasonal page: its own ranges, or the same dates as the Carousel
+function seUsesOwn(o) { return o.seasonalDates === 'own' || (o.seasonalDates === undefined && Array.isArray(o.seasonalRanges) && o.seasonalRanges.length > 0); }
 function seIsActive(ev) {
   if (ev.pending) return false;
   if (ev.hiddenYear && ev.hiddenYear === new Date().getFullYear()) return false;
@@ -6412,6 +6453,7 @@ function openSeasonalModal(id, pick) {
   const src = seLinkedNight || ev || {};
   document.getElementById('se-on-seasonal').checked = seLinkedNight ? !!seLinkedNight.publishedSeasonal : !!(ev && ev.onSeasonal);
   sdMount('se-sd-slot'); sdLoad(src);
+  dmCar = (ev && ev.carouselDates === 'seasonal') ? 'seasonal' : 'own'; if (dmCar === 'seasonal') dmSea = 'own'; dmApply();
   note.style.display = 'none';
   if (seLinkedNight) { note.textContent = 'This is a copy of the themed night “' + seLinkedNight.name + '”. The Themed Nights tab and Seasonal page boxes below change that night, so it never shows twice.'; note.style.display = ''; }
   else if (nightMissing) { note.textContent = 'The original themed night could not be found (renamed or deleted), so only the Carousel option applies.'; note.style.display = ''; }
@@ -6453,6 +6495,7 @@ async function saveSeasonalEvent() {
     evDay:      Number(document.getElementById('se-ev-day').value) || null,
     hiddenYear: document.getElementById('se-hide-year').checked ? new Date().getFullYear() : null,
     carouselOn: document.getElementById('se-on-carousel').checked,
+    carouselDates: dmCar,
   };
 
   if (seCurrentDateType === 'month') {
@@ -6477,6 +6520,7 @@ async function saveSeasonalEvent() {
     if (ev.image) ln.bannerData = ev.image;
     ev.srcName = name;
     Object.assign(ln, sdRead());
+    ev.seasonalRanges = ln.seasonalRanges; ev.seasonalDates = ln.seasonalDates;
     if (ln.seasonalMonth) ev.evMonth = ln.seasonalMonth;
     try { await saveNightDoc(ln); renderNights(); }
     catch (e) { toast('Could not save the themed night: ' + e.message, 'error'); return; }
@@ -7309,7 +7353,7 @@ window.deletePortalCollaborator = async function(id) {
 };
 
 Object.assign(window, {
-  carTab, carAllFilter, carSetView, renderCarSeasonal, carToggleModal, mxFold, sdFold, ntSetMode, seSetMode, mxRefresh, nsSetMode, nsAddRange, nsRemoveRange, setTriviaExBook, seImgPrev, catImgCheck, carGoPicks, carFromModal, setCatSize, setCatStyle, closeCategoryDetail, openNightFromCat, openCategoryDetail, carouselAdd,
+  carTab, carAllFilter, carSetView, renderCarSeasonal, carToggleModal, dmSet, mxFold, sdFold, ntSetMode, seSetMode, mxRefresh, nsSetMode, nsAddRange, nsRemoveRange, setTriviaExBook, seImgPrev, catImgCheck, carGoPicks, carFromModal, setCatSize, setCatStyle, closeCategoryDetail, openNightFromCat, openCategoryDetail, carouselAdd,
   liveImgPreview,
   toggleNavMenu, closeNavMenu,
   renderMovies, openMovieModal, addMovieLinkRow, closeMovieModal, saveMovie, deleteMovie, openMovieBulk, closeMovieBulk, saveMovieBulk,
