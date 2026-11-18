@@ -155,6 +155,13 @@ function seDatesEnd(ev) {
     for (let y = Y - 1; y <= Y + 1; y++) { const st = new Date(y, a - 1, sd), end = new Date(y + (wrap ? 1 : 0), b - 1, ed, 23, 59, 59); if (now >= st && now <= end) return end; }
     return null;
   }
+  if (ev.dateType === 'run') {
+    if (!ev.runFrom) return null;
+    const [fy, fm, fd] = ev.runFrom.split('-').map(Number);
+    if (!ev.runTo || ev.runTo === ev.runFrom) return win(new Date(fy, fm - 1, fd));
+    const [ty, tm, td] = ev.runTo.split('-').map(Number), st = new Date(fy, fm - 1, fd), en = new Date(ty, tm - 1, td, 23, 59, 59);
+    return (now >= st && now <= en) ? en : null;
+  }
   if (ev.dateType === 'exact') { if (!ev.exactDate) return null; const [ey, em, ed] = ev.exactDate.split('-').map(Number); return win(new Date(ey, em - 1, ed)); }
   const m = Number(ev.month); if (!m) return null;
   if (ev.day) { const ys = ev.recurring ? [Y, Y + 1] : [Y]; for (const y of ys) { const e = win(new Date(y, m - 1, ev.day)); if (e) return e; } return null; }
@@ -248,13 +255,14 @@ document.addEventListener('keydown',e=>{
 function fromCarousel(e,kind){
   let m=Number(e.evMonth)||0;
   if(!m){
-    if(e.dateType==='exact'&&e.exactDate) m=Number(e.exactDate.split('-')[1])||0;
+    if(e.dateType==='run'&&e.runFrom) m=Number(e.runFrom.split('-')[1])||0;
+    else if(e.dateType==='exact'&&e.exactDate) m=Number(e.exactDate.split('-')[1])||0;
     else if(e.dateType==='range') m=Number(e.rStartM)||0;
     else m=Number(e.month)||0;
   }
   return {_id:String(e.id),kind,name:e.name,bannerData:e.image||'',bannerColor:'',
     seasonalDesc:e.seasonalDesc||e.desc||'',seasonalFit:e.seasonalFit||'',seasonalDate:e.seasonalDate||'',seasonalWhen:e.seasonalWhen||'',
-    seasonalMonth:e.seasonalMonth||null,seasonalMode:e.seasonalMode,seasonalRanges:e.seasonalRanges,seasonalLead:e.seasonalLead,seasonalHiddenYear:e.seasonalHiddenYear,fallbackMonth:m,dateType:e.dateType,month:e.month,day:e.day,exactDate:e.exactDate,rStartM:e.rStartM,rStartD:e.rStartD,rEndM:e.rEndM,rEndD:e.rEndD,recurring:e.recurring,seasonalDates:e.seasonalDates,carouselDates:e.carouselDates};
+    seasonalMonth:e.seasonalMonth||null,seasonalMode:e.seasonalMode,seasonalRanges:e.seasonalRanges,seasonalLead:e.seasonalLead,seasonalHiddenYear:e.seasonalHiddenYear,fallbackMonth:m,dateType:e.dateType,month:e.month,day:e.day,exactDate:e.exactDate,rStartM:e.rStartM,rStartD:e.rStartD,rEndM:e.rEndM,rEndD:e.rEndD,recurring:e.recurring,runFrom:e.runFrom,runTo:e.runTo,seasonalDates:e.seasonalDates,carouselDates:e.carouselDates};
 }
 (async()=>{
   try{
