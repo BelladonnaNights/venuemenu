@@ -132,6 +132,13 @@ let nights=[];
    Manual nights show whenever they are published. 'Hide this year' skips it for the current year only. */
 // Carousel and Seasonal page can share one set of dates or each have their own.
 // Date range = live from its start through its end. Single day = live for 2 months before that day, through the day.
+// Runs: one-time and evergreen events list the dates they run (From, and To for a range)
+function seRuns(ev) {
+  if (Array.isArray(ev.runs) && ev.runs.length) return ev.runs.filter(r => r && r.from);
+  if (ev.runFrom) return [{ from: ev.runFrom, to: ev.runTo || '' }];
+  return [];
+}
+function seRunFirst(ev) { return seRuns(ev).slice().sort((a, b) => a.from < b.from ? -1 : 1)[0] || null; }
 function seRangeWins(o) {
   const Y = new Date().getFullYear(), out = [];
   (Array.isArray(o.seasonalRanges) ? o.seasonalRanges : []).forEach(r => {
@@ -156,11 +163,13 @@ function seDatesEnd(ev) {
     return null;
   }
   if (ev.dateType === 'run') {
-    if (!ev.runFrom) return null;
-    const [fy, fm, fd] = ev.runFrom.split('-').map(Number);
-    if (!ev.runTo || ev.runTo === ev.runFrom) return win(new Date(fy, fm - 1, fd));
-    const [ty, tm, td] = ev.runTo.split('-').map(Number), st = new Date(fy, fm - 1, fd), en = new Date(ty, tm - 1, td, 23, 59, 59);
-    return (now >= st && now <= en) ? en : null;
+    for (const r of seRuns(ev)) {
+      const [fy, fm, fd] = r.from.split('-').map(Number);
+      if (!r.to || r.to === r.from) { const e = win(new Date(fy, fm - 1, fd)); if (e) return e; continue; }
+      const [ty, tm, td] = r.to.split('-').map(Number), st = new Date(fy, fm - 1, fd), en = new Date(ty, tm - 1, td, 23, 59, 59);
+      if (now >= st && now <= en) return en;
+    }
+    return null;
   }
   if (ev.dateType === 'exact') { if (!ev.exactDate) return null; const [ey, em, ed] = ev.exactDate.split('-').map(Number); return win(new Date(ey, em - 1, ed)); }
   const m = Number(ev.month); if (!m) return null;
@@ -255,14 +264,14 @@ document.addEventListener('keydown',e=>{
 function fromCarousel(e,kind){
   let m=Number(e.evMonth)||0;
   if(!m){
-    if(e.dateType==='run'&&e.runFrom) m=Number(e.runFrom.split('-')[1])||0;
+    if(e.dateType==='run'&&seRunFirst(e)) m=Number(seRunFirst(e).from.split('-')[1])||0;
     else if(e.dateType==='exact'&&e.exactDate) m=Number(e.exactDate.split('-')[1])||0;
     else if(e.dateType==='range') m=Number(e.rStartM)||0;
     else m=Number(e.month)||0;
   }
   return {_id:String(e.id),kind,name:e.name,bannerData:e.image||'',bannerColor:'',
     seasonalDesc:e.seasonalDesc||e.desc||'',seasonalFit:e.seasonalFit||'',seasonalDate:e.seasonalDate||'',seasonalWhen:e.seasonalWhen||'',
-    seasonalMonth:e.seasonalMonth||null,seasonalMode:e.seasonalMode,seasonalRanges:e.seasonalRanges,seasonalLead:e.seasonalLead,seasonalHiddenYear:e.seasonalHiddenYear,fallbackMonth:m,dateType:e.dateType,month:e.month,day:e.day,exactDate:e.exactDate,rStartM:e.rStartM,rStartD:e.rStartD,rEndM:e.rEndM,rEndD:e.rEndD,recurring:e.recurring,runFrom:e.runFrom,runTo:e.runTo,seasonalDates:e.seasonalDates,carouselDates:e.carouselDates};
+    seasonalMonth:e.seasonalMonth||null,seasonalMode:e.seasonalMode,seasonalRanges:e.seasonalRanges,seasonalLead:e.seasonalLead,seasonalHiddenYear:e.seasonalHiddenYear,fallbackMonth:m,dateType:e.dateType,month:e.month,day:e.day,exactDate:e.exactDate,rStartM:e.rStartM,rStartD:e.rStartD,rEndM:e.rEndM,rEndD:e.rEndD,recurring:e.recurring,runFrom:e.runFrom,runTo:e.runTo,runs:e.runs,seasonalDates:e.seasonalDates,carouselDates:e.carouselDates};
 }
 (async()=>{
   try{
