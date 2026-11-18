@@ -970,6 +970,11 @@
   .qc-cell { min-height: 78px; border: 1px solid var(--border2); border-radius: 6px; padding: 3px; overflow: hidden; }
   .qc-cell.empty { border: none; }
   .qc-d { font-size: .7rem; color: var(--text-dim); }
+  .th-pills { display: flex; gap: 8px; margin: 0 0 1rem; }
+  .th-pill { font-family: var(--cinzel); font-size: 10px; letter-spacing: .08em; text-transform: uppercase; padding: 7px 14px; border-radius: 99px; border: 1px solid var(--border2); background: transparent; color: var(--text-muted); cursor: pointer; }
+  .th-pill:hover { border-color: var(--gold); color: var(--gold-light); }
+  .th-pill.active { background: var(--gold-dim); border-color: rgba(201,168,76,.5); color: var(--gold-light); }
+  .th-month-h { grid-column: 1 / -1; font-family: var(--cinzel); font-size: .8rem; letter-spacing: .16em; text-transform: uppercase; color: var(--gold); border-bottom: 1px solid var(--border); padding: .4rem 0 .5rem; margin-top: .6rem; }
   .qc-chip { font-size: .62rem; line-height: 1.2; border-radius: 4px; padding: 2px 4px; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .qc-chip.c-q { background: rgba(201,168,76,.22); color: var(--gold-light); }
   .qc-chip.c-p { background: rgba(120,160,220,.2); color: #A9C4EE; }
@@ -1276,6 +1281,7 @@
           </div>
         </div>
         <div id="active-filters-bar-themed" class="active-filters-bar"></div>
+        <div class="th-pills"><button type="button" class="th-pill active" id="themed-pill-all" onclick="setThemedView('all')">All</button><button type="button" class="th-pill" id="themed-pill-month" onclick="setThemedView('month')">By Month</button></div>
         <div id="themed-grid" class="nights-grid"></div>
         <div id="themed-empty" class="empty-state" style="display:none;"><h2>No Themed Nights Published Yet</h2></div>
       </div>
@@ -2045,40 +2051,34 @@ async function loadSeasonalEvents() {
     if (ps.exists()) seasonalEvents = seasonalEvents.concat((ps.data().carouselPicks || []).filter(p => p && p.id));
   } catch(e) {}
   renderComingUp();
+  try { if (currentView === 'themed') renderThemedNights(); } catch (e) {}
 }
 
+// One set of dates drives the Carousel, Themed Nights tab and Seasonal page.
+// Date range = live from its start through its end. Single day = live for 2 months before that day, through the day.
+function seDatesEnd(ev) {
+  const now = new Date(), Y = now.getFullYear();
+  const win = (day) => { const end = new Date(day.getFullYear(), day.getMonth(), day.getDate(), 23, 59, 59), st = new Date(day.getFullYear(), day.getMonth() - 2, day.getDate()); return (now >= st && now <= end) ? end : null; };
+  if (ev.dateType === 'range') {
+    const a = Number(ev.rStartM), b = Number(ev.rEndM); if (!a || !b) return null;
+    const sd = Number(ev.rStartD) || 1, ed = Number(ev.rEndD) || 28, wrap = (b * 100 + ed) < (a * 100 + sd);
+    for (let y = Y - 1; y <= Y + 1; y++) { const st = new Date(y, a - 1, sd), end = new Date(y + (wrap ? 1 : 0), b - 1, ed, 23, 59, 59); if (now >= st && now <= end) return end; }
+    return null;
+  }
+  if (ev.dateType === 'exact') { if (!ev.exactDate) return null; const [ey, em, ed] = ev.exactDate.split('-').map(Number); return win(new Date(ey, em - 1, ed)); }
+  const m = Number(ev.month); if (!m) return null;
+  if (ev.day) { const ys = ev.recurring ? [Y, Y + 1] : [Y]; for (const y of ys) { const e = win(new Date(y, m - 1, ev.day)); if (e) return e; } return null; }
+  const ys = ev.recurring ? [Y, Y + 1] : [Y];
+  for (const y of ys) { const st = new Date(y, m - 1, 1); st.setDate(st.getDate() - 14); const en = new Date(y, m, 0); en.setDate(en.getDate() - 7); if (now >= st && now <= en) return en; }
+  return null;
+}
+function seDatesLive(ev) { return !!seDatesEnd(ev); }
 function seIsActive(ev) {
   if (ev.pending) return false;
   if (ev.hiddenYear && ev.hiddenYear === new Date().getFullYear()) return false;
   if (ev.carouselOn === false) return false; // Carousel box unchecked in the admin
   if (ev.alwaysOn) return !ev.alwaysOff;
-  const now = new Date();
-  if (ev.dateType === 'range') {
-    const t = (now.getMonth() + 1) * 100 + now.getDate(), a = ev.rStartM * 100 + ev.rStartD, b = ev.rEndM * 100 + ev.rEndD;
-    return a <= b ? (t >= a && t <= b) : (t >= a || t <= b);
-  }
-  if (ev.dateType === 'exact') {
-    if (!ev.exactDate) return false;
-    const [ey, em, ed] = ev.exactDate.split('-').map(Number);
-    const target = new Date(ey, em-1, ed);
-    const diff = (target - now) / 86400000;
-    return diff >= 0 && diff <= 30;
-  }
-  const m = Number(ev.month);
-  if (!m) return false;
-  const yr = now.getFullYear();
-  if (ev.day) {
-    const occ = ev.recurring
-      ? [new Date(yr, m-1, ev.day), new Date(yr+1, m-1, ev.day)]
-      : [new Date(yr, m-1, ev.day)];
-    return occ.some(t => { const d=(t-now)/86400000; return d>=0&&d<=30; });
-  }
-  const years = ev.recurring ? [yr, yr+1] : [yr];
-  return years.some(y => {
-    const s = new Date(y, m-1, 1); s.setDate(s.getDate()-14);
-    const e = new Date(y, m, 0);   e.setDate(e.getDate()-7);
-    return now >= s && now <= e;
-  });
+  return seDatesLive(ev);
 }
 
 function seDisplayDate(ev) {
@@ -2702,7 +2702,11 @@ function renderAllFilterPills() {
 // disappears for hosts until Ahnna reviews it.
 function nightVisibleNow(n) {
   if (effectiveMode() === 'host') return (n.publishedHost !== undefined) ? !!n.publishedHost : !!n.published;
-  return !!n.published;
+  return !!n.published && (n.themedMode !== 'dates' || nightCarouselLive(n));
+}
+// "Follow carousel dates": a themed night shows in the tab only while the Pick made from it is live in the carousel
+function nightCarouselLive(n) {
+  return seasonalEvents.some(p => p.srcType === 'night' && (p.srcName || p.name) === n.name && !p.pending && seDatesLive(p));
 }
 // Empty state that tells the truth: "No matches" while searching, the normal "none published" message otherwise.
 
@@ -2727,15 +2731,54 @@ function renderThemedNights() {
   let filtered = publishedNights.filter(nightVisibleNow);
   if (q) filtered = filtered.filter(n => sMatch(q, n.name, n.description, NIGHT_DESC_FALLBACK[n._id]));
   if (hasSidebarFilters()) filtered = filtered.filter(n => nightMatchesFilters(n));
-  if (!filtered.length) { showEmpty(empty, q); grid.innerHTML=''; return; }
+  let evs = (effectiveMode() === 'host' || hasSidebarFilters()) ? [] : themedEvents();
+  if (q) evs = evs.filter(e => sMatch(q, e.name, e.desc));
+  if (!filtered.length && !evs.length) { showEmpty(empty, q); grid.innerHTML=''; return; }
   empty.style.display = 'none';
-  grid.innerHTML = filtered.map((n,i) => {
+  const nightHtml = (n,i) => {
     const img = n.bannerData ? `<img class="night-card-img" src="${n.bannerData}" alt="${esc(n.name)}" loading="lazy">` : `<div class="night-card-img" style="display:flex;align-items:center;justify-content:center;background:var(--surface2);color:var(--text-dim);font-size:2rem;">🌙</div>`;
     const star = starBtnHtml('night', n._id);
     const ni = publishedNights.indexOf(n);
     const nBtns = effectiveMode()==='venue' ? `<div class="br-btns" style="padding:8px 0 0;"><button class="br-btn gold" onclick="event.stopPropagation();brWish('night',${ni})">Add to Wish List</button><button class="br-btn" onclick="event.stopPropagation();brRequest('night',${ni})">Pick a Date</button></div>` : '';
     return `<div class="night-card" onclick="openNightDetail(${publishedNights.indexOf(n)})">${img}${star}<div class="night-card-body"><div class="night-name">${esc(n.name)}</div><div style="padding-top:8px;">${brPill('night')}</div>${nBtns}</div></div>`;
-  }).join('');
+  };
+  const eventHtml = e => {
+    const img = e.image ? `<img class="night-card-img" src="${esc(e.image)}" alt="${esc(e.name)}" loading="lazy">` : `<div class="night-card-img" style="display:flex;align-items:center;justify-content:center;background:var(--surface2);color:var(--text-dim);font-size:2rem;">&#10022;</div>`;
+    return `<div class="night-card" onclick="openSeasonalPopup('${String(e.id).replace(/'/g, "\\'")}')">${img}<div class="night-card-body"><div class="night-name">${esc(e.name)}</div></div></div>`;
+  };
+  if (themedView === 'month') {
+    const cur = new Date().getMonth() + 1, rank = m => m ? ((m - cur + 12) % 12) : 99;
+    const items = filtered.map(n => ({ m: nightMonthV(n), html: nightHtml(n) })).concat(evs.map(e => ({ m: evMonthV(e), html: eventHtml(e) })));
+    const groups = {};
+    items.forEach(it => { (groups[it.m] = groups[it.m] || []).push(it.html); });
+    const keys = Object.keys(groups).map(Number).sort((a, b) => rank(a) - rank(b));
+    grid.innerHTML = keys.map(m => '<div class="th-month-h">' + (m ? MONTH_NAMES_V[m] : 'Any time of year') + '</div>' + groups[m].join('')).join('');
+  } else {
+    grid.innerHTML = filtered.map(nightHtml).join('') + evs.map(eventHtml).join('');
+  }
+}
+
+let themedView = 'all';
+function setThemedView(v) {
+  themedView = v;
+  ['all', 'month'].forEach(k => { const b = document.getElementById('themed-pill-' + k); if (b) b.classList.toggle('active', k === v); });
+  renderThemedNights();
+}
+function evMonthV(e) {
+  if (e.evMonth) return Number(e.evMonth);
+  if (e.dateType === 'exact') return e.exactDate ? Number(e.exactDate.split('-')[1]) || 0 : 0;
+  if (e.dateType === 'range') return Number(e.rStartM) || 0;
+  return Number(e.month) || 0;
+}
+function nightMonthV(n) {
+  const p = seasonalEvents.find(p => p.srcType === 'night' && (p.srcName || p.name) === n.name);
+  if (p) { const m = evMonthV(p); if (m) return m; }
+  const sm = Number(n.seasonalMonth); if (sm >= 1 && sm <= 12) return sm;
+  const mm = /^\d{4}-(\d{2})/.exec(n.seasonalDate || ''); return mm ? Number(mm[1]) : 0;
+}
+// Calendar events turned on for the Themed Nights tab (Manual = whenever checked, Follow carousel dates = only while live)
+function themedEvents() {
+  return seasonalEvents.filter(e => !e.srcType && e.onNights && !e.pending && (e.themedMode !== 'dates' || seDatesLive(e)));
 }
 
 function isTrivia(c)    { return (c.type||'').toLowerCase().split(',').map(t=>t.trim()).some(t=>t.includes('trivia')); }
@@ -4388,6 +4431,7 @@ async function loadBattlesPageContent() {
 }
 
 Object.assign(window, {
+  setThemedView,
   ideaReasonChanged,
   renderMovies, openMovieDetail, movieAddToCart,
   navigateTo, toggleCatView, gigRequest, bookTriviaRemove, toggleNavGroup, toggleNavMenu, closeNavMenu, renderComingUp, toggleFilterSidebar, closeFilterSidebar,
