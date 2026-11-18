@@ -1079,8 +1079,8 @@
   .mx-row-head > input[type="checkbox"] { width: 18px !important; height: 18px; accent-color: var(--gold); margin-top: 2px; flex: none; cursor: pointer; }
   .mx-row-title { display: block; font-family: var(--cinzel); font-size: .74rem; letter-spacing: .1em; text-transform: uppercase; color: var(--text); }
   .mx-row-sub { display: block; font-size: .8rem; color: var(--text-dim); margin-top: 2px; }
-  .mx-row-body { display: none; padding: .1rem .9rem .9rem 2.55rem; }
-  .mx-row.on > .mx-row-body { display: block; }
+  .mx-row-body { display: block; padding: .1rem .9rem .9rem 2.55rem; }
+  .mx-row:not(.on) > .mx-row-body { opacity: .65; }
   .mx-checks { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px; }
   .mx-check { display: flex; align-items: center; gap: 8px; padding: .45rem .7rem; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); cursor: pointer; font-size: .84rem; color: var(--text-muted); margin: 0; }
   .mx-check input { width: 16px !important; height: 16px; accent-color: var(--gold); flex: none; }
