@@ -130,9 +130,23 @@ let nights=[];
 
 /* Auto pop-up: a night with seasonalMode 'auto' only shows while today falls inside one of its date ranges.
    Manual nights show whenever they are published. 'Hide this year' skips it for the current year only. */
-// One set of dates drives the Carousel, Themed Nights tab and Seasonal page.
+// Carousel and Seasonal page can share one set of dates or each have their own.
 // Date range = live from its start through its end. Single day = live for 2 months before that day, through the day.
+function seRangeWins(o) {
+  const Y = new Date().getFullYear(), out = [];
+  (Array.isArray(o.seasonalRanges) ? o.seasonalRanges : []).forEach(r => {
+    if (!r || !r.from) return;
+    const single = !r.to || r.to === r.from, to = r.to || r.from;
+    const [fy, fm, fd] = r.from.split('-').map(Number), [ty, tm, td] = to.split('-').map(Number);
+    const mk = (sy, ey) => out.push({ show: single ? new Date(sy, fm - 3, fd) : new Date(sy, fm - 1, fd), end: new Date(ey, tm - 1, td, 23, 59, 59) });
+    if (r.yearly) { const wrap = (tm * 100 + td) < (fm * 100 + fd); for (let y = Y - 1; y <= Y + 1; y++) mk(y, y + (wrap ? 1 : 0)); }
+    else mk(fy, ty);
+  });
+  return out;
+}
+function seWinEnd(o) { const now = new Date(), w = seRangeWins(o).find(x => now >= x.show && now <= x.end); return w ? w.end : null; }
 function seDatesEnd(ev) {
+  if (ev.carouselDates === 'seasonal') return seWinEnd(ev);
   const now = new Date(), Y = now.getFullYear();
   const win = (day) => { const end = new Date(day.getFullYear(), day.getMonth(), day.getDate(), 23, 59, 59), st = new Date(day.getFullYear(), day.getMonth() - 2, day.getDate()); return (now >= st && now <= end) ? end : null; };
   if (ev.dateType === 'range') {
@@ -149,27 +163,15 @@ function seDatesEnd(ev) {
   return null;
 }
 function seDatesLive(ev) { return !!seDatesEnd(ev); }
+// Seasonal page: its own ranges, or the same dates as the Carousel
+function seUsesOwn(o) { return o.seasonalDates === 'own' || (o.seasonalDates === undefined && Array.isArray(o.seasonalRanges) && o.seasonalRanges.length > 0); }
 let allPicks=[];
 function seDateSrc(o){if(o.dateType)return o;const p=allPicks.find(x=>x.srcType==='night'&&(x.srcName||x.name)===o.name);return p&&p.dateType?p:null;}
-function seWindows(o){
-  const lead=0;
-  const Y=new Date().getFullYear(), out=[];
-  (Array.isArray(o.seasonalRanges)?o.seasonalRanges:[]).forEach(r=>{
-    if(!r||!r.from) return;
-    const to=r.to||r.from;
-    const [fy,fm,fd]=r.from.split('-').map(Number), [ty,tm,td]=to.split('-').map(Number);
-    const mk=(sy,ey)=>out.push({show:new Date(sy,fm-1-lead,fd),start:new Date(sy,fm-1,fd),end:new Date(ey,tm-1,td,23,59,59)});
-    if(r.yearly){const wrap=(tm*100+td)<(fm*100+fd);for(let y=Y-1;y<=Y+1;y++)mk(y,y+(wrap?1:0));}
-    else mk(fy,ty);
-  });
-  return out;
-}
 /* Booked = within 2 weeks of its END date. Only dated items can be booked. */
 function seBooked(o){
   const now=new Date(), day=864e5;
-  if(o.seasonalMode==='auto'){const src=seDateSrc(o),en=src?seDatesEnd(src):null;
-    if(en&&now>=new Date(en.getTime()-14*day)) return true;
-    if(!src&&seWindows(o).some(w=>now>=new Date(w.end.getTime()-14*day)&&now<=w.end)) return true;}
+  if(o.seasonalMode==='auto'){const src=seDateSrc(o),en=(seUsesOwn(o)||!src)?seWinEnd(o):seDatesEnd(src);
+    if(en&&now>=new Date(en.getTime()-14*day)) return true;}
   if(o.seasonalDate){const d=new Date(o.seasonalDate+'T12:00:00'),diff=(d-now)/day;if(diff>=0&&diff<=14) return true;}
   return false;
 }
@@ -178,8 +180,9 @@ function isLiveNow(n){
   if(n.seasonalHiddenYear && n.seasonalHiddenYear===now.getFullYear()) return false;
   if(n.seasonalMode!=='auto') return true;
   /* auto: pops up 3 months (or the lead set on the night) before each date range starts, and stays through its end */
-  const src=seDateSrc(n); if(src) return seDatesLive(src);
-  return seWindows(n).some(w=>now>=w.show&&now<=w.end);
+  const src=seDateSrc(n);
+  if(seUsesOwn(n)||!src) return !!seWinEnd(n);
+  return seDatesLive(src);
 }
 function whenOf(n){
   if(n.seasonalWhen) return n.seasonalWhen;
@@ -251,7 +254,7 @@ function fromCarousel(e,kind){
   }
   return {_id:String(e.id),kind,name:e.name,bannerData:e.image||'',bannerColor:'',
     seasonalDesc:e.seasonalDesc||e.desc||'',seasonalFit:e.seasonalFit||'',seasonalDate:e.seasonalDate||'',seasonalWhen:e.seasonalWhen||'',
-    seasonalMonth:e.seasonalMonth||null,seasonalMode:e.seasonalMode,seasonalRanges:e.seasonalRanges,seasonalLead:e.seasonalLead,seasonalHiddenYear:e.seasonalHiddenYear,fallbackMonth:m,dateType:e.dateType,month:e.month,day:e.day,exactDate:e.exactDate,rStartM:e.rStartM,rStartD:e.rStartD,rEndM:e.rEndM,rEndD:e.rEndD,recurring:e.recurring};
+    seasonalMonth:e.seasonalMonth||null,seasonalMode:e.seasonalMode,seasonalRanges:e.seasonalRanges,seasonalLead:e.seasonalLead,seasonalHiddenYear:e.seasonalHiddenYear,fallbackMonth:m,dateType:e.dateType,month:e.month,day:e.day,exactDate:e.exactDate,rStartM:e.rStartM,rStartD:e.rStartD,rEndM:e.rEndM,rEndD:e.rEndD,recurring:e.recurring,seasonalDates:e.seasonalDates,carouselDates:e.carouselDates};
 }
 (async()=>{
   try{
