@@ -2050,6 +2050,7 @@ async function loadSeasonalEvents() {
 function seIsActive(ev) {
   if (ev.pending) return false;
   if (ev.hiddenYear && ev.hiddenYear === new Date().getFullYear()) return false;
+  if (ev.carouselOn === false) return false; // Carousel box unchecked in the admin
   if (ev.alwaysOn) return !ev.alwaysOff;
   const now = new Date();
   if (ev.dateType === 'range') {
