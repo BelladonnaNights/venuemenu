@@ -113,7 +113,7 @@ textarea{min-height:90px;resize:vertical}
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getFirestore, collection, query, where, getDocs, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 /* EDIT HERE: the label above the headline */
 const SEASON = 'Winter 2026 \u00b7 2027';
@@ -163,7 +163,7 @@ function monthOf(n){
   const m=Number(n.seasonalMonth);
   if(m>=1&&m<=12) return m;
   const mm=/^\d{4}-(\d{2})/.exec(n.seasonalDate||'');
-  return mm?Number(mm[1]):0;
+  return mm?Number(mm[1]):(n.fallbackMonth||0);
 }
 function cardHtml(n){
   return `<div class="card" data-open="${esc(n._id)}" tabindex="0" role="button" aria-label="More about ${esc(n.name)}">
@@ -176,7 +176,9 @@ function cardHtml(n){
 function draw(){
   const groups={};
   nights.forEach(n=>{const m=monthOf(n);(groups[m]=groups[m]||[]).push(n);});
-  const keys=Object.keys(groups).map(Number).sort((a,b)=>(a||99)-(b||99));
+  const cur=new Date().getMonth()+1; /* current month first, then the months after it, wrapping around the year */
+  const rank=m=>m?((m-cur+12)%12):99;
+  const keys=Object.keys(groups).map(Number).sort((a,b)=>rank(a)-rank(b));
   $('#grid').innerHTML=keys.map(m=>{
     const items=groups[m].slice().sort((x,y)=>{const a=x.seasonalDate||'9999',b=y.seasonalDate||'9999';return a<b?-1:a>b?1:String(x.name).localeCompare(String(y.name));});
     return `<h2 class="mh">${esc(m?MONTHS[m]:'More nights')}</h2><div class="grid">${items.map(cardHtml).join('')}</div>`;
@@ -190,7 +192,7 @@ function openNight(id){
     ${n.seasonalDesc?`<div class="desc">${esc(n.seasonalDesc)}</div>`:''}
     ${n.seasonalFit?`<div class="fit"><b>Great for:</b> ${esc(n.seasonalFit)}</div>`:''}
     <div class="fit"><b>Includes:</b> A Belladonna host, the music and sound, themed games, and promo graphics for your socials.</div>
-    <div class="acts"><button class="btn ghost" data-x="1">Back</button><a class="btn" href="${BOOK_PAGE}?event=${encodeURIComponent(n._id)}">Book this night</a></div></div></div>`;
+    <div class="acts"><button class="btn ghost" data-x="1">Back</button><a class="btn" href="${n.kind==='night'?BOOK_PAGE+'?event='+encodeURIComponent(n._id):BOOK_PAGE}">Book this night</a></div></div></div>`;
   $('#bg').classList.add('open');
 }
 document.addEventListener('click',e=>{
@@ -204,10 +206,30 @@ document.addEventListener('keydown',e=>{
   if((e.key==='Enter'||e.key===' ')&&e.target.dataset&&e.target.dataset.open){e.preventDefault();openNight(e.target.dataset.open);}
 });
 
+/* The page shows everything that is turned on for the Seasonal page: themed nights, calendar events and picks. */
+function fromCarousel(e,kind){
+  let m=Number(e.evMonth)||0;
+  if(!m){
+    if(e.dateType==='exact'&&e.exactDate) m=Number(e.exactDate.split('-')[1])||0;
+    else if(e.dateType==='range') m=Number(e.rStartM)||0;
+    else m=Number(e.month)||0;
+  }
+  return {_id:String(e.id),kind,name:e.name,bannerData:e.image||'',bannerColor:'',
+    seasonalDesc:e.seasonalDesc||e.desc||'',seasonalFit:e.seasonalFit||'',seasonalDate:e.seasonalDate||'',seasonalWhen:e.seasonalWhen||'',
+    seasonalMonth:e.seasonalMonth||null,seasonalMode:e.seasonalMode,seasonalRanges:e.seasonalRanges,seasonalHiddenYear:e.seasonalHiddenYear,fallbackMonth:m};
+}
 (async()=>{
   try{
-    const snap=await getDocs(query(collection(db,'venueMenuNights'),where('publishedSeasonal','==',true)));
-    nights=snap.docs.map(d=>({_id:d.id,...d.data()})).filter(isLiveNow);
+    const [nSnap,eSnap,mSnap]=await Promise.all([
+      getDocs(query(collection(db,'venueMenuNights'),where('publishedSeasonal','==',true))),
+      getDoc(doc(db,'venueMenuConfig','seasonalEvents')).catch(()=>null),
+      getDoc(doc(db,'venueMenuConfig','mainMenu')).catch(()=>null)
+    ]);
+    const fromNights=nSnap.docs.map(d=>({_id:d.id,kind:'night',...d.data()}));
+    const events=(eSnap&&eSnap.exists()?(eSnap.data().events||[]):[]).filter(e=>e&&e.onSeasonal&&!e.pending&&e.name).map(e=>fromCarousel(e,'event'));
+    /* Picks made from a themed night are controlled by that night, so only other picks are read here. */
+    const picks=(mSnap&&mSnap.exists()?(mSnap.data().carouselPicks||[]):[]).filter(p=>p&&p.onSeasonal&&!p.pending&&p.name&&p.srcType!=='night').map(p=>fromCarousel(p,'pick'));
+    nights=fromNights.concat(events,picks).filter(isLiveNow);
     nights.sort((a,b)=>{const x=a.seasonalDate||'9999',y=b.seasonalDate||'9999';return x<y?-1:x>y?1:String(a.name).localeCompare(String(b.name));});
     if(!nights.length){$('#state').textContent='New seasonal nights are on the way. Check back soon.';return;}
     $('#state').style.display='none';draw();
