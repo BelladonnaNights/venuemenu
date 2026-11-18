@@ -694,7 +694,8 @@
     justify-content: center;
     padding: 1.5rem;
   }
-  .modal-backdrop.open { display: flex; }
+  .modal-backdrop.open { display: flex; overscroll-behavior: contain; }
+  html:has(.modal-backdrop.open), body:has(.modal-backdrop.open) { overflow: hidden; }
   .modal {
     background: var(--surface);
     border: 1px solid var(--border-strong);
@@ -1087,6 +1088,10 @@
   .mx-split:has(.mx-prev) { grid-template-columns: 1fr 150px; }
   .mx-prev #se-img-prev img, .mx-prev #se-img-prev div { width: 150px; aspect-ratio: 4/5; object-fit: contain; background: #000; border: 1px solid var(--border2); border-radius: 6px; display: flex; align-items: center; justify-content: center; color: var(--text-dim); font-size: 11px; text-align: center; }
   .mx-where { display: grid; gap: 8px; }
+  .ws-sum { background: var(--surface); border: 1px solid var(--border2); border-radius: 8px; padding: .6rem .85rem; margin-bottom: .75rem; font-size: .86rem; line-height: 1.6; color: var(--text); }
+  .ws-sum b { color: var(--gold); font-family: var(--cinzel); font-size: .68rem; letter-spacing: .1em; text-transform: uppercase; font-weight: 400; margin-right: 6px; }
+  .ws-sum .ws-off { color: var(--text-dim); }
+  .mx-sec.closed > .ws-sum { display: block !important; }
   .mx-row { border: 1px solid var(--border); border-radius: 8px; background: var(--surface); transition: border-color .15s, background .15s; }
   .mx-row.on { border-color: rgba(201,168,76,.55); background: rgba(201,168,76,.05); }
   .mx-row-head { display: flex; gap: 11px; align-items: flex-start; padding: .65rem .85rem; cursor: pointer; margin: 0; }
@@ -1944,6 +1949,7 @@
 
       <div class="mx-sec">
         <div class="mx-h mx-fold" onclick="mxFold(this)">Where it shows <span class="mx-sub">Check every place it should appear</span></div>
+        <div class="ws-sum"></div>
         <div class="mx-where">
           <div class="mx-row">
             <label class="mx-row-head"><input type="checkbox" id="night-published" onchange="mxRefresh()"><span><span class="mx-row-title">Themed Nights tab (venue.html)</span><span class="mx-row-sub">venue.html &mdash; venues with the menu see it</span></span></label>
@@ -2263,6 +2269,7 @@
 
       <div class="mx-sec">
         <div class="mx-h mx-fold" onclick="mxFold(this)">Where it shows <span class="mx-sub">Check every place it should appear</span></div>
+        <div class="ws-sum"></div>
         <div class="mx-where">
           <div class="mx-row" id="se-row-carousel">
             <label class="mx-row-head"><input type="checkbox" id="se-on-carousel" onchange="mxRefresh()"><span><span class="mx-row-title">Carousel</span><span class="mx-row-sub">&ldquo;Coming Up&rdquo; on the front page of venue.html</span></span></label>
@@ -3638,13 +3645,6 @@ function renderNights() {
       </div>
       <div class="night-card-body" onclick="openNightDetail(${i})">
         <div class="night-card-name" style="margin-bottom:0.4rem;">${esc(n.name)}</div>
-        <div style="display:flex; align-items:center; gap:8px; margin-bottom:0.45rem; flex-wrap:wrap;">
-          ${n.published ? `<span style="font-family:'Cinzel',serif;font-size:0.6rem;letter-spacing:0.12em;text-transform:uppercase;background:rgba(42,107,58,0.2);color:#7DC996;border:1px solid rgba(42,107,58,0.4);padding:2px 7px;border-radius:3px;flex-shrink:0;">Venue</span>` : ''}
-          ${(n.publishedHost !== undefined ? n.publishedHost : n.published) ? `<span style="font-family:'Cinzel',serif;font-size:0.6rem;letter-spacing:0.12em;text-transform:uppercase;background:rgba(201,168,76,0.15);color:var(--gold);border:1px solid rgba(201,168,76,0.4);padding:2px 7px;border-radius:3px;flex-shrink:0;">Host</span>` : ''}
-          ${n.publishedSeasonal ? `<span style="font-family:'Cinzel',serif;font-size:0.6rem;letter-spacing:0.12em;text-transform:uppercase;background:rgba(201,168,76,0.15);color:var(--gold);border:1px solid rgba(201,168,76,0.4);padding:2px 7px;border-radius:3px;flex-shrink:0;">Seasonal${n.seasonalMode === 'auto' ? ' · Auto' : ''}</span>` : ''}
-          ${n.publishedSeasonal && n.seasonalMode === 'auto' && nightSeasonalLive(n) ? `<span style="font-family:'Cinzel',serif;font-size:0.6rem;letter-spacing:0.12em;text-transform:uppercase;background:rgba(42,107,58,0.2);color:#7DC996;border:1px solid rgba(42,107,58,0.4);padding:2px 7px;border-radius:3px;flex-shrink:0;">Live now</span>` : ''}
-        </div>
-        ${(n.nightTagsList||[]).length ? `<div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:0.5rem;">${(n.nightTagsList||[]).map(t=>`<span class="badge" style="background:rgba(60,80,100,0.2);color:#9BB8D4;border:1px solid rgba(100,140,180,0.2);font-size:0.65rem;">${esc(t)}</span>`).join('')}</div>` : ''}
       </div>
       <div class="night-card-footer" onclick="event.stopPropagation()">
         <span title="Drag to reorder" style="cursor:grab; color:var(--text-dim); font-size:1.1rem; user-select:none; padding:0.1rem 0.3rem;" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='var(--text-dim)'">⠿</span>
@@ -3778,6 +3778,54 @@ function legacyToSched(ranges) {
   if (rs.length === 1 && rs[0].yearly !== false) { const f = rs[0].from.split('-').map(Number), t = (rs[0].to || rs[0].from).split('-').map(Number); return { eventType: 'annual', dateType: 'range', rStartM: f[1], rStartD: f[2], rEndM: t[1], rEndD: t[2] }; }
   return { eventType: 'evergreen', dateType: 'run', runs: rs.map(r => ({ from: r.from, to: r.to || '' })) };
 }
+// ── Dates summary at the top of "Where it shows" ──
+function wsFmt(d) { return String(d.getMonth() + 1).padStart(2, '0') + '/' + String(d.getDate()).padStart(2, '0') + '/' + d.getFullYear(); }
+function wsWindows(o) {
+  if (!o) return [];
+  const now = new Date(), t0 = new Date(now.getFullYear(), now.getMonth(), now.getDate()), Y = now.getFullYear(), out = [];
+  const day = d => ({ s: new Date(d.getFullYear(), d.getMonth() - 2, d.getDate()), e: d });
+  const pick = list => { const f = list.find(w => w.e >= t0); return f ? [f] : (list.length ? [list[list.length - 1]] : []); };
+  if (o.dateType === 'run') {
+    seRuns(o).forEach(r => {
+      const [fy, fm, fd] = r.from.split('-').map(Number);
+      if (!r.to || r.to === r.from) out.push(day(new Date(fy, fm - 1, fd)));
+      else { const [ty, tm, td] = r.to.split('-').map(Number); out.push({ s: new Date(fy, fm - 1, fd), e: new Date(ty, tm - 1, td) }); }
+    });
+    return out;
+  }
+  if (o.dateType === 'range') {
+    const a = Number(o.rStartM), b = Number(o.rEndM); if (!a || !b) return [];
+    const sd = Number(o.rStartD) || 1, ed = Number(o.rEndD) || 28, wrap = (b * 100 + ed) < (a * 100 + sd), l = [];
+    for (let y = Y - 1; y <= Y + 1; y++) l.push({ s: new Date(y, a - 1, sd), e: new Date(y + (wrap ? 1 : 0), b - 1, ed) });
+    return pick(l);
+  }
+  const m = Number(o.month); if (!m) return [];
+  const l = [];
+  for (let y = Y - 1; y <= Y + 1; y++) {
+    if (o.day) l.push(day(new Date(y, m - 1, Number(o.day))));
+    else { const st = new Date(y, m - 1, 1); st.setDate(st.getDate() - 14); const en = new Date(y, m, 0); en.setDate(en.getDate() - 7); l.push({ s: st, e: en }); }
+  }
+  return pick(l);
+}
+function wsText(sched) { const w = wsWindows(sched); return w.length ? w.map(x => wsFmt(x.s) + '-' + wsFmt(x.e)).join(', ') : 'No dates yet'; }
+function wsRender() {
+  const nightOpen = document.getElementById('night-modal').classList.contains('open'), seOpen = document.getElementById('seasonal-modal').classList.contains('open');
+  if (!nightOpen && !seOpen) return;
+  const modal = document.getElementById(nightOpen ? 'night-modal' : 'seasonal-modal'), box = modal.querySelector('.ws-sum'); if (!box) return;
+  const g = id => document.getElementById(id), ck = id => !!(g(id) && g(id).checked);
+  const carSched = dmCar === 'seasonal' ? cdRead('sx') : cdRead('se'), seaSched = dmSea === 'same' ? carSched : cdRead('sx');
+  const annual = SEST.se.ev === 'annual';
+  let themedOn, themedMode, carOn, carManual, seaOn, showThemed = true;
+  if (nightOpen) { themedOn = ck('night-published'); themedMode = ntModes.night; const c = modal.querySelector('#car-modal-night input[type="checkbox"]'); carOn = !!(c && c.checked); carManual = false; seaOn = ck('night-published-seasonal'); }
+  else { const r = g('se-row-nights'); showThemed = !!(r && r.style.display !== 'none'); themedOn = ck('se-on-nights'); themedMode = ntModes.se; carOn = ck('se-on-carousel'); carManual = annual && ck('se-always-on'); seaOn = ck('se-on-seasonal'); }
+  const line = (label, on, txt) => '<div><b>' + label + ':</b>' + (on ? esc(txt) : '<span class="ws-off">Off</span>') + '</div>';
+  let h = '';
+  if (showThemed) h += line('Themed Nights', themedOn, themedMode === 'dates' ? wsText(carSched) : 'Always on (manual)');
+  h += line('Carousel', carOn, carManual ? 'Always on (manual)' : wsText(carSched));
+  h += line('Seasonal Page', seaOn, (annual && nsMode === 'manual') ? 'Always on (manual)' : wsText(seaSched));
+  box.innerHTML = h;
+}
+['input', 'change', 'click'].forEach(ev => document.addEventListener(ev, e => { if (e.target && e.target.closest && e.target.closest('#night-modal, #seasonal-modal')) setTimeout(() => { try { wsRender(); } catch (x) {} }, 0); }));
 function dtSweep() { document.querySelectorAll('input[type="date"]').forEach(i => i.classList.toggle('dt-empty', !i.value)); }
 document.addEventListener('input', e => { if (e.target && e.target.type === 'date') e.target.classList.toggle('dt-empty', !e.target.value); if (e.target && e.target.closest && e.target.closest('#se-auto-panel')) cdDirty = true; });
 document.addEventListener('change', e => { if (e.target && e.target.type === 'date') e.target.classList.toggle('dt-empty', !e.target.value); if (e.target && e.target.closest && e.target.closest('#se-auto-panel')) cdDirty = true; });
@@ -3898,6 +3946,7 @@ function mxInitRows() {
 }
 function mxCollapse(id) {
   mxInitRows(); try { dtSweep(); } catch (e) {}
+  setTimeout(() => { try { wsRender(); } catch (x) {} }, 0);
   const m = document.getElementById(id); if (!m) return;
   m.querySelectorAll('.mx-sec').forEach(x => { if (x.querySelector(':scope > .mx-fold')) x.classList.add('closed'); });
   m.querySelectorAll('.mx-row').forEach(r => { r.classList.remove('open'); const t = r.querySelector(':scope > .mx-row-head > .mx-row-tog'); if (t) t.innerHTML = '&#9656;'; });
