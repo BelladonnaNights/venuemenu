@@ -130,6 +130,27 @@ let nights=[];
 
 /* Auto pop-up: a night with seasonalMode 'auto' only shows while today falls inside one of its date ranges.
    Manual nights show whenever they are published. 'Hide this year' skips it for the current year only. */
+// One set of dates drives the Carousel, Themed Nights tab and Seasonal page.
+// Date range = live from its start through its end. Single day = live for 2 months before that day, through the day.
+function seDatesEnd(ev) {
+  const now = new Date(), Y = now.getFullYear();
+  const win = (day) => { const end = new Date(day.getFullYear(), day.getMonth(), day.getDate(), 23, 59, 59), st = new Date(day.getFullYear(), day.getMonth() - 2, day.getDate()); return (now >= st && now <= end) ? end : null; };
+  if (ev.dateType === 'range') {
+    const a = Number(ev.rStartM), b = Number(ev.rEndM); if (!a || !b) return null;
+    const sd = Number(ev.rStartD) || 1, ed = Number(ev.rEndD) || 28, wrap = (b * 100 + ed) < (a * 100 + sd);
+    for (let y = Y - 1; y <= Y + 1; y++) { const st = new Date(y, a - 1, sd), end = new Date(y + (wrap ? 1 : 0), b - 1, ed, 23, 59, 59); if (now >= st && now <= end) return end; }
+    return null;
+  }
+  if (ev.dateType === 'exact') { if (!ev.exactDate) return null; const [ey, em, ed] = ev.exactDate.split('-').map(Number); return win(new Date(ey, em - 1, ed)); }
+  const m = Number(ev.month); if (!m) return null;
+  if (ev.day) { const ys = ev.recurring ? [Y, Y + 1] : [Y]; for (const y of ys) { const e = win(new Date(y, m - 1, ev.day)); if (e) return e; } return null; }
+  const ys = ev.recurring ? [Y, Y + 1] : [Y];
+  for (const y of ys) { const st = new Date(y, m - 1, 1); st.setDate(st.getDate() - 14); const en = new Date(y, m, 0); en.setDate(en.getDate() - 7); if (now >= st && now <= en) return en; }
+  return null;
+}
+function seDatesLive(ev) { return !!seDatesEnd(ev); }
+let allPicks=[];
+function seDateSrc(o){if(o.dateType)return o;const p=allPicks.find(x=>x.srcType==='night'&&(x.srcName||x.name)===o.name);return p&&p.dateType?p:null;}
 function seWindows(o){
   const lead=0;
   const Y=new Date().getFullYear(), out=[];
@@ -146,7 +167,9 @@ function seWindows(o){
 /* Booked = within 2 weeks of its END date. Only dated items can be booked. */
 function seBooked(o){
   const now=new Date(), day=864e5;
-  if(o.seasonalMode==='auto' && seWindows(o).some(w=>now>=new Date(w.end.getTime()-14*day)&&now<=w.end)) return true;
+  if(o.seasonalMode==='auto'){const src=seDateSrc(o),en=src?seDatesEnd(src):null;
+    if(en&&now>=new Date(en.getTime()-14*day)) return true;
+    if(!src&&seWindows(o).some(w=>now>=new Date(w.end.getTime()-14*day)&&now<=w.end)) return true;}
   if(o.seasonalDate){const d=new Date(o.seasonalDate+'T12:00:00'),diff=(d-now)/day;if(diff>=0&&diff<=14) return true;}
   return false;
 }
@@ -155,6 +178,7 @@ function isLiveNow(n){
   if(n.seasonalHiddenYear && n.seasonalHiddenYear===now.getFullYear()) return false;
   if(n.seasonalMode!=='auto') return true;
   /* auto: pops up 3 months (or the lead set on the night) before each date range starts, and stays through its end */
+  const src=seDateSrc(n); if(src) return seDatesLive(src);
   return seWindows(n).some(w=>now>=w.show&&now<=w.end);
 }
 function whenOf(n){
@@ -227,7 +251,7 @@ function fromCarousel(e,kind){
   }
   return {_id:String(e.id),kind,name:e.name,bannerData:e.image||'',bannerColor:'',
     seasonalDesc:e.seasonalDesc||e.desc||'',seasonalFit:e.seasonalFit||'',seasonalDate:e.seasonalDate||'',seasonalWhen:e.seasonalWhen||'',
-    seasonalMonth:e.seasonalMonth||null,seasonalMode:e.seasonalMode,seasonalRanges:e.seasonalRanges,seasonalLead:e.seasonalLead,seasonalHiddenYear:e.seasonalHiddenYear,fallbackMonth:m};
+    seasonalMonth:e.seasonalMonth||null,seasonalMode:e.seasonalMode,seasonalRanges:e.seasonalRanges,seasonalLead:e.seasonalLead,seasonalHiddenYear:e.seasonalHiddenYear,fallbackMonth:m,dateType:e.dateType,month:e.month,day:e.day,exactDate:e.exactDate,rStartM:e.rStartM,rStartD:e.rStartD,rEndM:e.rEndM,rEndD:e.rEndD,recurring:e.recurring};
 }
 (async()=>{
   try{
@@ -239,6 +263,7 @@ function fromCarousel(e,kind){
     const fromNights=nSnap.docs.map(d=>({_id:d.id,kind:'night',...d.data()}));
     const events=(eSnap&&eSnap.exists()?(eSnap.data().events||[]):[]).filter(e=>e&&e.onSeasonal&&!e.pending&&e.name).map(e=>fromCarousel(e,'event'));
     /* Picks made from a themed night are controlled by that night, so only other picks are read here. */
+    allPicks=(mSnap&&mSnap.exists()?(mSnap.data().carouselPicks||[]):[]).filter(p=>p&&p.srcType==='night');
     const picks=(mSnap&&mSnap.exists()?(mSnap.data().carouselPicks||[]):[]).filter(p=>p&&p.onSeasonal&&!p.pending&&p.name&&p.srcType!=='night').map(p=>fromCarousel(p,'pick'));
     nights=fromNights.concat(events,picks).filter(isLiveNow);
     nights.sort((a,b)=>{const x=a.seasonalDate||'9999',y=b.seasonalDate||'9999';return x<y?-1:x>y?1:String(a.name).localeCompare(String(b.name));});
