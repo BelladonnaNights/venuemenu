@@ -29,6 +29,7 @@ a{color:var(--gold)}
 .card.on{border-color:var(--gold);box-shadow:0 0 30px rgba(201,169,110,.2)}
 .poster{display:block;width:100%;aspect-ratio:4/5;object-fit:cover;background:var(--surface3);cursor:zoom-in}
 .body{padding:1.1rem 1.2rem 1.3rem;display:flex;flex-direction:column;gap:.55rem;flex:1}
+.bk{display:inline-block;margin-left:.5rem;padding:.05rem .55rem;border:1px solid var(--gold);border-radius:999px;color:#000;background:var(--gold);letter-spacing:.12em;font-size:.6rem;vertical-align:middle}
 .when{font-family:'Cinzel',serif;font-size:.68rem;letter-spacing:.2em;text-transform:uppercase;color:var(--gold)}
 .body h2{font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:1.7rem;letter-spacing:.06em;line-height:1.1}
 .body p{font-size:.9rem;color:var(--text2)}
@@ -129,22 +130,32 @@ let nights=[];
 
 /* Auto pop-up: a night with seasonalMode 'auto' only shows while today falls inside one of its date ranges.
    Manual nights show whenever they are published. 'Hide this year' skips it for the current year only. */
+function seWindows(o){
+  const lead=0;
+  const Y=new Date().getFullYear(), out=[];
+  (Array.isArray(o.seasonalRanges)?o.seasonalRanges:[]).forEach(r=>{
+    if(!r||!r.from) return;
+    const to=r.to||r.from;
+    const [fy,fm,fd]=r.from.split('-').map(Number), [ty,tm,td]=to.split('-').map(Number);
+    const mk=(sy,ey)=>out.push({show:new Date(sy,fm-1-lead,fd),start:new Date(sy,fm-1,fd),end:new Date(ey,tm-1,td,23,59,59)});
+    if(r.yearly){const wrap=(tm*100+td)<(fm*100+fd);for(let y=Y-1;y<=Y+1;y++)mk(y,y+(wrap?1:0));}
+    else mk(fy,ty);
+  });
+  return out;
+}
+/* Booked = within 2 weeks of its END date. Only dated items can be booked. */
+function seBooked(o){
+  const now=new Date(), day=864e5;
+  if(o.seasonalMode==='auto' && seWindows(o).some(w=>now>=new Date(w.end.getTime()-14*day)&&now<=w.end)) return true;
+  if(o.seasonalDate){const d=new Date(o.seasonalDate+'T12:00:00'),diff=(d-now)/day;if(diff>=0&&diff<=14) return true;}
+  return false;
+}
 function isLiveNow(n){
   const now=new Date();
   if(n.seasonalHiddenYear && n.seasonalHiddenYear===now.getFullYear()) return false;
   if(n.seasonalMode!=='auto') return true;
-  const pad=x=>String(x).padStart(2,'0');
-  const today=now.getFullYear()+'-'+pad(now.getMonth()+1)+'-'+pad(now.getDate());
-  const md=(now.getMonth()+1)*100+now.getDate();
-  return (Array.isArray(n.seasonalRanges)?n.seasonalRanges:[]).some(r=>{
-    if(!r||!r.from) return false;
-    const to=r.to||r.from;
-    if(r.yearly){
-      const a=Number(r.from.slice(5,7))*100+Number(r.from.slice(8,10)), b=Number(to.slice(5,7))*100+Number(to.slice(8,10));
-      return a<=b ? (md>=a&&md<=b) : (md>=a||md<=b);
-    }
-    return today>=r.from && today<=to;
-  });
+  /* auto: pops up 3 months (or the lead set on the night) before each date range starts, and stays through its end */
+  return seWindows(n).some(w=>now>=w.show&&now<=w.end);
 }
 function whenOf(n){
   if(n.seasonalWhen) return n.seasonalWhen;
@@ -168,8 +179,8 @@ function monthOf(n){
 function cardHtml(n){
   return `<div class="card" data-open="${esc(n._id)}" tabindex="0" role="button" aria-label="More about ${esc(n.name)}">
     ${posterTag(n,'poster')}
-    <div class="body"><div class="when">${esc(whenOf(n))}</div><h2>${esc(n.name)}</h2>
-    ${n.seasonalDesc?`<p>${esc(teaser(n.seasonalDesc))}</p>`:''}
+    <div class="body"><div class="when">${esc(whenOf(n))}${seBooked(n)?' <span class="bk">Booked</span>':''}</div><h2>${esc(n.name)}</h2>
+    ${(n.seasonalDesc||n.description)?`<p>${esc(teaser(n.seasonalDesc||n.description))}</p>`:''}
     ${n.seasonalFit?`<div class="fit"><b>Great for:</b> ${esc(n.seasonalFit)}</div>`:''}
     <span class="btn">More info</span></div></div>`;
 }
@@ -189,10 +200,10 @@ function openNight(id){
   $('#modal').innerHTML=`<div class="mgrid">
     <div class="mposter">${posterTag(n,'mimg',n.bannerData?'data-zoom="1"':'')}</div>
     <div class="minfo"><div class="when">${esc(whenOf(n))}</div><h3>${esc(n.name)}</h3>
-    ${n.seasonalDesc?`<div class="desc">${esc(n.seasonalDesc)}</div>`:''}
+    ${(n.seasonalDesc||n.description)?`<div class="desc">${esc(n.seasonalDesc||n.description)}</div>`:''}
     ${n.seasonalFit?`<div class="fit"><b>Great for:</b> ${esc(n.seasonalFit)}</div>`:''}
     <div class="fit"><b>Includes:</b> A Belladonna host, the music and sound, themed games, and promo graphics for your socials.</div>
-    <div class="acts"><button class="btn ghost" data-x="1">Back</button><a class="btn" href="${BOOK_PAGE}?event=${encodeURIComponent(n._id)}${n.kind==='night'?'':'&source='+n.kind+'&name='+encodeURIComponent(n.name)}">Book this night</a></div></div></div>`;
+    <div class="acts"><button class="btn ghost" data-x="1">Back</button>${seBooked(n)?'<span class="btn ghost" style="cursor:default;pointer-events:none">Booked</span>':`<a class="btn" href="${BOOK_PAGE}?event=${encodeURIComponent(n._id)}${n.kind==='night'?'':'&source='+n.kind+'&name='+encodeURIComponent(n.name)}">Book this night</a>`}</div></div></div>`;
   $('#bg').classList.add('open');
 }
 document.addEventListener('click',e=>{
@@ -216,7 +227,7 @@ function fromCarousel(e,kind){
   }
   return {_id:String(e.id),kind,name:e.name,bannerData:e.image||'',bannerColor:'',
     seasonalDesc:e.seasonalDesc||e.desc||'',seasonalFit:e.seasonalFit||'',seasonalDate:e.seasonalDate||'',seasonalWhen:e.seasonalWhen||'',
-    seasonalMonth:e.seasonalMonth||null,seasonalMode:e.seasonalMode,seasonalRanges:e.seasonalRanges,seasonalHiddenYear:e.seasonalHiddenYear,fallbackMonth:m};
+    seasonalMonth:e.seasonalMonth||null,seasonalMode:e.seasonalMode,seasonalRanges:e.seasonalRanges,seasonalLead:e.seasonalLead,seasonalHiddenYear:e.seasonalHiddenYear,fallbackMonth:m};
 }
 (async()=>{
   try{
