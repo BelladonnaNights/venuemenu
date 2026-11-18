@@ -1973,8 +1973,7 @@
                 </div>
                 <p class="se-note" id="ns-mode-note"></p>
                 <div id="ns-auto-wrap" style="display:none;">
-                  <div id="ns-ranges"></div>
-                  <button type="button" class="btn btn-sm btn-ghost" onclick="nsAddRange()">+ Add date range</button>
+                  <div id="ns-ranges" style="display:none;"></div>
                   <input type="hidden" id="ns-lead" value="0">
                   <label class="se-check"><input type="checkbox" id="ns-hide-year"><span>Hide this year <em>(skips it this year only, back next year)</em></span></label>
                 </div>
@@ -3726,9 +3725,8 @@ function nsSetMode(m) {
   document.getElementById('ns-mode-auto').className = 'btn btn-sm' + (nsMode === 'auto' ? '' : ' btn-ghost');
   document.getElementById('ns-auto-wrap').style.display = nsMode === 'auto' ? '' : 'none';
   document.getElementById('ns-mode-note').textContent = nsMode === 'auto'
-    ? 'With the box checked, it pops up on the Seasonal Page by itself a few months before each date range below (3 by default) and goes away when the range ends. Within 2 weeks of the end date it is marked Booked. Add as many ranges as you need.'
+    ? 'Uses the same dates as the Carousel. A date range shows for that range. A single day shows for 2 months before that day. Within 2 weeks of the end it is marked Booked. (A themed night uses the dates on its Carousel pick.)'
     : 'Shows on the Seasonal Page whenever the box above is checked.';
-  if (nsMode === 'auto' && !document.querySelector('#ns-ranges .ns-range')) nsAddRange();
 }
 function nsAddRange(r) {
   r = r || {};
@@ -3776,16 +3774,28 @@ function seWindows(o) {
   return out;
 }
 // Same rule the public Seasonal page uses: auto items pop up N months (default 3) before each range starts
+// The dates for an item: its own, or (for a themed night) its Carousel pick's
+function seDateSrc(o) {
+  if (o.dateType) return o;
+  const p = (typeof carPicks !== 'undefined' ? carPicks : []).find(x => x.srcType === 'night' && (x.srcName || x.name) === o.name);
+  return p && p.dateType ? p : null;
+}
 function seasonalLiveObj(o) {
   const now = new Date();
   if (o.seasonalHiddenYear && o.seasonalHiddenYear === now.getFullYear()) return false;
   if (o.seasonalMode !== 'auto') return true;
+  const src = seDateSrc(o);
+  if (src) return seDatesLive(src);
   return seWindows(o).some(w => now >= w.show && now <= w.end);
 }
 // Booked = within 2 weeks of its end date
 function seasonalBooked(o) {
   const now = new Date(), day = 864e5;
-  if (o.seasonalMode === 'auto' && seWindows(o).some(w => now >= new Date(w.end.getTime() - 14 * day) && now <= w.end)) return true;
+  if (o.seasonalMode === 'auto') {
+    const src = seDateSrc(o), en = src ? seDatesEnd(src) : null;
+    if (en && now >= new Date(en.getTime() - 14 * day)) return true;
+    if (!src && seWindows(o).some(w => now >= new Date(w.end.getTime() - 14 * day) && now <= w.end)) return true;
+  }
   if (o.seasonalDate) { const d = new Date(o.seasonalDate + 'T12:00:00'), diff = (d - now) / day; if (diff >= 0 && diff <= 14) return true; }
   return false;
 }
@@ -6287,53 +6297,31 @@ function carRefreshPanes() {
 
 // ── VISIBILITY LOGIC ──
 // Returns true if this event should currently appear in the "Coming Up" carousel
+// One set of dates drives the Carousel, Themed Nights tab and Seasonal page.
+// Date range = live from its start through its end. Single day = live for 2 months before that day, through the day.
+function seDatesEnd(ev) {
+  const now = new Date(), Y = now.getFullYear();
+  const win = (day) => { const end = new Date(day.getFullYear(), day.getMonth(), day.getDate(), 23, 59, 59), st = new Date(day.getFullYear(), day.getMonth() - 2, day.getDate()); return (now >= st && now <= end) ? end : null; };
+  if (ev.dateType === 'range') {
+    const a = Number(ev.rStartM), b = Number(ev.rEndM); if (!a || !b) return null;
+    const sd = Number(ev.rStartD) || 1, ed = Number(ev.rEndD) || 28, wrap = (b * 100 + ed) < (a * 100 + sd);
+    for (let y = Y - 1; y <= Y + 1; y++) { const st = new Date(y, a - 1, sd), end = new Date(y + (wrap ? 1 : 0), b - 1, ed, 23, 59, 59); if (now >= st && now <= end) return end; }
+    return null;
+  }
+  if (ev.dateType === 'exact') { if (!ev.exactDate) return null; const [ey, em, ed] = ev.exactDate.split('-').map(Number); return win(new Date(ey, em - 1, ed)); }
+  const m = Number(ev.month); if (!m) return null;
+  if (ev.day) { const ys = ev.recurring ? [Y, Y + 1] : [Y]; for (const y of ys) { const e = win(new Date(y, m - 1, ev.day)); if (e) return e; } return null; }
+  const ys = ev.recurring ? [Y, Y + 1] : [Y];
+  for (const y of ys) { const st = new Date(y, m - 1, 1); st.setDate(st.getDate() - 14); const en = new Date(y, m, 0); en.setDate(en.getDate() - 7); if (now >= st && now <= en) return en; }
+  return null;
+}
+function seDatesLive(ev) { return !!seDatesEnd(ev); }
 function seIsActive(ev) {
   if (ev.pending) return false;
   if (ev.hiddenYear && ev.hiddenYear === new Date().getFullYear()) return false;
   if (ev.carouselOn === false) return false; // Carousel box unchecked
   if (ev.alwaysOn) return !ev.alwaysOff; // year-round override
-  const now = new Date();
-  if (ev.dateType === 'range') {
-    const v = (now.getMonth() + 1) * 100 + now.getDate(), a = ev.rStartM * 100 + ev.rStartD, b = ev.rEndM * 100 + ev.rEndD;
-    return a <= b ? (v >= a && v <= b) : (v >= a || v <= b);
-  }
-  const today = { y: now.getFullYear(), m: now.getMonth()+1, d: now.getDate() };
-
-  if (ev.dateType === 'exact') {
-    if (!ev.exactDate) return false;
-    const [ey, em, ed] = ev.exactDate.split('-').map(Number);
-    // Show from 30 days before the exact date up to the day of
-    const target = new Date(ey, em-1, ed);
-    const diff = (target - now) / 86400000; // days
-    return diff >= 0 && diff <= 30;
-  }
-
-  // dateType === 'month'
-  const m = Number(ev.month);
-  if (!m) return false;
-
-  if (ev.day) {
-    // Has a specific day — show 30 days before that day
-    // Figure out which year's occurrence to check (current or next)
-    const occurrences = ev.recurring
-      ? [new Date(today.y, m-1, ev.day), new Date(today.y+1, m-1, ev.day)]
-      : [new Date(today.y, m-1, ev.day)];
-    return occurrences.some(target => {
-      const diff = (target - now) / 86400000;
-      return diff >= 0 && diff <= 30;
-    });
-  }
-
-  // Generic month — show from 2 weeks before month starts through 1 week before month ends
-  // Check current year and next year
-  const years = ev.recurring ? [today.y, today.y+1] : [today.y];
-  return years.some(y => {
-    const monthStart = new Date(y, m-1, 1);
-    const monthEnd   = new Date(y, m, 0); // last day of month
-    const windowStart = new Date(monthStart); windowStart.setDate(windowStart.getDate() - 14);
-    const windowEnd   = new Date(monthEnd);   windowEnd.setDate(windowEnd.getDate() - 7);
-    return now >= windowStart && now <= windowEnd;
-  });
+  return seDatesLive(ev);
 }
 
 // ── ADMIN: RENDER BY MONTH ──
@@ -6360,7 +6348,7 @@ function ntSetMode(w, m) {
   document.getElementById('nt-' + w + '-manual').className = 'btn btn-sm' + (ntModes[w] === 'manual' ? '' : ' btn-ghost');
   document.getElementById('nt-' + w + '-dates').className = 'btn btn-sm' + (ntModes[w] === 'dates' ? '' : ' btn-ghost');
   document.getElementById('nt-' + w + '-note').textContent = ntModes[w] === 'dates'
-    ? 'Shows in the Themed Nights tab only while its Carousel dates are live (set the dates under Carousel, and keep Carousel checked).'
+    ? 'Shows in the Themed Nights tab on the same dates as the Carousel: a date range shows for that range, a single day shows for 2 months before it.'
     : 'Shows in the Themed Nights tab whenever the box is checked.';
 }
 let seLinkedNight = null;
