@@ -1054,6 +1054,47 @@
   .ns-range .se-check { margin-top: 0; padding-bottom: 9px; white-space: nowrap; }
   @media (max-width: 720px) { .ns-range { grid-template-columns: 1fr 1fr; } }
   @media (max-width: 720px) { .se-top, .se-cols { grid-template-columns: 1fr; } .se-prev { display: none; } }
+
+  /* ═══ POP-UP LAYOUT (all modals): fixed header + footer, scrolling body, grouped sections ═══ */
+  .modal { display: flex; flex-direction: column; overflow: hidden; }
+  .modal.mx-wide { max-width: 860px; }
+  .modal-header, .modal-footer { flex: none; }
+  .modal-footer { flex-wrap: wrap; align-items: center; background: var(--surface); }
+  .modal-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 1.1rem 1.4rem; }
+  .mx * { box-sizing: border-box; }
+  .mx input[type="text"], .mx input[type="number"], .mx input[type="date"], .mx input[type="search"], .mx select, .mx textarea { width: 100%; min-width: 0; }
+  .mx-sec { border: 1px solid var(--border); border-radius: 10px; background: var(--surface2); padding: .85rem 1rem 1rem; margin-bottom: .9rem; }
+  .mx-h { font-family: var(--cinzel); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--gold); margin-bottom: .75rem; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .mx-sub, .mx-hint { color: var(--text-dim); font-size: .74rem; font-style: italic; text-transform: none; letter-spacing: 0; font-family: 'Crimson Text', serif; font-weight: 400; }
+  .mx-priv { font-size: .62rem; color: #C0654F; background: rgba(139,58,42,.15); border: 1px solid rgba(139,58,42,.3); padding: 1px 7px; border-radius: 3px; text-transform: uppercase; letter-spacing: .08em; font-style: normal; }
+  .mx-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: .8rem; }
+  .mx-stack { display: grid; gap: .8rem; align-content: start; }
+  .mx-split { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; align-items: start; }
+  .mx-split:has(.mx-prev) { grid-template-columns: 1fr 150px; }
+  .mx-prev #se-img-prev img, .mx-prev #se-img-prev div { width: 150px; aspect-ratio: 4/5; object-fit: contain; background: #000; border: 1px solid var(--border2); border-radius: 6px; display: flex; align-items: center; justify-content: center; color: var(--text-dim); font-size: 11px; text-align: center; }
+  .mx-where { display: grid; gap: 8px; }
+  .mx-row { border: 1px solid var(--border); border-radius: 8px; background: var(--surface); transition: border-color .15s, background .15s; }
+  .mx-row.on { border-color: rgba(201,168,76,.55); background: rgba(201,168,76,.05); }
+  .mx-row-head { display: flex; gap: 11px; align-items: flex-start; padding: .65rem .85rem; cursor: pointer; margin: 0; }
+  .mx-row-head > input[type="checkbox"] { width: 18px !important; height: 18px; accent-color: var(--gold); margin-top: 2px; flex: none; cursor: pointer; }
+  .mx-row-title { display: block; font-family: var(--cinzel); font-size: .74rem; letter-spacing: .1em; text-transform: uppercase; color: var(--text); }
+  .mx-row-sub { display: block; font-size: .8rem; color: var(--text-dim); margin-top: 2px; }
+  .mx-row-body { display: none; padding: .1rem .9rem .9rem 2.55rem; }
+  .mx-row.on > .mx-row-body { display: block; }
+  .mx-checks { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px; }
+  .mx-check { display: flex; align-items: center; gap: 8px; padding: .45rem .7rem; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); cursor: pointer; font-size: .84rem; color: var(--text-muted); margin: 0; }
+  .mx-check input { width: 16px !important; height: 16px; accent-color: var(--gold); flex: none; }
+  .mx-check:has(input:checked) { border-color: rgba(201,168,76,.55); color: var(--text); background: rgba(201,168,76,.07); }
+  .mx-subbox { display: grid; gap: .8rem; padding-top: .2rem; }
+  .mx-sep { border-top: 1px solid var(--border); }
+  .mx-list { display: flex; flex-direction: column; gap: 4px; font-size: .85rem; color: var(--text-muted); }
+  .mx-more { border: 1px solid var(--border); border-radius: 10px; background: var(--surface2); margin-bottom: .5rem; }
+  .mx-more > summary { cursor: pointer; padding: .75rem 1rem; font-family: var(--cinzel); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--gold); list-style: none; display: flex; gap: 10px; align-items: baseline; }
+  .mx-more > summary::-webkit-details-marker { display: none; }
+  .mx-more > summary::before { content: '\25B8'; }
+  .mx-more[open] > summary::before { content: '\25BE'; }
+  .mx-more-body { padding: 0 1rem 1rem; }
+  @media (max-width: 720px) { .mx-grid2, .mx-split, .mx-split:has(.mx-prev) { grid-template-columns: 1fr; } .mx-prev { display: none; } .mx-row-body { padding-left: .9rem; } }
   .filter-sidebar:not(.open) { border-right: none; }
 
   /* header: three-bar dropdown menu (replaces the tab row) */
@@ -1718,155 +1759,91 @@
 
 <!-- ═══ ADD/EDIT CATEGORY MODAL ═══ -->
 <div class="modal-backdrop" id="cat-modal">
-  <div class="modal">
+  <div class="modal mx-wide">
     <div class="modal-header">
       <span class="modal-title" id="cat-modal-title">Add Category</span>
       <button class="modal-close" onclick="closeCatModal()">✕</button>
     </div>
-    <div class="modal-body">
-      <div class="form-grid">
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">Category Name *</label>
-            <input type="text" id="cat-name" placeholder="e.g. Witchcore Trivia">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Type</label>
-            <input type="text" id="cat-type" placeholder="e.g. Trivia, Karaoke List, Sing-Along, Book Trivia…" list="type-datalist" oninput="updateCatKaraokeVisibility()">
-            <datalist id="type-datalist"></datalist>
-          </div>
+    <div class="modal-body mx">
+      <div class="mx-sec">
+        <div class="mx-h">Details</div>
+        <div class="mx-grid2">
+          <div class="form-group"><label class="form-label">Category name *</label><input type="text" id="cat-name"></div>
+          <div class="form-group"><label class="form-label">Type</label><input type="text" id="cat-type" list="type-datalist" oninput="updateCatKaraokeVisibility()"><datalist id="type-datalist"></datalist></div>
+          <div class="form-group"><label class="form-label">Theme</label><input type="text" id="cat-theme"></div>
+          <div class="form-group"><label class="form-label">Tags</label><input type="text" id="cat-tags"></div>
         </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">Theme</label>
-            <input type="text" id="cat-theme" placeholder="e.g. Witches & Magic, Gothic…">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Tags</label>
-            <input type="text" id="cat-tags" placeholder="e.g. Teen TV, Supernatural, Movies…">
-          </div>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Notes <span style="color:var(--text-dim);font-size:0.72rem;font-style:italic;font-family:'Crimson Text',serif;text-transform:none;letter-spacing:0;">— for trivia/bingo: shows & titles. For mini games: shown on the card face.</span></label>
-          <textarea id="cat-shows" rows="4" placeholder="Trivia/Bingo: Vampire Diaries, Charmed, Sabrina…&#10;Mini Game: Rules, description, how to play, etc."></textarea>
-        </div>
-        <div class="form-group" id="cat-karaoke-wrap" style="display:none;">
-          <label class="form-label">Themed Karaoke Song List <span style="color:var(--text-dim);font-size:0.72rem;font-style:italic;font-family:'Crimson Text',serif;text-transform:none;letter-spacing:0;">— optional. Leave blank for plain regular karaoke. One song per line — this becomes a distinct themed set (like "Buffy Karaoke") in the venue's popup.</span></label>
-          <textarea id="cat-karaoke-songs" rows="4" placeholder="e.g.&#10;Buffy Theme Song&#10;I'll Never Tell (Once More, With Feeling)&#10;Goodbye to You"></textarea>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Admin Notes <span style="font-size:0.65rem;color:#C0654F;background:rgba(139,58,42,0.15);border:1px solid rgba(139,58,42,0.3);padding:1px 7px;border-radius:3px;font-family:'Crimson Text',serif;text-transform:uppercase;font-style:normal;letter-spacing:0.08em;">Private</span></label>
-          <textarea id="cat-notes" rows="6" placeholder="Your private brainstorming space. Vibe references, show lists, round ideas, anything…" style="font-size:15px; line-height:1.6;"></textarea>
-        </div>
-        <div style="border-top:1px solid var(--border);margin:0.5rem 0 0.75rem;padding-top:0.75rem;">
-          <div class="section-title" style="margin-bottom:0.75rem;">Sidebar Filter Dimensions</div>
-          <div class="form-row">
-            <div class="form-group">
-              <label class="form-label">Genre</label>
-              <input type="text" id="cat-genre" placeholder="e.g. Horror, Comedy, Romance">
-            </div>
-            <div class="form-group">
-              <label class="form-label">Tone</label>
-              <input type="text" id="cat-tone" placeholder="e.g. Cozy, Dark, Chaotic">
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label class="form-label">Era</label>
-              <input type="text" id="cat-era" placeholder="e.g. 90s, Y2K, Retro">
-            </div>
-            <div class="form-group">
-              <label class="form-label">Audience</label>
-              <input type="text" id="cat-audience" placeholder="e.g. Adults, Date Night, Kids/Family">
-            </div>
-          </div>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Mini Games Section <span style="color:var(--text-dim);font-size:0.7rem;font-style:italic;font-family:'Crimson Text',serif;text-transform:none;letter-spacing:0;">— only applies when published to Mini Games tab</span></label>
-          <select id="cat-mini-section" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:4px;padding:0.55rem 0.8rem;font-family:'Crimson Text',serif;font-size:15px;width:100%;outline:none;">
-            <option value="">— Unassigned —</option>
-            <option value="knowledge">Mini Game - Brain</option>
-            <option value="interactive">Mini Game - Interactive</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <div class="form-label" style="margin-bottom:0.5rem;">Publish to Venue <span style="color:var(--text-dim);font-size:0.7rem;font-style:italic;font-family:'Crimson Text',serif;text-transform:none;letter-spacing:0;">— check any tab this should appear on</span></div>
-          <div id="cat-publish-checkboxes" style="display:flex; gap:1.2rem; flex-wrap:wrap;">
-            <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-family:'Cinzel',serif;font-size:0.68rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);">
-              <input type="checkbox" id="cat-pub-karaoke" style="accent-color:var(--gold);width:15px;height:15px;cursor:pointer;"> Karaoke
-            </label>
-            <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-family:'Cinzel',serif;font-size:0.68rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);">
-              <input type="checkbox" id="cat-pub-trivia" style="accent-color:var(--gold);width:15px;height:15px;cursor:pointer;"> Trivia
-            </label>
-            <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-family:'Cinzel',serif;font-size:0.68rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);">
-              <input type="checkbox" id="cat-pub-mini" style="accent-color:var(--gold);width:15px;height:15px;cursor:pointer;"> Mini Games
-            </label>
-            <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-family:'Cinzel',serif;font-size:0.68rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);">
-              <input type="checkbox" id="cat-pub-battles" style="accent-color:var(--gold);width:15px;height:15px;cursor:pointer;"> Belladonna Battles
-            </label>
-            <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-family:'Cinzel',serif;font-size:0.68rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);">
-              <input type="checkbox" id="cat-pub-singa" style="accent-color:var(--gold);width:15px;height:15px;cursor:pointer;"> Sing-Alongs
-            </label>
-            <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-family:'Cinzel',serif;font-size:0.68rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);">
-              <input type="checkbox" id="cat-pub-waytoplay" style="accent-color:var(--gold);width:15px;height:15px;cursor:pointer;"> Way to Play
-            </label>
-            <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-family:'Cinzel',serif;font-size:0.68rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);">
-              <input type="checkbox" id="cat-pub-quickies" style="accent-color:var(--gold);width:15px;height:15px;cursor:pointer;"> Mini Games (Brain/Interactive)
-            </label>
-          </div>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Add-On Price <span style="font-size:0.7rem;color:var(--text-dim);font-style:italic;font-family:'Crimson Text',serif;text-transform:none;letter-spacing:0;">(Sing-Alongs only — shown to venues as the extra cost to add this one; requires its own date, same as Themed Nights)</span></label>
-          <input type="number" id="cat-addon-price" min="0" step="0.01" placeholder="0.00" style="max-width:160px;">
-        </div>
+      </div>
 
-        <!-- ALSO SEE ON PAGE -->
-        <div class="form-group">
-          <div class="form-label" style="margin-bottom:0.5rem;">Also See — Publish to Page <span style="color:var(--text-dim);font-size:0.7rem;font-style:italic;font-family:'Crimson Text',serif;text-transform:none;letter-spacing:0;">— shows this category in the "Also See" sidebar on that page</span></div>
-          <div style="display:flex; gap:1.2rem; flex-wrap:wrap;">
-            <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-family:'Cinzel',serif;font-size:0.68rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);">
-              <input type="checkbox" id="cat-alsosee-karaoke" style="accent-color:var(--gold);width:15px;height:15px;cursor:pointer;"> Karaoke Page
-            </label>
-            <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-family:'Cinzel',serif;font-size:0.68rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);">
-              <input type="checkbox" id="cat-alsosee-trivia" style="accent-color:var(--gold);width:15px;height:15px;cursor:pointer;"> Trivia Page
-            </label>
-            <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-family:'Cinzel',serif;font-size:0.68rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);">
-              <input type="checkbox" id="cat-alsosee-booktrivia" style="accent-color:var(--gold);width:15px;height:15px;cursor:pointer;"> Book Trivia Page
-            </label>
-            <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-family:'Cinzel',serif;font-size:0.68rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);">
-              <input type="checkbox" id="cat-alsosee-bingo" style="accent-color:var(--gold);width:15px;height:15px;cursor:pointer;"> Music Bingo Page
-            </label>
+      <div class="mx-sec">
+        <div class="mx-h">Content</div>
+        <div class="form-group"><label class="form-label">Notes <span class="mx-hint">trivia/bingo: shows &amp; titles &middot; mini games: shown on the card face</span></label><textarea id="cat-shows" rows="4"></textarea></div>
+        <div class="form-group" id="cat-karaoke-wrap" style="display:none;margin-top:.8rem;"><label class="form-label">Themed karaoke song list <span class="mx-hint">optional &middot; one song per line &middot; becomes its own themed set in the venue popup. Blank = plain regular karaoke</span></label><textarea id="cat-karaoke-songs" rows="4"></textarea></div>
+      </div>
+
+      <div class="mx-sec">
+        <div class="mx-h">Where it shows <span class="mx-sub">Check every place it should appear</span></div>
+        <div class="mx-where">
+          <div class="mx-row on">
+            <div class="mx-row-head" style="cursor:default"><span><span class="mx-row-title">Venue menu tabs</span><span class="mx-row-sub">venue.html &mdash; check any tab this appears on</span></span></div>
+            <div class="mx-row-body" style="display:block">
+              <div id="cat-publish-checkboxes" class="mx-checks">
+                <label class="mx-check"><input type="checkbox" id="cat-pub-karaoke"> Karaoke</label>
+                <label class="mx-check"><input type="checkbox" id="cat-pub-trivia"> Trivia</label>
+                <label class="mx-check"><input type="checkbox" id="cat-pub-mini"> Mini Games</label>
+                <label class="mx-check"><input type="checkbox" id="cat-pub-battles"> Belladonna Battles</label>
+                <label class="mx-check"><input type="checkbox" id="cat-pub-singa"> Sing-Alongs</label>
+                <label class="mx-check"><input type="checkbox" id="cat-pub-waytoplay"> Way to Play</label>
+                <label class="mx-check"><input type="checkbox" id="cat-pub-quickies"> Mini Games (Brain/Interactive)</label>
+              </div>
+              <div class="mx-grid2" style="margin-top:.8rem;">
+                <div class="form-group"><label class="form-label">Mini Games section <span class="mx-hint">only for the Mini Games tab</span></label><select id="cat-mini-section"><option value="">Unassigned</option><option value="knowledge">Mini Game - Brain</option><option value="interactive">Mini Game - Interactive</option></select></div>
+                <div class="form-group"><label class="form-label">Add-on price <span class="mx-hint">Sing-Alongs only</span></label><input type="number" id="cat-addon-price" min="0" step="0.01"></div>
+              </div>
+            </div>
           </div>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Banner Image URL <span style="color:var(--text-dim);font-size:0.72rem;font-style:italic;font-family:'Crimson Text',serif;text-transform:none;letter-spacing:0;">— wide/landscape, shown in Library</span></label>
-          <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:0.5rem;">
-            <button class="btn btn-sm btn-danger" type="button" id="cat-banner-clear" onclick="clearCatBanner()" style="display:none;">Remove</button>
+          <div class="mx-row on">
+            <div class="mx-row-head" style="cursor:default"><span><span class="mx-row-title">&ldquo;Also See&rdquo; sidebar</span><span class="mx-row-sub">Shows this category in the Also See sidebar on that page</span></span></div>
+            <div class="mx-row-body" style="display:block">
+              <div class="mx-checks">
+                <label class="mx-check"><input type="checkbox" id="cat-alsosee-karaoke"> Karaoke page</label>
+                <label class="mx-check"><input type="checkbox" id="cat-alsosee-trivia"> Trivia page</label>
+                <label class="mx-check"><input type="checkbox" id="cat-alsosee-booktrivia"> Book Trivia page</label>
+                <label class="mx-check"><input type="checkbox" id="cat-alsosee-bingo"> Music Bingo page</label>
+              </div>
+            </div>
           </div>
-          <input type="text" id="cat-banner-url" placeholder="Paste banner image URL…" oninput="handleCatBannerUrl(this.value)">
-          <div id="cat-banner-preview" style="display:none; margin-top:0.6rem; height:90px; border-radius:5px; overflow:hidden; border:1px solid var(--border); position:relative; background:var(--surface2);">
-            <img id="cat-banner-img" style="width:100%; height:100%; object-fit:cover;" src="" alt="" onerror="this.style.opacity=0.2">
-          </div>
-        </div>
-        <div class="form-group">
-          <label class="form-label">5:4 Image URL <span style="color:var(--text-dim);font-size:0.72rem;font-style:italic;font-family:'Crimson Text',serif;text-transform:none;letter-spacing:0;">— 5:4 landscape, shown on Browse &amp; Trivia pages</span></label>
-          <input type="text" id="cat-l54-url" placeholder="Paste 5:4 image URL…">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Square Image URL <span style="color:var(--text-dim);font-size:0.72rem;font-style:italic;font-family:'Crimson Text',serif;text-transform:none;letter-spacing:0;">— 1:1</span></label>
-          <input type="text" id="cat-square-url" placeholder="Paste square image URL…">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Portrait Image URL <span style="color:var(--text-dim);font-size:0.72rem;font-style:italic;font-family:'Crimson Text',serif;text-transform:none;letter-spacing:0;">— 4:5, shown on Trivia, Mini Games &amp; Sing-Alongs tabs</span></label>
-          <input type="text" id="cat-minigame-url" placeholder="Paste 4:5 portrait image URL…" oninput="handleCatMiniUrl(this.value)">
-          <div id="cat-minigame-preview" style="display:none; margin-top:0.6rem; max-width:120px; aspect-ratio:4/5; border-radius:5px; overflow:hidden; border:1px solid var(--border); position:relative; background:var(--surface2);">
-            <img id="cat-minigame-img" style="width:100%; height:100%; object-fit:cover;" src="" alt="" onerror="this.style.opacity=0.2">
+          <div class="mx-row" id="car-modal-cat">
+            <label class="mx-row-head"><input type="checkbox" onchange="carToggleModal('cat',this)"><span><span class="mx-row-title">Carousel</span><span class="mx-row-sub">Adds it to Picks for the &ldquo;Coming Up&rdquo; carousel on the venue.html front page<span class="mx-sf" style="display:none"> &mdash; save it first</span></span></span></label>
           </div>
         </div>
       </div>
+
+      <div class="mx-sec">
+        <div class="mx-h">Images</div>
+        <div class="mx-grid2">
+          <div class="form-group"><label class="form-label">Banner URL <span class="mx-hint">wide, shown in Library</span></label><input type="text" id="cat-banner-url" oninput="handleCatBannerUrl(this.value)"><div><button class="btn btn-sm btn-danger" type="button" id="cat-banner-clear" onclick="clearCatBanner()" style="display:none;margin-top:6px;">Remove</button></div><div id="cat-banner-preview" style="display:none; margin-top:0.6rem; height:90px; border-radius:5px; overflow:hidden; border:1px solid var(--border); position:relative; background:var(--surface2);"><img id="cat-banner-img" style="width:100%; height:100%; object-fit:cover;" src="" alt="" onerror="this.style.opacity=0.2"></div></div>
+          <div class="form-group"><label class="form-label">Portrait URL <span class="mx-hint">4:5 &middot; Trivia, Mini Games, Sing-Alongs</span></label><input type="text" id="cat-minigame-url" oninput="handleCatMiniUrl(this.value)"><div id="cat-minigame-preview" style="display:none; margin-top:0.6rem; max-width:120px; aspect-ratio:4/5; border-radius:5px; overflow:hidden; border:1px solid var(--border); position:relative; background:var(--surface2);"><img id="cat-minigame-img" style="width:100%; height:100%; object-fit:cover;" src="" alt="" onerror="this.style.opacity=0.2"></div></div>
+          <div class="form-group"><label class="form-label">5:4 URL <span class="mx-hint">Browse &amp; Trivia pages</span></label><input type="text" id="cat-l54-url"></div>
+          <div class="form-group"><label class="form-label">Square URL <span class="mx-hint">1:1</span></label><input type="text" id="cat-square-url"></div>
+        </div>
+      </div>
+
+      <details class="mx-more">
+        <summary>More options <span class="mx-sub">admin notes &amp; sidebar filters</span></summary>
+        <div class="mx-more-body">
+          <div class="form-group"><label class="form-label">Admin notes <span class="mx-priv">Private</span></label><textarea id="cat-notes" rows="5"></textarea></div>
+          <div class="form-label" style="margin:.9rem 0 .5rem;">Sidebar filter dimensions</div>
+          <div class="mx-grid2">
+            <div class="form-group"><label class="form-label">Genre</label><input type="text" id="cat-genre"></div>
+            <div class="form-group"><label class="form-label">Tone</label><input type="text" id="cat-tone"></div>
+            <div class="form-group"><label class="form-label">Era</label><input type="text" id="cat-era"></div>
+            <div class="form-group"><label class="form-label">Audience</label><input type="text" id="cat-audience"></div>
+          </div>
+        </div>
+      </details>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-ghost btn-sm car-modal-btn" id="car-modal-cat" onclick="carFromModal('cat')" style="display:none;">+ Carousel</button>
       <button class="btn btn-danger btn-sm" id="cat-modal-delete-btn" onclick="deleteCategoryFromModal()" style="display:none; margin-right:auto;">Delete Category</button>
       <button class="btn btn-ghost" onclick="closeCatModal()">Cancel</button>
       <button class="btn" onclick="saveCategoryFromModal()">Save Category</button>
@@ -1878,37 +1855,41 @@
      editing the Venue-Menu fields here writes straight back to that record.
      "Where This Shows" lives inside this same box, not a separate button. ═══ -->
 <div class="modal-backdrop" id="live-cat-info-modal">
-  <div class="modal" style="max-width:460px;">
+  <div class="modal mx-wide" style="max-width:640px;">
     <div class="modal-header">
       <span class="modal-title" id="live-cat-info-title">Category</span>
       <button class="modal-close" onclick="closeLiveCategoryInfo()">✕</button>
     </div>
-    <div class="modal-body">
-      <div class="form-label" style="margin-bottom:0.5rem;">Where This Shows</div>
-      <div id="live-cat-info-list" style="display:flex;flex-direction:column;gap:6px;font-size:0.85rem;color:var(--text-muted);margin-bottom:1.1rem;"></div>
-
-      <label class="form-label" style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:1rem;">
-        <input type="checkbox" id="live-vm-show" style="accent-color:var(--gold);width:13px;height:13px"/>
-        Show this category on the Venue Menu (public)
-      </label>
-
-      <label class="form-label">Description</label>
-      <textarea class="field-input" id="live-vm-description" rows="3" style="resize:vertical;line-height:1.5;font-family:var(--font);margin-bottom:1rem;"
-        placeholder="What guests see for this category on the Venue Menu"></textarea>
-
-      <label class="form-label">Shows / Lineup (one per line)</label>
-      <textarea class="field-input" id="live-vm-shows" rows="3" style="resize:vertical;line-height:1.5;font-family:var(--font);margin-bottom:0.3rem;"></textarea>
-      <div style="font-size:0.7rem;color:var(--text-dim);margin-bottom:0.9rem;">Name and type are edited in <span id="live-vm-owner-label">Trivia Admin</span>.</div>
-
-      <div class="form-label" style="margin-bottom:0.4rem;">Image links <span style="color:var(--text-dim);font-size:0.72rem;font-style:italic;font-family:'Crimson Text',serif;text-transform:none;letter-spacing:0;">— all four sizes save under this category's ID, and every app uses them</span></div>
-      <input type="text" class="field-input" id="live-img-banner" placeholder="Banner (wide) image URL" style="margin-bottom:6px" oninput="liveImgPreview()">
-      <input type="text" class="field-input" id="live-img-l54" placeholder="5:4 image URL" style="margin-bottom:6px" oninput="liveImgPreview()">
-      <input type="text" class="field-input" id="live-img-p45" placeholder="4:5 portrait image URL" style="margin-bottom:6px" oninput="liveImgPreview()">
-      <input type="text" class="field-input" id="live-img-square" placeholder="Square (1:1) image URL" style="margin-bottom:8px" oninput="liveImgPreview()">
-      <div id="live-img-previews" style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;"></div>
+    <div class="modal-body mx">
+      <div class="mx-sec">
+        <div class="mx-h">Where it shows</div>
+        <div id="live-cat-info-list" class="mx-list"></div>
+        <div class="mx-where" style="margin-top:.7rem;">
+          <div class="mx-row">
+            <label class="mx-row-head"><input type="checkbox" id="live-vm-show" onchange="mxRefresh()"><span><span class="mx-row-title">Venue Menu</span><span class="mx-row-sub">Public, on venue.html</span></span></label>
+          </div>
+          <div class="mx-row" id="car-modal-live">
+            <label class="mx-row-head"><input type="checkbox" onchange="carToggleModal('live',this)"><span><span class="mx-row-title">Carousel</span><span class="mx-row-sub">Adds it to Picks for the &ldquo;Coming Up&rdquo; carousel on the venue.html front page<span class="mx-sf" style="display:none"> &mdash; save it first</span></span></span></label>
+          </div>
+        </div>
+      </div>
+      <div class="mx-sec">
+        <div class="mx-h">Details <span class="mx-sub">Name and type are edited in <span id="live-vm-owner-label">Trivia Admin</span></span></div>
+        <div class="form-group"><label class="form-label">Description <span class="mx-hint">what guests see on the Venue Menu</span></label><textarea class="field-input" id="live-vm-description" rows="3"></textarea></div>
+        <div class="form-group" style="margin-top:.8rem;"><label class="form-label">Shows / lineup <span class="mx-hint">one per line</span></label><textarea class="field-input" id="live-vm-shows" rows="3"></textarea></div>
+      </div>
+      <div class="mx-sec">
+        <div class="mx-h">Images <span class="mx-sub">All four sizes save under this category and every app uses them</span></div>
+        <div class="mx-grid2">
+          <div class="form-group"><label class="form-label">Banner (wide)</label><input type="text" class="field-input" id="live-img-banner" oninput="liveImgPreview()"></div>
+          <div class="form-group"><label class="form-label">4:5 portrait</label><input type="text" class="field-input" id="live-img-p45" oninput="liveImgPreview()"></div>
+          <div class="form-group"><label class="form-label">5:4</label><input type="text" class="field-input" id="live-img-l54" oninput="liveImgPreview()"></div>
+          <div class="form-group"><label class="form-label">Square (1:1)</label><input type="text" class="field-input" id="live-img-square" oninput="liveImgPreview()"></div>
+        </div>
+        <div id="live-img-previews" style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;margin-top:.7rem;"></div>
+      </div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-ghost btn-sm car-modal-btn" id="car-modal-live" onclick="carFromModal('live')" style="display:none;">+ Carousel</button>
       <button class="btn btn-ghost" onclick="closeLiveCategoryInfo()">Cancel</button>
       <button class="btn" onclick="saveLiveCategoryEdit()">Save Changes</button>
     </div>
@@ -1917,152 +1898,107 @@
 
 <!-- ═══ NEW/EDIT NIGHT MODAL ═══ -->
 <div class="modal-backdrop" id="night-modal">
-  <div class="modal" style="max-width:800px;">
+  <div class="modal mx-wide">
     <div class="modal-header">
       <span class="modal-title" id="night-modal-title">New Themed Night</span>
       <button class="modal-close" onclick="closeNightModal()">✕</button>
     </div>
-    <div class="modal-body">
-      <div class="form-grid">
-        <div class="form-group">
-          <label class="form-label">Night Name *</label>
-          <input type="text" id="night-name" placeholder="e.g. Coven Night, Spooky Season Spectacular…">
-        </div>
-        <div class="form-group">
-          <div style="display:flex; gap:1.5rem; flex-wrap:wrap;">
-            <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
-              <input type="checkbox" id="night-published" style="accent-color:var(--gold); width:18px; height:18px; cursor:pointer; flex-shrink:0;">
-              <span style="font-family:'Cinzel',serif; font-size:0.72rem; letter-spacing:0.14em; text-transform:uppercase; color:var(--gold);">Published to Venue Menu</span>
-            </label>
-            <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
-              <input type="checkbox" id="night-published-host" style="accent-color:var(--gold); width:18px; height:18px; cursor:pointer; flex-shrink:0;">
-              <span style="font-family:'Cinzel',serif; font-size:0.72rem; letter-spacing:0.14em; text-transform:uppercase; color:var(--gold);">Published to Host Menu</span>
-            </label>
+    <div class="modal-body mx">
+      <div class="mx-sec">
+        <div class="mx-h">Details</div>
+        <div class="mx-split">
+          <div class="mx-stack">
+            <div class="form-group"><label class="form-label">Night name *</label><input type="text" id="night-name"></div>
+            <div class="form-group"><label class="form-label">Venue description <span class="mx-hint">what venues see</span></label><textarea id="night-description" rows="4"></textarea></div>
+            <div class="form-group" style="max-width:200px;"><label class="form-label">Add-on price <span class="mx-hint">optional, extra cost to add this night</span></label><input type="number" id="night-addon-price" min="0" step="0.01"></div>
           </div>
-          <p style="font-size:0.8rem; color:var(--text-dim); margin-top:4px;">Check either or both — Venue Menu controls what venues see, Host Menu controls what hosts see (including whether they can star it).</p>
-          <div style="margin-top:0.9rem; padding:0.8rem 0.9rem; border:1px solid var(--border); border-radius:8px;">
-            <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
-              <input type="checkbox" id="night-published-seasonal" style="accent-color:var(--gold); width:18px; height:18px; cursor:pointer; flex-shrink:0;">
-              <span style="font-family:'Cinzel',serif; font-size:0.72rem; letter-spacing:0.14em; text-transform:uppercase; color:var(--gold);">Published to Seasonal Page</span>
-            </label>
-            <p style="font-size:0.8rem; color:var(--text-dim); margin:4px 0 0.7rem;">The public Seasonal Nights landing page (no sign-in). It shows this night's banner image as the poster and the Seasonal Page Description below (not the Venue Description). Visitors click the poster for more info, then go to the booking page.</p>
-            <div class="form-group" style="margin-bottom:0.8rem;">
-              <label class="form-label">When it shows on the Seasonal Page</label>
-              <div class="se-seg">
-                <button type="button" id="ns-mode-manual" class="btn btn-sm" onclick="nsSetMode('manual')">Manual</button>
-                <button type="button" id="ns-mode-auto" class="btn btn-sm btn-ghost" onclick="nsSetMode('auto')">Auto by dates</button>
-              </div>
-              <p class="se-note" id="ns-mode-note"></p>
-              <div id="ns-auto-wrap" style="display:none;">
-                <div id="ns-ranges"></div>
-                <button type="button" class="btn btn-sm btn-ghost" onclick="nsAddRange()">+ Add date range</button>
-                <label class="se-check"><input type="checkbox" id="ns-hide-year"><span>Hide this year <em>(skips it this year only, back next year)</em></span></label>
+          <div class="mx-stack">
+            <div class="form-group"><label class="form-label">Banner image URL <span class="mx-hint">4:5</span></label><input type="text" id="night-banner-url" oninput="handleNightBannerUrl(this.value)"></div>
+            <div class="form-group"><label class="form-label">Or background color</label><div style="display:flex;gap:8px;align-items:center;"><input type="text" id="night-banner-color" oninput="handleNightBannerColorInput(this.value)"><button class="btn btn-sm btn-danger" id="night-banner-clear" onclick="clearNightBanner()" style="display:none;">Remove</button></div></div>
+            <div id="banner-preview" style="display:none; aspect-ratio:4/5; max-width:170px; border-radius:5px; overflow:hidden; border:1px solid var(--border); position:relative; background:var(--surface2);">
+              <img id="night-banner-img" style="width:100%; height:100%; object-fit:cover; display:none;" src="" alt="" onerror="this.style.opacity=0.2">
+              <div id="banner-preview-inner" style="width:100%; height:100%; background:transparent; display:flex; align-items:center; justify-content:center; position:absolute; inset:0;">
+                <span id="banner-preview-label" style="font-family:'Cinzel',serif; color:var(--gold); font-size:1rem; text-align:center; padding:0 1rem; text-shadow:0 1px 6px rgba(0,0,0,0.8);"></span>
               </div>
             </div>
-            <div class="form-row">
-              <div class="form-group">
-                <label class="form-label">Seasonal Page: Date <span style="color:var(--text-dim);font-size:0.72rem;font-style:italic;font-family:'Crimson Text',serif;text-transform:none;letter-spacing:0;">— also sorts the page</span></label>
-                <input type="date" id="night-seasonal-date">
-              </div>
-              <div class="form-group">
-                <label class="form-label">Seasonal Page: Date Line <span style="color:var(--text-dim);font-size:0.72rem;font-style:italic;font-family:'Crimson Text',serif;text-transform:none;letter-spacing:0;">— optional, replaces the date shown</span></label>
-                <input type="text" id="night-seasonal-when">
-              </div>
-            </div>
-            <div class="form-group" style="margin-top:0.6rem;max-width:260px;">
-              <label class="form-label">Seasonal Page: Month <span style="color:var(--text-dim);font-size:0.72rem;font-style:italic;font-family:'Crimson Text',serif;text-transform:none;letter-spacing:0;">— the month it sits under (here and on the page). Blank = use the Date</span></label>
-              <select id="night-seasonal-month"><option value="">Use the Date</option><option value="1">January</option><option value="2">February</option><option value="3">March</option><option value="4">April</option><option value="5">May</option><option value="6">June</option><option value="7">July</option><option value="8">August</option><option value="9">September</option><option value="10">October</option><option value="11">November</option><option value="12">December</option></select>
-            </div>
-            <div class="form-group" style="margin-top:0.6rem;">
-              <label class="form-label">Seasonal Page: Description <span style="color:var(--text-dim);font-size:0.72rem;font-style:italic;font-family:'Crimson Text',serif;text-transform:none;letter-spacing:0;">— shown to the public. Separate from the Venue Description above</span></label>
-              <textarea id="night-seasonal-desc" rows="4" style="resize:vertical;line-height:1.5;"></textarea>
-            </div>
-            <div class="form-group" style="margin-top:0.6rem;">
-              <label class="form-label">Seasonal Page: Great For</label>
-              <input type="text" id="night-seasonal-fit">
-            </div>
           </div>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Add-On Price <span style="font-size:0.7rem;color:var(--text-dim);font-style:italic;font-family:'Crimson Text',serif;text-transform:none;letter-spacing:0;">(optional — shown to venues as the extra cost to add this night)</span></label>
-          <input type="number" id="night-addon-price" min="0" step="0.01" placeholder="0.00" style="max-width:160px;">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Venue Description <span style="color:var(--text-dim); font-weight:400; font-style:italic; font-size:0.75rem; letter-spacing:0;">— visible to venues</span></label>
-          <textarea id="night-description" rows="3" placeholder="A short blurb about this night that venues will see. e.g. A witchy evening of occult trivia, spooky sing-alongs, and cauldron-worthy drinks…"></textarea>
-        </div>
-        <div class="form-group">
-          <label class="form-label" style="display:flex; align-items:center; gap:8px;">
-            Admin Notes
-            <span style="font-size:0.65rem; color:var(--text-dim); background:rgba(139,58,42,0.15); border:1px solid rgba(139,58,42,0.3); color:#C0654F; padding:1px 7px; border-radius:3px; letter-spacing:0.08em; font-family:'Crimson Text',serif; text-transform:uppercase; font-style:normal;">Private</span>
-          </label>
-          <textarea id="night-admin-notes" rows="6" placeholder="Your private brainstorming space. Vibe references, movie lists, costume ideas, round structure ideas, anything…" style="font-size:15px; line-height:1.6;"></textarea>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Filter Tags</label>
-          <div id="night-modal-tags" style="display:flex; gap:6px; flex-wrap:wrap; min-height:32px; align-items:center;">
-            <span style="color:var(--text-dim); font-size:0.85rem; font-style:italic;">No filter tags available — add some via Manage Filters</span>
-          </div>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Banner / Header Image</label>
-          <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:0.5rem;">
-            <input type="text" id="night-banner-color" placeholder="Background color (e.g. #2D1B4E)" style="width:180px;" oninput="handleNightBannerColorInput(this.value)">
-            <button class="btn btn-sm btn-danger" id="night-banner-clear" onclick="clearNightBanner()" style="display:none;">Remove</button>
-          </div>
-          <input type="text" id="night-banner-url" placeholder="Paste image URL…" oninput="handleNightBannerUrl(this.value)">
-          <div id="banner-preview" style="display:none; margin-top:0.75rem; aspect-ratio:4/5; max-width:200px; border-radius:5px; overflow:hidden; border:1px solid var(--border); position:relative; background:var(--surface2);">
-            <img id="night-banner-img" style="width:100%; height:100%; object-fit:cover; display:none;" src="" alt="" onerror="this.style.opacity=0.2">
-            <div id="banner-preview-inner" style="width:100%; height:100%; background:transparent; display:flex; align-items:center; justify-content:center; position:absolute; inset:0;">
-              <span id="banner-preview-label" style="font-family:'Cinzel',serif; color:var(--gold); font-size:1rem; text-align:center; padding:0 1rem; text-shadow:0 1px 6px rgba(0,0,0,0.8);"></span>
-            </div>
-          </div>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Night Enhancements</label>
-          <p style="font-size:0.82rem; color:var(--text-dim); margin-bottom:0.5rem; font-style:italic;">Decor, prizes, food/drinks, activities, vibe notes — anything that makes this night special.</p>
-          <div id="enhancements-list" style="display:grid; gap:6px; margin-bottom:8px;"></div>
-          <div style="display:flex; gap:8px;">
-            <input type="text" id="enhancement-input" placeholder="e.g. Serve popcorn in little tins, Prizes are adult toys…" onkeydown="if(event.key==='Enter'){event.preventDefault();addEnhancement();}">
-            <button class="btn btn-sm" onclick="addEnhancement()" style="flex-shrink:0;">+ Add</button>
-          </div>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Tags <span style="color:var(--text-dim); font-size:0.72rem; font-style:italic; font-family:'Crimson Text',serif; text-transform:none; letter-spacing:0;">comma separated</span></label>
-          <input type="text" id="night-tags-input" placeholder="e.g. Witches, Dark, Halloween, 90s…">
-        </div>
-        <div style="border-top:1px solid var(--border);margin:0.5rem 0 0.75rem;padding-top:0.75rem;">
-          <div class="section-title" style="margin-bottom:0.75rem;">Sidebar Filter Dimensions</div>
-          <div class="form-row">
-            <div class="form-group">
-              <label class="form-label">Genre</label>
-              <input type="text" id="night-genre" placeholder="e.g. Horror, Comedy, Romance">
-            </div>
-            <div class="form-group">
-              <label class="form-label">Tone</label>
-              <input type="text" id="night-tone" placeholder="e.g. Cozy, Dark, Chaotic">
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label class="form-label">Era</label>
-              <input type="text" id="night-era" placeholder="e.g. 90s, Y2K, Retro">
-            </div>
-            <div class="form-group">
-              <label class="form-label">Audience</label>
-              <input type="text" id="night-audience" placeholder="e.g. Adults, Date Night, Kids/Family">
-            </div>
-          </div>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Select Categories for This Night</label>
-          <input type="search" autocomplete="off" id="night-cat-search" placeholder="Filter categories…" style="margin-bottom:0.5rem;">
-          <div class="cat-selector" id="night-cat-selector"></div>
         </div>
       </div>
+
+      <div class="mx-sec">
+        <div class="mx-h">Where it shows <span class="mx-sub">Check every place it should appear</span></div>
+        <div class="mx-where">
+          <div class="mx-row">
+            <label class="mx-row-head"><input type="checkbox" id="night-published" onchange="mxRefresh()"><span><span class="mx-row-title">Themed Nights tab</span><span class="mx-row-sub">venue.html &mdash; venues with the menu see it</span></span></label>
+          </div>
+          <div class="mx-row">
+            <label class="mx-row-head"><input type="checkbox" id="night-published-host" onchange="mxRefresh()"><span><span class="mx-row-title">Host Menu</span><span class="mx-row-sub">Hosts see it and can star it</span></span></label>
+          </div>
+          <div class="mx-row" id="car-modal-night">
+            <label class="mx-row-head"><input type="checkbox" onchange="carToggleModal('night',this)"><span><span class="mx-row-title">Carousel</span><span class="mx-row-sub">Adds it to Picks for the &ldquo;Coming Up&rdquo; carousel on the venue.html front page. Set its dates in Carousel Calendar &rarr; Picks<span class="mx-sf" style="display:none"> &mdash; save it first</span></span></span></label>
+          </div>
+          <div class="mx-row">
+            <label class="mx-row-head"><input type="checkbox" id="night-published-seasonal" onchange="mxRefresh()"><span><span class="mx-row-title">Seasonal page</span><span class="mx-row-sub">seasonal.html &mdash; the public landing page for venues without an account</span></span></label>
+            <div class="mx-row-body"><div id="night-sd-slot"><div id="sd-box" class="mx-subbox">
+                <div class="mx-grid2">
+                  <div class="form-group"><label class="form-label">Month it sits under</label><select id="night-seasonal-month"><option value="">Use the date</option><option value="1">January</option><option value="2">February</option><option value="3">March</option><option value="4">April</option><option value="5">May</option><option value="6">June</option><option value="7">July</option><option value="8">August</option><option value="9">September</option><option value="10">October</option><option value="11">November</option><option value="12">December</option></select></div>
+                  <div class="form-group"><label class="form-label">Date <span class="mx-hint">(sorts the page)</span></label><input type="date" id="night-seasonal-date"></div>
+                </div>
+                <div class="form-group"><label class="form-label">Date line on the page <span class="mx-hint">(blank = show the date; or write &ldquo;Date by request&rdquo;)</span></label><input type="text" id="night-seasonal-when"></div>
+                <div class="form-group"><label class="form-label">Public description</label><textarea id="night-seasonal-desc" rows="3"></textarea></div>
+                <div class="form-group"><label class="form-label">Great for</label><input type="text" id="night-seasonal-fit"></div>
+                <div class="mx-sep"></div>
+                <div class="form-label">When it shows on the page</div>
+                <div class="se-seg">
+                  <button type="button" id="ns-mode-manual" class="btn btn-sm" onclick="nsSetMode('manual')">Manual</button>
+                  <button type="button" id="ns-mode-auto" class="btn btn-sm btn-ghost" onclick="nsSetMode('auto')">Auto by dates</button>
+                </div>
+                <p class="se-note" id="ns-mode-note"></p>
+                <div id="ns-auto-wrap" style="display:none;">
+                  <div id="ns-ranges"></div>
+                  <button type="button" class="btn btn-sm btn-ghost" onclick="nsAddRange()">+ Add date range</button>
+                  <label class="se-check"><input type="checkbox" id="ns-hide-year"><span>Hide this year <em>(skips it this year only, back next year)</em></span></label>
+                </div>
+              </div></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mx-sec">
+        <div class="mx-h">Categories in this night</div>
+        <input type="search" autocomplete="off" id="night-cat-search" placeholder="Filter categories…" style="margin-bottom:0.6rem;">
+        <div class="cat-selector" id="night-cat-selector"></div>
+      </div>
+
+      <details class="mx-more">
+        <summary>More options <span class="mx-sub">tags, enhancements, filters, private notes</span></summary>
+        <div class="mx-more-body">
+          <div class="form-group"><label class="form-label">Filter tags</label>
+            <div id="night-modal-tags" style="display:flex; gap:6px; flex-wrap:wrap; min-height:32px; align-items:center;">
+              <span style="color:var(--text-dim); font-size:0.85rem; font-style:italic;">No filter tags available — add some via Manage Filters</span>
+            </div>
+          </div>
+          <div class="form-group" style="margin-top:.8rem;"><label class="form-label">Tags <span class="mx-hint">comma separated</span></label><input type="text" id="night-tags-input"></div>
+          <div class="form-group" style="margin-top:.8rem;">
+            <label class="form-label">Night enhancements <span class="mx-hint">decor, prizes, food/drinks, activities, vibe</span></label>
+            <div id="enhancements-list" style="display:grid; gap:6px; margin-bottom:8px;"></div>
+            <div style="display:flex; gap:8px;">
+              <input type="text" id="enhancement-input" onkeydown="if(event.key==='Enter'){event.preventDefault();addEnhancement();}">
+              <button class="btn btn-sm" onclick="addEnhancement()" style="flex-shrink:0;">+ Add</button>
+            </div>
+          </div>
+          <div class="form-label" style="margin:.9rem 0 .5rem;">Sidebar filter dimensions</div>
+          <div class="mx-grid2">
+            <div class="form-group"><label class="form-label">Genre</label><input type="text" id="night-genre"></div>
+            <div class="form-group"><label class="form-label">Tone</label><input type="text" id="night-tone"></div>
+            <div class="form-group"><label class="form-label">Era</label><input type="text" id="night-era"></div>
+            <div class="form-group"><label class="form-label">Audience</label><input type="text" id="night-audience"></div>
+          </div>
+          <div class="form-group" style="margin-top:.9rem;"><label class="form-label">Admin notes <span class="mx-priv">Private</span></label><textarea id="night-admin-notes" rows="5" style="font-size:15px; line-height:1.6;"></textarea></div>
+        </div>
+      </details>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-ghost btn-sm car-modal-btn" id="car-modal-night" onclick="carFromModal('night')" style="display:none;">+ Carousel</button>
       <button class="btn btn-danger btn-sm" id="night-modal-delete-btn" onclick="deleteNightFromModal()" style="display:none; margin-right:auto;">Delete Night</button>
       <button class="btn btn-ghost" onclick="closeNightModal()">Cancel</button>
       <button class="btn" onclick="saveNight()">Save Night</button>
@@ -2081,7 +2017,7 @@
       <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:1rem;">These filter tags appear on the Themed Nights page. Assign tags to a night in the Edit modal.</p>
       <div id="night-tags-list" style="display:grid; gap:6px; margin-bottom:1rem;"></div>
       <div style="display:flex; gap:8px;">
-        <input type="text" id="night-tag-input" placeholder="Add a filter tag… e.g. Halloween" onkeydown="if(event.key==='Enter'){event.preventDefault();addNightTag();}">
+        <input type="text" id="night-tag-input" onkeydown="if(event.key==='Enter'){event.preventDefault();addNightTag();}">
         <button class="btn btn-sm" onclick="addNightTag()" style="flex-shrink:0;">+ Add</button>
       </div>
     </div>
@@ -2119,7 +2055,7 @@
       <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:1rem;">Filter tags for the Trivia tab.</p>
       <div id="trivia-tags-list" style="display:grid; gap:6px; margin-bottom:1rem;"></div>
       <div style="display:flex; gap:8px;">
-        <input type="text" id="trivia-tag-input" placeholder="Add a filter tag… e.g. Horror, Pop Culture, Sports" onkeydown="if(event.key==='Enter'){event.preventDefault();addTriviaTag();}">
+        <input type="text" id="trivia-tag-input" onkeydown="if(event.key==='Enter'){event.preventDefault();addTriviaTag();}">
         <button class="btn btn-sm" onclick="addTriviaTag()" style="flex-shrink:0;">+ Add</button>
       </div>
     </div>
@@ -2140,7 +2076,7 @@
       <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:1rem;">Filter tags for the Mini Games tab. Assign tags to a mini game via the Tags field in the category edit modal.</p>
       <div id="mini-tags-list" style="display:grid; gap:6px; margin-bottom:1rem;"></div>
       <div style="display:flex; gap:8px;">
-        <input type="text" id="mini-tag-input" placeholder="Add a filter tag… e.g. Party, Quick Play, Team" onkeydown="if(event.key==='Enter'){event.preventDefault();addMiniTag();}">
+        <input type="text" id="mini-tag-input" onkeydown="if(event.key==='Enter'){event.preventDefault();addMiniTag();}">
         <button class="btn btn-sm" onclick="addMiniTag()" style="flex-shrink:0;">+ Add</button>
       </div>
     </div>
@@ -2152,29 +2088,43 @@
 
 <!-- ═══ MOVIE MODALS ═══ -->
 <div class="modal-backdrop" id="movie-modal">
-  <div class="modal" style="max-width:560px;">
+  <div class="modal mx-wide" style="max-width:640px;">
     <div class="modal-header">
       <span class="modal-title" id="movie-modal-title">Add Movie</span>
       <button class="modal-close" onclick="closeMovieModal()">✕</button>
     </div>
-    <div class="modal-body">
-      <div class="form-group"><label class="form-label">Title</label><input type="text" id="mv-title" placeholder="e.g. Night of the Living Dead"></div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-        <div class="form-group"><label class="form-label">Year</label><input type="text" id="mv-year" placeholder="1968"></div>
-        <div class="form-group"><label class="form-label">Runtime (minutes)</label><input type="text" id="mv-runtime" placeholder="96"></div>
+    <div class="modal-body mx">
+      <div class="mx-sec">
+        <div class="mx-h">Details</div>
+        <div class="form-group"><label class="form-label">Title</label><input type="text" id="mv-title"></div>
+        <div class="mx-grid2" style="margin-top:.8rem;">
+          <div class="form-group"><label class="form-label">Year</label><input type="text" id="mv-year"></div>
+          <div class="form-group"><label class="form-label">Runtime (minutes)</label><input type="text" id="mv-runtime"></div>
+        </div>
+        <div class="form-group" style="margin-top:.8rem;"><label class="form-label">Genre / tags <span class="mx-hint">comma separated</span></label><input type="text" id="mv-genre"></div>
+        <div class="form-group" style="margin-top:.8rem;"><label class="form-label">Description <span class="mx-hint">what venues see</span></label><textarea id="mv-desc" rows="3"></textarea></div>
+        <div class="form-group" style="margin-top:.8rem;"><label class="form-label">Poster image URL <span class="mx-hint">4:5 portrait, e.g. 800&times;1000</span></label><input type="text" id="mv-poster"></div>
       </div>
-      <div class="form-group"><label class="form-label">Genre / tags <span style="font-style:italic;text-transform:none;letter-spacing:0;color:var(--text-dim)">— comma separated</span></label><input type="text" id="mv-genre" placeholder="Horror, Classic, B-Movie"></div>
-      <div class="form-group"><label class="form-label">Description <span style="font-style:italic;text-transform:none;letter-spacing:0;color:var(--text-dim)">— what venues see</span></label><textarea id="mv-desc" rows="3" placeholder="A short pitch for the movie…"></textarea></div>
-      <div class="form-group"><label class="form-label">Poster image URL <span style="font-style:italic;text-transform:none;letter-spacing:0;color:var(--text-dim)">— 4:5 portrait (e.g. 800×1000)</span></label><input type="text" id="mv-poster" placeholder="https://…"></div>
-      <div class="form-group"><label class="form-label">Where to find it <span style="font-style:italic;text-transform:none;letter-spacing:0;color:var(--text-dim)">— links to the movie; add backups and label each (Black &amp; white, Colorized, Backup…)</span></label>
+      <div class="mx-sec">
+        <div class="mx-h">Where to find it <span class="mx-sub">Add backups and label each (Black &amp; white, Colorized, Backup&hellip;)</span></div>
         <div id="mv-links"></div>
         <button type="button" class="btn btn-sm btn-ghost" onclick="addMovieLinkRow()" style="margin-top:6px">+ Add another link</button>
-        <datalist id="mv-link-labels"><option value="Black &amp; white"><option value="Colorized"><option value="Backup"><option value="Best quality"><option value="With subtitles"></datalist></div>
-      <div class="form-group"><label class="form-label">Notes <span style="font-style:italic;text-transform:none;letter-spacing:0;color:var(--text-dim)">— internal: well-known actors, silent film, best print…</span></label><textarea id="mv-notes" rows="2" placeholder="e.g. SILENT FILM · stars Bela Lugosi"></textarea></div>
-      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-top:0.5rem;"><input type="checkbox" id="mv-published" style="accent-color:var(--gold);width:15px;height:15px;"> Show on Venue Menu</label>
+        <datalist id="mv-link-labels"><option value="Black &amp; white"><option value="Colorized"><option value="Backup"><option value="Best quality"><option value="With subtitles"></datalist>
+        <div class="form-group" style="margin-top:.9rem;"><label class="form-label">Notes <span class="mx-priv">Internal</span></label><textarea id="mv-notes" rows="2"></textarea></div>
+      </div>
+      <div class="mx-sec">
+        <div class="mx-h">Where it shows <span class="mx-sub">Check every place it should appear</span></div>
+        <div class="mx-where">
+          <div class="mx-row">
+            <label class="mx-row-head"><input type="checkbox" id="mv-published" onchange="mxRefresh()"><span><span class="mx-row-title">Venue Menu</span><span class="mx-row-sub">Movies tab on venue.html</span></span></label>
+          </div>
+          <div class="mx-row" id="car-modal-movie">
+            <label class="mx-row-head"><input type="checkbox" onchange="carToggleModal('movie',this)"><span><span class="mx-row-title">Carousel</span><span class="mx-row-sub">Adds it to Picks for the &ldquo;Coming Up&rdquo; carousel on the venue.html front page<span class="mx-sf" style="display:none"> &mdash; save it first</span></span></span></label>
+          </div>
+        </div>
+      </div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-ghost btn-sm car-modal-btn" id="car-modal-movie" onclick="carFromModal('movie')" style="display:none;">+ Carousel</button>
       <button class="btn btn-danger" id="mv-delete-btn" onclick="deleteMovie()" style="margin-right:auto;display:none;">Delete</button>
       <button class="btn btn-ghost" onclick="closeMovieModal()">Cancel</button>
       <button class="btn" onclick="saveMovie()">Save</button>
@@ -2189,7 +2139,7 @@
     </div>
     <div class="modal-body">
       <p style="color:var(--text-muted);font-size:0.9rem;margin-bottom:0.75rem;">One movie per line: <b>Title | Year | Runtime | Link | Notes</b> — everything after the title is optional. Titles already in the list are skipped.</p>
-      <textarea id="mv-bulk-text" rows="10" placeholder="Night of the Living Dead | 1968 | 96 | https://archive.org/…&#10;Nosferatu | 1922&#10;Plan 9 from Outer Space"></textarea>
+      <textarea id="mv-bulk-text" rows="10"></textarea>
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeMovieBulk()">Cancel</button>
@@ -2209,7 +2159,7 @@
       <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:1rem;">Filter tags for the Sing-Alongs tab.</p>
       <div id="singa-tags-list" style="display:grid; gap:6px; margin-bottom:1rem;"></div>
       <div style="display:flex; gap:8px;">
-        <input type="text" id="singa-tag-input" placeholder="Add a filter tag… e.g. Pop, Disney, 90s" onkeydown="if(event.key==='Enter'){event.preventDefault();addSingaTag();}">
+        <input type="text" id="singa-tag-input" onkeydown="if(event.key==='Enter'){event.preventDefault();addSingaTag();}">
         <button class="btn btn-sm" onclick="addSingaTag()" style="flex-shrink:0;">+ Add</button>
       </div>
     </div>
@@ -2237,7 +2187,7 @@
       </div>
       <div id="filter-dim-content" style="display:grid; gap:6px; max-height:320px; overflow-y:auto; margin-bottom:1rem;"></div>
       <div style="display:flex; gap:8px;">
-        <input type="text" id="filter-dim-new-input" placeholder="Add new option…" onkeydown="if(event.key==='Enter'){event.preventDefault();addFilterDimOption();}">
+        <input type="text" id="filter-dim-new-input" onkeydown="if(event.key==='Enter'){event.preventDefault();addFilterDimOption();}">
         <button class="btn btn-sm" onclick="addFilterDimOption()" style="flex-shrink:0;">+ Add</button>
       </div>
     </div>
@@ -2247,70 +2197,90 @@
   </div>
 </div>
 
-<!-- ═══ SEASONAL EVENT MODAL ═══ -->
+<!-- ═══ CAROUSEL CALENDAR EVENT / PICK MODAL ═══ -->
 <div class="modal-backdrop" id="seasonal-modal">
-  <div class="modal se-modal">
+  <div class="modal mx-wide">
     <div class="modal-header">
-      <span class="modal-title" id="seasonal-modal-title">Add Seasonal Event</span>
+      <span class="modal-title" id="seasonal-modal-title">Add Calendar Event</span>
       <button class="modal-close" onclick="closeSeasonalModal()">✕</button>
     </div>
-    <div class="modal-body se-body">
-      <div class="se-top">
-        <div class="se-fields">
-          <div class="form-group"><label class="form-label">Event Name *</label><input type="text" id="se-name"></div>
-          <div class="form-group"><label class="form-label">Image URL <span class="se-hint">(optional, 4:5 card face)</span></label><input type="text" id="se-image" oninput="seImgPrev()"></div>
-          <div class="form-group"><label class="form-label">Short Description <span class="se-hint">(shown on card)</span></label><textarea id="se-desc" rows="3"></textarea></div>
+    <div class="modal-body mx">
+      <div class="mx-sec">
+        <div class="mx-h">Details</div>
+        <div class="mx-split">
+          <div class="mx-stack">
+            <div class="form-group"><label class="form-label">Name *</label><input type="text" id="se-name"></div>
+            <div class="form-group"><label class="form-label">Image URL <span class="mx-hint">4:5 card face</span></label><input type="text" id="se-image" oninput="seImgPrev()"></div>
+            <div class="form-group"><label class="form-label">Short description <span class="mx-hint">shown on the card</span></label><textarea id="se-desc" rows="3"></textarea></div>
+            <div class="mx-grid2">
+              <div class="form-group"><label class="form-label">Filed under month</label><select id="se-ev-month"><option value="1">January</option><option value="2">February</option><option value="3">March</option><option value="4">April</option><option value="5">May</option><option value="6">June</option><option value="7">July</option><option value="8">August</option><option value="9">September</option><option value="10">October</option><option value="11">November</option><option value="12">December</option></select></div>
+              <div class="form-group"><label class="form-label">Day <span class="mx-hint">optional</span></label><input type="number" id="se-ev-day" min="1" max="31"></div>
+            </div>
+          </div>
+          <div class="mx-prev"><div id="se-img-prev"></div></div>
         </div>
-        <div class="se-prev"><div id="se-img-prev"></div></div>
+        <div id="se-linked-note" class="mx-hint" style="display:none;margin-top:.7rem;"></div>
       </div>
 
-      <div class="se-cols">
-        <div class="se-box">
-          <div class="se-box-title">When the event happens</div>
-          <div class="form-row">
-            <div class="form-group"><label class="form-label">Month</label><select id="se-ev-month"><option value="1">January</option><option value="2">February</option><option value="3">March</option><option value="4">April</option><option value="5">May</option><option value="6">June</option><option value="7">July</option><option value="8">August</option><option value="9">September</option><option value="10">October</option><option value="11">November</option><option value="12">December</option></select></div>
-            <div class="form-group"><label class="form-label">Day <span class="se-hint">(optional)</span></label><input type="number" id="se-ev-day" min="1" max="31"></div>
-          </div>
-          <p class="se-note">This is the month it sits under in All Images and what "Next 3 Months" uses.</p>
-          <label class="se-check"><input type="checkbox" id="se-recurring"><span>Repeats every year</span></label>
-        </div>
-
-        <div class="se-box">
-          <div class="se-box-title">When it shows in the carousel</div>
-          <div class="se-seg">
-            <button id="se-type-month-btn" class="btn btn-sm" onclick="setSeasonalDateType('month')">Month / Season</button>
-            <button id="se-type-exact-btn" class="btn btn-sm btn-ghost" onclick="setSeasonalDateType('exact')">Exact Date</button>
-            <button id="se-type-range-btn" class="btn btn-sm btn-ghost" onclick="setSeasonalDateType('range')">Date Range</button>
-          </div>
-          <div id="se-month-fields">
-            <div class="form-row">
-              <div class="form-group"><label class="form-label">Month</label><select id="se-month"><option value="1">January</option><option value="2">February</option><option value="3">March</option><option value="4">April</option><option value="5">May</option><option value="6">June</option><option value="7">July</option><option value="8">August</option><option value="9">September</option><option value="10">October</option><option value="11">November</option><option value="12">December</option></select></div>
-              <div class="form-group"><label class="form-label">Day <span class="se-hint">(optional)</span></label><input type="number" id="se-day" min="1" max="31"></div>
+      <div class="mx-sec">
+        <div class="mx-h">Where it shows <span class="mx-sub">Check every place it should appear</span></div>
+        <div class="mx-where">
+          <div class="mx-row" id="se-row-carousel">
+            <label class="mx-row-head"><input type="checkbox" id="se-on-carousel" onchange="mxRefresh()"><span><span class="mx-row-title">Carousel</span><span class="mx-row-sub">&ldquo;Coming Up&rdquo; on the front page of venue.html</span></span></label>
+            <div class="mx-row-body">
+              <div class="form-label">When it shows</div>
+              <div class="se-seg">
+                <button type="button" id="se-mode-auto" class="btn btn-sm" onclick="seSetMode('auto')">Auto by dates</button>
+                <button type="button" id="se-mode-manual" class="btn btn-sm btn-ghost" onclick="seSetMode('manual')">Manual (always on)</button>
+              </div>
+              <input type="checkbox" id="se-always-on" hidden>
+              <div id="se-auto-panel">
+                <div class="se-seg">
+                  <button id="se-type-month-btn" type="button" class="btn btn-sm" onclick="setSeasonalDateType('month')">Month / Season</button>
+                  <button id="se-type-exact-btn" type="button" class="btn btn-sm btn-ghost" onclick="setSeasonalDateType('exact')">Exact date</button>
+                  <button id="se-type-range-btn" type="button" class="btn btn-sm btn-ghost" onclick="setSeasonalDateType('range')">Date range</button>
+                </div>
+                <div id="se-month-fields">
+                  <div class="mx-grid2">
+                    <div class="form-group"><label class="form-label">Month</label><select id="se-month"><option value="1">January</option><option value="2">February</option><option value="3">March</option><option value="4">April</option><option value="5">May</option><option value="6">June</option><option value="7">July</option><option value="8">August</option><option value="9">September</option><option value="10">October</option><option value="11">November</option><option value="12">December</option></select></div>
+                    <div class="form-group"><label class="form-label">Day <span class="mx-hint">optional</span></label><input type="number" id="se-day" min="1" max="31"></div>
+                  </div>
+                  <p class="se-note">Shows from 2 weeks before the month starts through 1 week before it ends. With a day set, it shows 1 month before that day.</p>
+                </div>
+                <div id="se-range-fields" style="display:none;">
+                  <div class="mx-grid2">
+                    <div class="form-group"><label class="form-label">From</label><div class="se-pair"><select id="se-rs-m"><option value="1">January</option><option value="2">February</option><option value="3">March</option><option value="4">April</option><option value="5">May</option><option value="6">June</option><option value="7">July</option><option value="8">August</option><option value="9">September</option><option value="10">October</option><option value="11">November</option><option value="12">December</option></select><input type="number" id="se-rs-d" min="1" max="31"></div></div>
+                    <div class="form-group"><label class="form-label">To</label><div class="se-pair"><select id="se-re-m"><option value="1">January</option><option value="2">February</option><option value="3">March</option><option value="4">April</option><option value="5">May</option><option value="6">June</option><option value="7">July</option><option value="8">August</option><option value="9">September</option><option value="10">October</option><option value="11">November</option><option value="12">December</option></select><input type="number" id="se-re-d" min="1" max="31"></div></div>
+                  </div>
+                  <p class="se-note">Shows from the first date through the second date, every year.</p>
+                </div>
+                <div id="se-exact-fields" style="display:none;">
+                  <div class="form-group" style="max-width:240px;"><label class="form-label">Exact date</label><input type="date" id="se-exact-date"></div>
+                  <p class="se-note">Shows exactly 1 month before this date.</p>
+                </div>
+                <label class="se-check"><input type="checkbox" id="se-recurring"><span>Repeats every year</span></label>
+              </div>
+              <div id="se-manual-panel" style="display:none;">
+                <p class="se-note">Shows all the time. Use the box below to pause it without losing anything.</p>
+                <div id="se-always-on-off-wrap"><label class="se-check se-red"><input type="checkbox" id="se-always-off"><span>Temporarily hidden</span></label></div>
+              </div>
+              <label class="se-check"><input type="checkbox" id="se-hide-year"><span>Hide this year <em>(skips it this year only, back next year)</em></span></label>
             </div>
-            <p class="se-note">Shows from 2 weeks before this month starts through 1 week before it ends. With a day set, it shows 1 month before that day.</p>
           </div>
-          <div id="se-range-fields" style="display:none;">
-            <div class="form-row">
-              <div class="form-group"><label class="form-label">From</label><div class="se-pair"><select id="se-rs-m"><option value="1">January</option><option value="2">February</option><option value="3">March</option><option value="4">April</option><option value="5">May</option><option value="6">June</option><option value="7">July</option><option value="8">August</option><option value="9">September</option><option value="10">October</option><option value="11">November</option><option value="12">December</option></select><input type="number" id="se-rs-d" min="1" max="31"></div></div>
-              <div class="form-group"><label class="form-label">To</label><div class="se-pair"><select id="se-re-m"><option value="1">January</option><option value="2">February</option><option value="3">March</option><option value="4">April</option><option value="5">May</option><option value="6">June</option><option value="7">July</option><option value="8">August</option><option value="9">September</option><option value="10">October</option><option value="11">November</option><option value="12">December</option></select><input type="number" id="se-re-d" min="1" max="31"></div></div>
-            </div>
-            <p class="se-note">Shows from the first date through the second date, every year.</p>
+          <div class="mx-row" id="se-row-nights" style="display:none;">
+            <label class="mx-row-head"><input type="checkbox" id="se-on-nights" onchange="mxRefresh()"><span><span class="mx-row-title">Themed Nights tab</span><span class="mx-row-sub">venue.html &mdash; controls the original themed night</span></span></label>
           </div>
-          <div id="se-exact-fields" style="display:none;">
-            <div class="form-group"><label class="form-label">Exact Date</label><input type="date" id="se-exact-date"></div>
-            <p class="se-note">Shows exactly 1 month before this date.</p>
+          <div class="mx-row" id="se-row-seasonal">
+            <label class="mx-row-head"><input type="checkbox" id="se-on-seasonal" onchange="mxRefresh()"><span><span class="mx-row-title">Seasonal page</span><span class="mx-row-sub">seasonal.html &mdash; the public landing page for venues without an account</span></span></label>
+            <div class="mx-row-body"><div id="se-sd-slot"></div></div>
           </div>
-          <div class="se-sep"></div>
-          <label class="se-check"><input type="checkbox" id="se-hide-year"><span>Hide this year <em>(skips it this year only, back next year)</em></span></label>
-          <label class="se-check"><input type="checkbox" id="se-always-on" onchange="seToggleAlwaysOn()"><span>Always show in carousel <em>(year-round, ignores the dates above)</em></span></label>
-          <div id="se-always-on-off-wrap" style="display:none;"><label class="se-check se-red"><input type="checkbox" id="se-always-off"><span>Temporarily hidden</span></label></div>
         </div>
       </div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-danger btn-sm" id="se-delete-btn" onclick="deleteSeasonalEvent()" style="display:none;margin-right:auto;">Delete</button>
       <button class="btn btn-ghost" onclick="closeSeasonalModal()">Cancel</button>
-      <button class="btn" onclick="saveSeasonalEvent()">Save Event</button>
+      <button class="btn" onclick="saveSeasonalEvent()">Save</button>
     </div>
   </div>
 </div>
@@ -3707,12 +3677,7 @@ function openNewNightModal() {
   document.getElementById('night-published').checked = false;
   document.getElementById('night-published-host').checked = false;
   document.getElementById('night-published-seasonal').checked = false;
-  document.getElementById('night-seasonal-date').value = '';
-  document.getElementById('night-seasonal-when').value = '';
-  document.getElementById('night-seasonal-month').value = '';
-  nsLoad(null);
-  document.getElementById('night-seasonal-fit').value = '';
-  document.getElementById('night-seasonal-desc').value = '';
+  sdMount('night-sd-slot'); sdLoad(null);
   document.getElementById('night-addon-price').value = '';
   ['genre','tone','era','audience'].forEach(d=>{const el=document.getElementById(`night-${d}`);if(el)el.value='';});
   document.getElementById('night-description').value = '';
@@ -3768,15 +3733,15 @@ function nightSeasonalMonth(n) {
   return mm ? Number(mm[1]) : 0;
 }
 // Same rule the Seasonal Page uses, so the admin badge matches what the public sees.
-function nightSeasonalLive(n) {
-  if (!n || !n.publishedSeasonal) return false;
+// One rule for "is it showing on seasonal.html right now" (shared with the public page)
+function seasonalLiveObj(o) {
   const now = new Date();
-  if (n.seasonalHiddenYear && n.seasonalHiddenYear === now.getFullYear()) return false;
-  if (n.seasonalMode !== 'auto') return true;
+  if (o.seasonalHiddenYear && o.seasonalHiddenYear === now.getFullYear()) return false;
+  if (o.seasonalMode !== 'auto') return true;
   const pad = x => String(x).padStart(2, '0');
   const today = now.getFullYear() + '-' + pad(now.getMonth() + 1) + '-' + pad(now.getDate());
   const md = (now.getMonth() + 1) * 100 + now.getDate();
-  return (n.seasonalRanges || []).some(r => {
+  return (o.seasonalRanges || []).some(r => {
     if (!r || !r.from) return false;
     const to = r.to || r.from;
     if (r.yearly) {
@@ -3786,7 +3751,44 @@ function nightSeasonalLive(n) {
     return today >= r.from && today <= to;
   });
 }
-
+function nightSeasonalLive(n) { return !!(n && n.publishedSeasonal) && seasonalLiveObj(n); }
+function evSeasonalLive(ev) { return !!(ev && ev.onSeasonal) && seasonalLiveObj(ev); }
+// A Pick made from a themed night points back at that night by name
+function carLinkedNight(p) {
+  if (!p || p.srcType !== 'night') return null;
+  const nm = p.srcName || p.name;
+  return nights.find(n => n.name === nm) || null;
+}
+function evOnSeasonal(ev) {
+  if (ev._pick) { const ln = carLinkedNight(ev); if (ln) return nightSeasonalLive(ln); }
+  return evSeasonalLive(ev);
+}
+// Seasonal details box: lives in whichever pop-up is open (themed night, calendar event or pick)
+function sdMount(slotId) { const slot = document.getElementById(slotId), box = document.getElementById('sd-box'); if (slot && box && box.parentNode !== slot) slot.appendChild(box); }
+function sdLoad(o) {
+  o = o || {};
+  document.getElementById('night-seasonal-month').value = o.seasonalMonth || '';
+  document.getElementById('night-seasonal-date').value = o.seasonalDate || '';
+  document.getElementById('night-seasonal-when').value = o.seasonalWhen || '';
+  document.getElementById('night-seasonal-desc').value = o.seasonalDesc || '';
+  document.getElementById('night-seasonal-fit').value = o.seasonalFit || '';
+  nsLoad(o);
+}
+function sdRead() {
+  return {
+    seasonalMonth: Number(document.getElementById('night-seasonal-month').value) || null,
+    seasonalDate: document.getElementById('night-seasonal-date').value || '',
+    seasonalWhen: document.getElementById('night-seasonal-when').value.trim(),
+    seasonalDesc: document.getElementById('night-seasonal-desc').value.trim(),
+    seasonalFit: document.getElementById('night-seasonal-fit').value.trim(),
+    seasonalMode: nsMode,
+    seasonalRanges: nsReadRanges(),
+    seasonalHiddenYear: document.getElementById('ns-hide-year').checked ? new Date().getFullYear() : null
+  };
+}
+function mxRefresh() {
+  document.querySelectorAll('.mx-row').forEach(r => { const c = r.querySelector(':scope > .mx-row-head > input[type="checkbox"]'); if (c) r.classList.toggle('on', c.checked); });
+}
 function editNight(idx) {
   editingNightIndex = idx;
   const n = nights[idx];
@@ -3799,12 +3801,7 @@ function editNight(idx) {
   document.getElementById('night-published').checked = !!n.published;
   document.getElementById('night-published-host').checked = (n.publishedHost !== undefined) ? !!n.publishedHost : !!n.published;
   document.getElementById('night-published-seasonal').checked = !!n.publishedSeasonal;
-  document.getElementById('night-seasonal-date').value = n.seasonalDate || '';
-  document.getElementById('night-seasonal-when').value = n.seasonalWhen || '';
-  document.getElementById('night-seasonal-month').value = n.seasonalMonth || '';
-  nsLoad(n);
-  document.getElementById('night-seasonal-fit').value = n.seasonalFit || '';
-  document.getElementById('night-seasonal-desc').value = n.seasonalDesc || '';
+  sdMount('night-sd-slot'); sdLoad(n);
   document.getElementById('night-addon-price').value = (n.addonPrice || n.addonPrice === 0) ? n.addonPrice : '';
   ['genre','tone','era','audience'].forEach(d=>{const el=document.getElementById(`night-${d}`);if(el)el.value=n[d]||'';});
   document.getElementById('night-description').value = n.description || '';
@@ -4028,14 +4025,7 @@ async function saveNight() {
     published: document.getElementById('night-published').checked,
     publishedHost: document.getElementById('night-published-host').checked,
     publishedSeasonal: document.getElementById('night-published-seasonal').checked,
-    seasonalDate: document.getElementById('night-seasonal-date').value || '',
-    seasonalWhen: document.getElementById('night-seasonal-when').value.trim(),
-    seasonalMonth: Number(document.getElementById('night-seasonal-month').value) || null,
-    seasonalMode: nsMode,
-    seasonalRanges: nsReadRanges(),
-    seasonalHiddenYear: document.getElementById('ns-hide-year').checked ? new Date().getFullYear() : null,
-    seasonalFit: document.getElementById('night-seasonal-fit').value.trim(),
-    seasonalDesc: document.getElementById('night-seasonal-desc').value.trim(),
+    ...sdRead(),
     addonPrice: document.getElementById('night-addon-price').value.trim() ? parseFloat(document.getElementById('night-addon-price').value) : null,
     description: document.getElementById('night-description').value.trim(),
     adminNotes: document.getElementById('night-admin-notes').value.trim(),
@@ -5991,7 +5981,7 @@ function carBadges(ev) {
   if (ev._pick) left.push('<span class="car-b pick">Pick</span>');
   if (ev.pending) left.push('<span class="car-b warn">Not scheduled yet</span>');
   if (ev.alwaysOn) left.push(ev.alwaysOff ? '<span class="car-b red">Hidden</span>' : '<span class="car-b live">Always On</span>');
-  if (carSeasonalNames().has(carNorm(ev._pick ? (ev.srcName || ev.name) : ev.name))) left.push('<span class="car-b seasonal">Seasonal</span>');
+  if (evOnSeasonal(ev)) left.push('<span class="car-b seasonal">Seasonal</span>');
   return { left: left.join(''), right: seIsActive(ev) ? '<span class="car-b live">Live</span>' : '' };
 }
 // One renderer for the Calendar, Picks and All Images pills: January at the top, December at the bottom.
@@ -6033,39 +6023,51 @@ function carRenderEvents(boxId, emptyId, evs) {
     return '<div style="margin-bottom:1.75rem;"><div class="section-title" style="margin-bottom:0.6rem;">' + (m ? MONTH_NAMES[m] : 'Unscheduled') + '</div>' + body + '</div>';
   }).join('');
 }
-// Themed nights that are live on seasonal.html right now (same rule the public page uses)
+// Everything live on seasonal.html right now: themed nights, calendar events and picks
+function seItemMonth(it) {
+  const o = it.o, m = Number(o.seasonalMonth);
+  if (m >= 1 && m <= 12) return m;
+  const mm = /^\d{4}-(\d{2})/.exec(o.seasonalDate || '');
+  if (mm) return Number(mm[1]);
+  return it.kind === 'night' ? 0 : (seEvMonth(o) || 0);
+}
+function seasonalItems() {
+  const out = [];
+  nights.forEach((n, i) => { if (nightSeasonalLive(n)) out.push({ kind: 'night', idx: i, id: n._id, name: n.name, image: n.bannerData || '', color: n.bannerColor || '', o: n }); });
+  (typeof seasonalEvents !== 'undefined' ? seasonalEvents : []).forEach(e => { if (!e.pending && evSeasonalLive(e)) out.push({ kind: 'event', id: e.id, name: e.name, image: e.image || '', o: e }); });
+  carPicks.forEach(p => { if (!carLinkedNight(p) && evSeasonalLive(p)) out.push({ kind: 'pick', id: p.id, name: p.name, image: p.image || '', o: p }); });
+  return out;
+}
 async function renderCarSeasonal() {
   await loadCarPicks();
-  const calNames = new Set((typeof seasonalEvents !== 'undefined' ? seasonalEvents : []).filter(e => !e.pending).map(e => carNorm(e.name)));
-  const pickNames = new Set(carPicks.map(e => carNorm(e.srcName || e.name)));
-  const alsoIn = n => (calNames.has(carNorm(n.name)) ? '<span class="car-b pick">Calendar</span>' : '') + (pickNames.has(carNorm(n.name)) ? '<span class="car-b pick">Pick</span>' : '');
   const box = document.getElementById('car-seasonal-list'), empty = document.getElementById('car-seasonal-empty');
   if (!box) return;
-  const live = nights.map((n, i) => ({ n, i })).filter(x => nightSeasonalLive(x.n))
-    .sort((a, b) => { const x = a.n.seasonalDate || '9999', y = b.n.seasonalDate || '9999'; return x < y ? -1 : x > y ? 1 : String(a.n.name).localeCompare(String(b.n.name)); });
-  if (!live.length) { box.innerHTML = ''; if (empty) empty.style.display = 'block'; return; }
+  const pickNames = new Set(carPicks.filter(p => p.srcType === 'night').map(p => carNorm(p.srcName || p.name)));
+  const items = seasonalItems().sort((a, b) => { const x = a.o.seasonalDate || '9999', y = b.o.seasonalDate || '9999'; return x < y ? -1 : x > y ? 1 : String(a.name).localeCompare(String(b.name)); });
+  if (!items.length) { box.innerHTML = ''; if (empty) empty.style.display = 'block'; return; }
   if (empty) empty.style.display = 'none';
   const groups = {};
-  live.forEach(x => { const m = nightSeasonalMonth(x.n); (groups[m] = groups[m] || []).push(x); });
+  items.forEach(it => { const m = seItemMonth(it); (groups[m] = groups[m] || []).push(it); });
   const gkeys = Object.keys(groups).map(Number).sort((a, b) => (a || 99) - (b || 99));
-  const whenOfNight = n => n.seasonalWhen || (n.seasonalDate ? (() => { const d = new Date(n.seasonalDate + 'T12:00:00'); return isNaN(d) ? '' : d.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' }); })() : 'Date by request');
+  const whenOfItem = o => o.seasonalWhen || (o.seasonalDate ? (() => { const d = new Date(o.seasonalDate + 'T12:00:00'); return isNaN(d) ? '' : d.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' }); })() : 'Date by request');
+  const srcLabel = it => it.kind === 'night' ? 'Themed Night' : it.kind === 'event' ? 'Calendar' : 'Pick';
+  const openJs = it => it.kind === 'night' ? 'editNight(' + it.idx + ')' : "openSeasonalModal('" + String(it.id).replace(/'/g, "\\'") + "'" + (it.kind === 'pick' ? ',true' : '') + ')';
+  const tags = it => '<span class="car-b pick">' + srcLabel(it) + '</span>' + '<span class="car-b warn">' + (it.o.seasonalMode === 'auto' ? 'Auto' : 'Manual') + '</span>' + (it.kind === 'night' && pickNames.has(carNorm(it.name)) ? '<span class="car-b pick">Pick</span>' : '');
   box.innerHTML = gkeys.map(m => {
-    const g = { items: groups[m] };
     const label = m ? MONTH_NAMES[m] : 'No month set';
-    const modeTxt = n => n.seasonalMode === 'auto' ? 'Auto' : 'Manual';
     let body;
     if (carViewMode === 'list') {
-      body = g.items.map(({ n, i }) => {
-        const thumb = n.bannerData ? '<img class="car-list-thumb" src="' + esc(n.bannerData) + '" alt="" loading="lazy">' : '<div class="car-list-thumb"></div>';
-        return '<div class="car-list-row" onclick="editNight(' + i + ')">' + thumb
-          + '<div class="car-list-main"><div class="car-list-name">' + esc(n.name) + ' <span class="car-b warn">' + modeTxt(n) + '</span> ' + alsoIn(n) + '</div><div class="car-list-sub">' + esc(whenOfNight(n)) + '</div></div>'
-          + '<span class="car-b live">Live</span><button class="btn btn-sm btn-ghost" onclick="event.stopPropagation();editNight(' + i + ')">Edit</button></div>';
+      body = groups[m].map(it => {
+        const thumb = it.image ? '<img class="car-list-thumb" src="' + esc(it.image) + '" alt="" loading="lazy">' : '<div class="car-list-thumb"></div>';
+        return '<div class="car-list-row" onclick="' + openJs(it) + '">' + thumb
+          + '<div class="car-list-main"><div class="car-list-name">' + esc(it.name) + ' ' + tags(it) + '</div><div class="car-list-sub">' + esc(whenOfItem(it.o)) + '</div></div>'
+          + '<span class="car-b live">Live</span><button class="btn btn-sm btn-ghost" onclick="event.stopPropagation();' + openJs(it) + '">Edit</button></div>';
       }).join('');
     } else {
-      body = '<div class="car-grid">' + g.items.map(({ n, i }) => {
-        const img = n.bannerData ? '<img src="' + esc(n.bannerData) + '" alt="" loading="lazy">' : '<div class="car-noimg" style="background:' + esc(n.bannerColor || '#000') + '">' + esc(n.name) + '</div>';
-        return '<div class="car-tile live" onclick="editNight(' + i + ')">' + img + '<div class="car-name">' + esc(n.name) + '</div><div class="car-date">' + esc(whenOfNight(n)) + '</div>'
-          + '<div class="car-foot"><div class="car-foot-l"><span class="car-b warn">' + modeTxt(n) + '</span>' + alsoIn(n) + '</div><div class="car-foot-r"><span class="car-b live">Live</span></div></div></div>';
+      body = '<div class="car-grid">' + groups[m].map(it => {
+        const img = it.image ? '<img src="' + esc(it.image) + '" alt="" loading="lazy">' : '<div class="car-noimg" style="background:' + esc(it.color || '#000') + '">' + esc(it.name) + '</div>';
+        return '<div class="car-tile live" onclick="' + openJs(it) + '">' + img + '<div class="car-name">' + esc(it.name) + '</div><div class="car-date">' + esc(whenOfItem(it.o)) + '</div>'
+          + '<div class="car-foot"><div class="car-foot-l">' + tags(it) + '</div><div class="car-foot-r"><span class="car-b live">Live</span></div></div></div>';
       }).join('') + '</div>';
     }
     return '<div style="margin-bottom:1.75rem;"><div class="section-title" style="margin-bottom:0.6rem;">' + label + '</div>' + body + '</div>';
@@ -6105,17 +6107,32 @@ function carModalRef(kind) {
   if (kind === 'live') return liveCatInfoKind && liveCatInfoId ? ['live', liveCatInfoKind + ':' + liveCatInfoId] : null;
   return null;
 }
+let _carSyncTried = false;
 function carModalSync() {
+  if (!carPicksLoaded && !_carSyncTried) { _carSyncTried = true; loadCarPicks().then(() => { try { carModalSync(); } catch (e) {} }); }
   ['cat', 'night', 'movie', 'live'].forEach(k => {
-    const b = document.getElementById('car-modal-' + k); if (!b) return;
+    const row = document.getElementById('car-modal-' + k); if (!row) return;
+    const cb = row.querySelector('input[type="checkbox"]'), sf = row.querySelector('.mx-sf');
     const ref = carModalRef(k);
-    if (!ref) { b.style.display = 'none'; return; }
-    const nm = carSrcName(ref[0], ref[1]);
-    b.style.display = nm ? '' : 'none';
-    const inn = nm && carPicks.some(p => p.srcType === ref[0] && (p.srcName || p.name) === nm);
-    b.textContent = inn ? '✓ In Carousel Picks' : '+ Carousel';
-    b.classList.toggle('cp-in', !!inn);
+    const nm = ref ? carSrcName(ref[0], ref[1]) : '';
+    const inn = !!(nm && carPicks.some(p => p.srcType === ref[0] && (p.srcName || p.name) === nm));
+    cb.disabled = !nm; cb.checked = inn;
+    if (sf) sf.style.display = nm ? 'none' : '';
+    row.classList.toggle('on', inn);
   });
+}
+async function carToggleModal(kind, cb) {
+  const ref = carModalRef(kind); if (!ref) { cb.checked = false; return; }
+  await loadCarPicks();
+  const nm = carSrcName(ref[0], ref[1]);
+  const idx = carPicks.findIndex(p => p.srcType === ref[0] && (p.srcName || p.name) === nm);
+  if (cb.checked) { if (idx < 0) await carouselAdd(ref[0], ref[1]); }
+  else if (idx >= 0) {
+    if (!confirm('Take "' + nm + '" off the carousel? Its carousel dates will be removed.')) { cb.checked = true; return; }
+    carPicks.splice(idx, 1);
+    try { await persistCarPicks(); carRerenderCards(); toast('Removed from the carousel', 'success'); } catch (e) { toast('Save failed: ' + e.message, 'error'); }
+  }
+  carModalSync();
 }
 async function carFromModal(kind) {
   const ref = carModalRef(kind); if (!ref) return;
@@ -6174,7 +6191,7 @@ let seEditingId = null;
 let sePickMode = false;
 function seList() { return sePickMode ? carPicks : seasonalEvents; }
 async function sePersist() { if (sePickMode) { await persistCarPicks(); carRerenderCards(); } else await persistSeasonalEvents(); }
-function seRefresh() { if (sePickMode) renderCarPicks(); else renderSeasonalAdmin(); const ap = document.getElementById('car-pane-all'); if (ap && ap.style.display !== 'none') renderCarAll(); }
+function seRefresh() { if (sePickMode) renderCarPicks(); else renderSeasonalAdmin(); const ap = document.getElementById('car-pane-all'); if (ap && ap.style.display !== 'none') renderCarAll(); try { renderCarSeasonal(); } catch (e) {} }
 const MONTH_NAMES = ['','January','February','March','April','May','June',
                      'July','August','September','October','November','December'];
 
@@ -6193,7 +6210,7 @@ async function persistSeasonalEvents() {
 }
 function carRefreshPanes() {
   try { renderSeasonalAdmin(); } catch (e) {}
-  ['car-pane-picks:renderCarPicks', 'car-pane-all:renderCarAll'].forEach(x => { const [id, fn] = x.split(':'); const el = document.getElementById(id); if (el && el.style.display !== 'none') { try { window[fn] ? window[fn]() : eval(fn)(); } catch (e) {} } });
+  ['car-pane-picks:renderCarPicks', 'car-pane-all:renderCarAll', 'car-pane-seasonal:renderCarSeasonal'].forEach(x => { const [id, fn] = x.split(':'); const el = document.getElementById(id); if (el && el.style.display !== 'none') { try { window[fn] ? window[fn]() : eval(fn)(); } catch (e) {} } });
 }
 
 // ── VISIBILITY LOGIC ──
@@ -6201,6 +6218,7 @@ function carRefreshPanes() {
 function seIsActive(ev) {
   if (ev.pending) return false;
   if (ev.hiddenYear && ev.hiddenYear === new Date().getFullYear()) return false;
+  if (ev.carouselOn === false) return false; // Carousel box unchecked
   if (ev.alwaysOn) return !ev.alwaysOff; // year-round override
   const now = new Date();
   if (ev.dateType === 'range') {
@@ -6264,21 +6282,30 @@ function setSeasonalDateType(type) {
   document.getElementById('se-type-exact-btn').className = 'btn btn-sm' + (type === 'exact' ? '' : ' btn-ghost');
 }
 
+let seLinkedNight = null;
+function seSetMode(m) {
+  const manual = m === 'manual';
+  document.getElementById('se-always-on').checked = manual;
+  document.getElementById('se-mode-auto').className = 'btn btn-sm' + (manual ? ' btn-ghost' : '');
+  document.getElementById('se-mode-manual').className = 'btn btn-sm' + (manual ? '' : ' btn-ghost');
+  document.getElementById('se-auto-panel').style.display = manual ? 'none' : '';
+  document.getElementById('se-manual-panel').style.display = manual ? '' : 'none';
+  if (!manual) document.getElementById('se-always-off').checked = false;
+}
+
 function openSeasonalModal(id, pick) {
   sePickMode = !!pick;
   seEditingId = id || null;
   const ev = id ? seList().find(e => e.id === id) : null;
+  seLinkedNight = (pick && ev) ? carLinkedNight(ev) : null;
+  const nightMissing = !!(pick && ev && ev.srcType === 'night' && !seLinkedNight);
 
-  document.getElementById('seasonal-modal-title').textContent = pick ? 'Carousel Pick' : (ev ? 'Edit Seasonal Event' : 'Add Seasonal Event');
+  document.getElementById('seasonal-modal-title').textContent = pick ? 'Carousel Pick' : (ev ? 'Edit Calendar Event' : 'Add Calendar Event');
   document.getElementById('se-name').value   = ev ? ev.name  : '';
   document.getElementById('se-image').value  = ev ? (ev.image||'') : '';
   document.getElementById('se-desc').value   = ev ? (ev.desc||'') : '';
   document.getElementById('se-recurring').checked = ev ? !!ev.recurring : true;
   document.getElementById('se-delete-btn').style.display = ev ? '' : 'none';
-  const alwaysOn = ev ? !!ev.alwaysOn : false;
-  document.getElementById('se-always-on').checked = alwaysOn;
-  document.getElementById('se-always-off').checked = ev ? !!ev.alwaysOff : false;
-  document.getElementById('se-always-on-off-wrap').style.display = alwaysOn ? '' : 'none';
 
   const dtype = ev ? (ev.dateType || 'month') : 'month';
   setSeasonalDateType(dtype);
@@ -6297,6 +6324,24 @@ function openSeasonalModal(id, pick) {
     document.getElementById('se-exact-date').value = ev ? (ev.exactDate || '') : '';
   }
 
+  // Where it shows
+  document.getElementById('se-on-carousel').checked = ev ? ev.carouselOn !== false : true;
+  seSetMode(ev && ev.alwaysOn ? 'manual' : 'auto');
+  document.getElementById('se-always-off').checked = !!(ev && ev.alwaysOn && ev.alwaysOff);
+
+  const rowNights = document.getElementById('se-row-nights'), rowSeas = document.getElementById('se-row-seasonal'), note = document.getElementById('se-linked-note');
+  rowNights.style.display = seLinkedNight ? '' : 'none';
+  document.getElementById('se-on-nights').checked = seLinkedNight ? !!seLinkedNight.published : false;
+  rowSeas.style.display = nightMissing ? 'none' : '';
+  const src = seLinkedNight || ev || {};
+  document.getElementById('se-on-seasonal').checked = seLinkedNight ? !!seLinkedNight.publishedSeasonal : !!(ev && ev.onSeasonal);
+  sdMount('se-sd-slot'); sdLoad(src);
+  note.style.display = 'none';
+  if (seLinkedNight) { note.textContent = 'This is a copy of the themed night “' + seLinkedNight.name + '”. The Themed Nights tab and Seasonal page boxes below change that night, so it never shows twice.'; note.style.display = ''; }
+  else if (nightMissing) { note.textContent = 'The original themed night could not be found (renamed or deleted), so only the Carousel option applies.'; note.style.display = ''; }
+  else if (pick) { note.textContent = 'Only themed nights can go on the Themed Nights tab, so this one has the Carousel and Seasonal page options.'; note.style.display = ''; }
+
+  mxRefresh();
   document.getElementById('seasonal-modal').classList.add('open');
 }
 
@@ -6331,6 +6376,7 @@ async function saveSeasonalEvent() {
     evMonth:    Number(document.getElementById('se-ev-month').value) || null,
     evDay:      Number(document.getElementById('se-ev-day').value) || null,
     hiddenYear: document.getElementById('se-hide-year').checked ? new Date().getFullYear() : null,
+    carouselOn: document.getElementById('se-on-carousel').checked,
   };
 
   if (seCurrentDateType === 'month') {
@@ -6343,6 +6389,19 @@ async function saveSeasonalEvent() {
     ev.recurring = true;
   } else {
     ev.exactDate = document.getElementById('se-exact-date').value;
+  }
+
+  const wantSeasonal = document.getElementById('se-on-seasonal').checked;
+  if (sePickMode && seLinkedNight) {
+    const ln = seLinkedNight;
+    ln.published = document.getElementById('se-on-nights').checked;
+    ln.publishedSeasonal = wantSeasonal;
+    Object.assign(ln, sdRead());
+    try { await saveNightDoc(ln); renderNights(); }
+    catch (e) { toast('Could not save the themed night: ' + e.message, 'error'); return; }
+  } else {
+    ev.onSeasonal = wantSeasonal;
+    Object.assign(ev, sdRead());
   }
 
   const list = seList();
@@ -7168,7 +7227,7 @@ window.deletePortalCollaborator = async function(id) {
 };
 
 Object.assign(window, {
-  carTab, carAllFilter, carSetView, renderCarSeasonal, nsSetMode, nsAddRange, nsRemoveRange, setTriviaExBook, seImgPrev, catImgCheck, carGoPicks, carFromModal, setCatSize, setCatStyle, closeCategoryDetail, openNightFromCat, openCategoryDetail, carouselAdd,
+  carTab, carAllFilter, carSetView, renderCarSeasonal, carToggleModal, seSetMode, mxRefresh, nsSetMode, nsAddRange, nsRemoveRange, setTriviaExBook, seImgPrev, catImgCheck, carGoPicks, carFromModal, setCatSize, setCatStyle, closeCategoryDetail, openNightFromCat, openCategoryDetail, carouselAdd,
   liveImgPreview,
   toggleNavMenu, closeNavMenu,
   renderMovies, openMovieModal, addMovieLinkRow, closeMovieModal, saveMovie, deleteMovie, openMovieBulk, closeMovieBulk, saveMovieBulk,
@@ -7222,7 +7281,7 @@ Object.assign(window, {
 
 ['editCategory', 'editNight', 'openNewNightModal', 'openMovieModal', 'openLiveCategoryInfo', 'openAddCategoryModal'].forEach(n => {
   const o = window[n]; if (typeof o !== 'function') return;
-  window[n] = function () { const res = o.apply(this, arguments); try { carModalSync(); } catch (e) {} return res; };
+  window[n] = function () { const res = o.apply(this, arguments); try { carModalSync(); mxRefresh(); } catch (e) {} return res; };
 });
 
 
