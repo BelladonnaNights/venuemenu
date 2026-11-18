@@ -151,7 +151,7 @@ function seRangeWins(o) {
   });
   return out;
 }
-function seWinEnd(o) { const now = new Date(), w = seRangeWins(o).find(x => now >= x.show && now <= x.end); return w ? w.end : null; }
+function seWinEnd(o) { if (o.seasonalSched) return seDatesEnd(o.seasonalSched); const now = new Date(), w = seRangeWins(o).find(x => now >= x.show && now <= x.end); return w ? w.end : null; }
 function seDatesEnd(ev) {
   if (ev.carouselDates === 'seasonal') return seWinEnd(ev);
   const now = new Date(), Y = now.getFullYear();
@@ -180,7 +180,7 @@ function seDatesEnd(ev) {
 }
 function seDatesLive(ev) { return !!seDatesEnd(ev); }
 // Seasonal page: its own ranges, or the same dates as the Carousel
-function seUsesOwn(o) { return o.seasonalDates === 'own' || (o.seasonalDates === undefined && Array.isArray(o.seasonalRanges) && o.seasonalRanges.length > 0); }
+function seUsesOwn(o) { return o.seasonalDates === 'own' || (o.seasonalDates === undefined && (!!o.seasonalSched || (Array.isArray(o.seasonalRanges) && o.seasonalRanges.length > 0))); }
 let allPicks=[];
 function seDateSrc(o){if(o.dateType)return o;const p=allPicks.find(x=>x.srcType==='night'&&(x.srcName||x.name)===o.name);return p&&p.dateType?p:null;}
 /* Booked = within 2 weeks of its END date. Only dated items can be booked. */
@@ -271,7 +271,7 @@ function fromCarousel(e,kind){
   }
   return {_id:String(e.id),kind,name:e.name,bannerData:e.image||'',bannerColor:'',
     seasonalDesc:e.seasonalDesc||e.desc||'',seasonalFit:e.seasonalFit||'',seasonalDate:e.seasonalDate||'',seasonalWhen:e.seasonalWhen||'',
-    seasonalMonth:e.seasonalMonth||null,seasonalMode:e.seasonalMode,seasonalRanges:e.seasonalRanges,seasonalLead:e.seasonalLead,seasonalHiddenYear:e.seasonalHiddenYear,fallbackMonth:m,dateType:e.dateType,month:e.month,day:e.day,exactDate:e.exactDate,rStartM:e.rStartM,rStartD:e.rStartD,rEndM:e.rEndM,rEndD:e.rEndD,recurring:e.recurring,runFrom:e.runFrom,runTo:e.runTo,runs:e.runs,seasonalDates:e.seasonalDates,carouselDates:e.carouselDates};
+    seasonalMonth:e.seasonalMonth||null,seasonalMode:e.seasonalMode,seasonalRanges:e.seasonalRanges,seasonalSched:e.seasonalSched,seasonalLead:e.seasonalLead,seasonalHiddenYear:e.seasonalHiddenYear,fallbackMonth:m,dateType:e.dateType,month:e.month,day:e.day,exactDate:e.exactDate,rStartM:e.rStartM,rStartD:e.rStartD,rEndM:e.rEndM,rEndD:e.rEndD,recurring:e.recurring,runFrom:e.runFrom,runTo:e.runTo,runs:e.runs,seasonalDates:e.seasonalDates,carouselDates:e.carouselDates};
 }
 (async()=>{
   try{
