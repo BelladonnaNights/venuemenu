@@ -2075,7 +2075,7 @@ function seRangeWins(o) {
   });
   return out;
 }
-function seWinEnd(o) { const now = new Date(), w = seRangeWins(o).find(x => now >= x.show && now <= x.end); return w ? w.end : null; }
+function seWinEnd(o) { if (o.seasonalSched) return seDatesEnd(o.seasonalSched); const now = new Date(), w = seRangeWins(o).find(x => now >= x.show && now <= x.end); return w ? w.end : null; }
 function seDatesEnd(ev) {
   if (ev.carouselDates === 'seasonal') return seWinEnd(ev);
   const now = new Date(), Y = now.getFullYear();
@@ -2104,7 +2104,7 @@ function seDatesEnd(ev) {
 }
 function seDatesLive(ev) { return !!seDatesEnd(ev); }
 // Seasonal page: its own ranges, or the same dates as the Carousel
-function seUsesOwn(o) { return o.seasonalDates === 'own' || (o.seasonalDates === undefined && Array.isArray(o.seasonalRanges) && o.seasonalRanges.length > 0); }
+function seUsesOwn(o) { return o.seasonalDates === 'own' || (o.seasonalDates === undefined && (!!o.seasonalSched || (Array.isArray(o.seasonalRanges) && o.seasonalRanges.length > 0))); }
 function seIsActive(ev) {
   if (ev.pending) return false;
   if (ev.hiddenYear && ev.hiddenYear === new Date().getFullYear()) return false;
